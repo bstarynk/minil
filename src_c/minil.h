@@ -70,7 +70,7 @@ typedef union MiSt_Val_un Mit_Val;
 struct MiSt_Entier_st
 {
   enum mi_typeval_en mi_type;
-  bool miva_marq;
+  bool mi_marq;
   long mi_ent;
 };
 
@@ -78,7 +78,7 @@ struct MiSt_Entier_st
 struct MiSt_Double_st
 {
   enum mi_typeval_en mi_type;
-  bool miva_marq;
+  bool mi_marq;
   double mi_dbl;
 };
 
@@ -89,7 +89,7 @@ struct MiSt_Double_st
 struct MiSt_Chaine_st
 {
   enum mi_typeval_en mi_type;
-  bool miva_marq;
+  bool mi_marq;
   char mi_str[];
 };
 
@@ -97,9 +97,77 @@ struct MiSt_Chaine_st
 struct MiSt_Noeud_st
 {
   enum mi_typeval_en mi_type;
-  bool miva_marq;
+  bool mi_marq;
   Mit_Symbole *mi_conn;
   unsigned mi_arite;
   Mit_Val mi_fils[];
 };
+
+// Une association par table de hashage entre symboles et valeurs.
+// Ce n'est pas une valeur, mais une donnée interne.
+struct Mi_Assoc_st;
+
+// Un vecteur n'est pas une valeur, mais une donnée interne.
+struct Mi_Vecteur_st;
+
+// Une valeur symbole a un type, une marque, une chaîne nom, un indice, une association pour les attributs
+// et un vecteur de composants
+struct MiSt_Symbole_st
+{
+  enum mi_typeval_en mi_type;
+  bool mi_marq;
+  Mit_Chaine *mi_nom;
+  unsigned mi_indice;
+  struct Mi_Assoc_st *mi_attrs;
+  struct Mi_Vecteur_st *mi_comps;
+};
+
+////////////////////// conversions sûres, car verifiantes
+static inline const Mit_Entier *
+mi_en_entier (const Mit_Val v)
+{
+  if (!v.miva_ptr || *v.miva_type != MiTy_Entier)
+    return NULL;
+  return v.miva_ent;
+}				// fin mi_en_entier
+
+static inline const Mit_Double *
+mi_en_double (const Mit_Val v)
+{
+  if (!v.miva_ptr || *v.miva_type != MiTy_Double)
+    return NULL;
+  return v.miva_dbl;
+}				// fin mi_en_double
+
+static inline const Mit_Chaine *
+mi_en_chaine (const Mit_Val v)
+{
+  if (!v.miva_ptr || *v.miva_type != MiTy_Chaine)
+    return NULL;
+  return v.miva_chn;
+}				// fin mi_en_chaine
+
+static inline Mit_Symbole *	// sans const, car on touchera l'intérieur du symbole
+mi_en_symbole (const Mit_Val v)
+{
+  if (!v.miva_ptr || *v.miva_type != MiTy_Symbole)
+    return NULL;
+  return v.miva_sym;
+}				// fin mi_en_symbole
+
+static inline const Mit_Noeud *
+mi_en_noeud (const Mit_Val v)
+{
+  if (!v.miva_ptr || *v.miva_type != MiTy_Noeud)
+    return NULL;
+  return v.miva_noe;
+}				// fin mi_en_noeud
+
+// tester si une valeur chaine est licite pour un nom
+bool mi_nom_licite (Mit_Chaine *nom);
+// tester si une chaine C est licite
+bool mi_nom_licite_chaine (const char *ch);
+// Trouver un symbole de nom et indice donnés
+Mit_Symbole *mi_trouver_symbole_nom (const Mit_Chaine *nom, unsigned ind);
+
 #endif /*MINIL_INCLUDED_ */
