@@ -1,0 +1,6 @@
+-T Mit_Val
+-T Mit_Entier
+-T Mit_Double
+-T Mit_Chaine
+-T Mit_Symbole
+-T Mit_Noeud
