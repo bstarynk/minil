@@ -25,6 +25,9 @@
 #include <ctype.h>
 #include <assert.h>
 #include <string.h>
+#include <errno.h>
+#include <stdarg.h>
+#include <limits.h>
 
 /// les constantes d'empreinte dans le fichier généré _timestamp.c
 extern const char minil_timestamp[];
@@ -34,7 +37,7 @@ extern const char minil_checksum[];
 /// une macro, à la printf, pour les messages d'erreur fatale
 #define MI_FATALPRINTF(Fmt,...) do { \
 	fprintf (stderr, "%s:%d(%s) FATAL:" Fmt "\n", __FILE__, __LINE__, \
-        __func__, #__VA_ARGS__); fflush(NULL); \
+        __func__, ##__VA_ARGS__); fflush(NULL); \
 	abort(); } while(0)
 
 //////////////////////////////////////
@@ -103,7 +106,7 @@ struct MiSt_Chaine_st
 {
   enum mi_typeval_en mi_type;
   bool mi_marq;
-  char mi_str[];
+  char mi_car[];
 };
 
 // Une valeur noeud a un type, une marque, une connective, une arité, des fils
@@ -171,6 +174,15 @@ mi_en_noeud (const Mit_Val v)
     return NULL;
   return v.miva_noe;
 }				// fin mi_en_noeud
+
+
+
+void *mi_allouer_valeur (enum mi_typeval_en typv, size_t tail);
+
+const Mit_Chaine *mi_creer_chaine (const char *ch);
+
+const Mit_Chaine *mi_creer_chaine_printf (const char *fmt, ...)
+  __attribute__ ((format (printf, 1, 2)));
 
 // hash code d'une chaine
 unsigned mi_hashage_chaine (const char *ch);

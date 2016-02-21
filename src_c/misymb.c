@@ -25,7 +25,7 @@ mi_nom_licite (Mit_Chaine *nom)
 {
   if (!nom || nom->mi_type != MiTy_Chaine)
     return false;
-  return mi_nom_licite_chaine (nom->mi_str);
+  return mi_nom_licite_chaine (nom->mi_car);
 }				// fin mi_nom_licite
 
 // tester si une chaine C est licite
@@ -110,7 +110,7 @@ mi_trouver_symbole_nom (const Mit_Chaine *nom, unsigned ind)
 {
   if (!nom || nom->mi_type != MiTy_Chaine)
     return NULL;
-  return mi_trouver_symbole_chaine (nom->mi_str, ind);
+  return mi_trouver_symbole_chaine (nom->mi_car, ind);
 }				// fin mi_trouver_symbole_nom
 
 static Mit_Symbole *
@@ -156,13 +156,14 @@ mi_trouver_symbole_chaine (const char *ch, unsigned ind)
   if (!mi_nom_licite_chaine (ch))
     return NULL;
   // recherche dichotomique
-  unsigned bas = 0, hau = mi_dicho_symb.dic_taille, mil = 0;
+  unsigned bas = 0, hau = mi_dicho_symb.dic_compte, mil = 0;
+  assert (hau <= mi_dicho_symb.dic_taille);
   while (bas + 5 < hau)
     {
       mil = (bas + hau) / 2;
       const Mit_Chaine *nom = mi_dicho_symb.dic_table[mil].baq_nom;
       assert (nom != NULL && nom->mi_type == MiTy_Chaine);
-      int cmp = strcmp (ch, nom->mi_str);
+      int cmp = strcmp (ch, nom->mi_car);
       if (cmp == 0)
 	return mi_trouver_symbole_baquet (mi_dicho_symb.dic_table + mil, ind);
       else if (cmp < 0)
@@ -174,7 +175,7 @@ mi_trouver_symbole_chaine (const char *ch, unsigned ind)
     {
       const Mit_Chaine *nom = mi_dicho_symb.dic_table[mil].baq_nom;
       assert (nom != NULL && nom->mi_type == MiTy_Chaine);
-      int cmp = strcmp (ch, nom->mi_str);
+      int cmp = strcmp (ch, nom->mi_car);
       if (cmp == 0)
 	return mi_trouver_symbole_baquet (mi_dicho_symb.dic_table + mil, ind);
     }
@@ -190,9 +191,9 @@ mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind)
 {
   if (!nom || nom->mi_type != MiTy_Chaine)
     return NULL;
-  if (!mi_nom_licite_chaine (nom->mi_str))
+  if (!mi_nom_licite_chaine (nom->mi_car))
     return NULL;
-  return mi_creer_symbole_chaine (nom->mi_str, ind);
+  return mi_creer_symbole_chaine (nom->mi_car, ind);
 }				// fin mi_creer_symbole_nom
 
 
@@ -233,6 +234,76 @@ mi_creer_symbole_baquet (struct mi_baquet_symbole_st *baq, unsigned ind)
 }				// fin mi_creer_symbole_baquet
 
 
+static void
+mi_inserer_symbole_baquet (unsigned ix, const char *ch)
+{
+  unsigned cpt = mi_dicho_symb.dic_compte;
+  assert (cpt <= mi_dicho_symb.dic_taille);
+  assert (ix <= cpt);
+  assert (mi_nom_licite_chaine (ch));
+  assert (ix == cpt
+	  || strcmp (ch, mi_dicho_symb.dic_table[ix].baq_nom->mi_car) < 0);
+  if (cpt + 1 >= mi_dicho_symb.dic_taille)
+    {
+      unsigned nouvta = mi_nombre_premier_apres (5 * cpt / 4 + 2);
+      struct mi_baquet_symbole_st *nouvzon =
+	calloc (nouvta, sizeof (struct mi_baquet_symbole_st));
+      if (!nouvzon)
+	MI_FATALPRINTF ("echec d'allocation de %d baquets (%s)", nouvta,
+			strerror (errno));
+      if (cpt > 0)
+	{
+	  memcpy (nouvzon, mi_dicho_symb.dic_table,
+		  ix * sizeof (struct mi_baquet_symbole_st));
+	  memcpy (nouvzon + ix + 1, mi_dicho_symb.dic_table + ix,
+		  (cpt - ix) * sizeof (struct mi_baquet_symbole_st));
+	}
+      free (mi_dicho_symb.dic_table);
+      mi_dicho_symb.dic_table = nouvzon;
+      mi_dicho_symb.dic_taille = nouvta;
+      mi_dicho_symb.dic_compte = cpt + 1;
+    }
+  else if (cpt > 0)
+    {
+      memmove (mi_dicho_symb.dic_table + ix + 1,
+	       mi_dicho_symb.dic_table + ix,
+	       sizeof (struct mi_baquet_symbole_st) * (cpt - ix));
+      memset (mi_dicho_symb.dic_table + ix, 0,
+	      sizeof (struct mi_baquet_symbole_st));
+    }
+  else
+    {				// cpt==0
+      assert (ix == 0);
+      if (mi_dicho_symb.dic_taille == 0)
+	{
+	  unsigned nouvta = 15;
+	  struct mi_baquet_symbole_st *nouvzon =
+	    calloc (nouvta, sizeof (struct mi_baquet_symbole_st));
+	  if (!nouvzon)
+	    MI_FATALPRINTF ("echec d'allocation initiale de %d baquets (%s)",
+			    nouvta, strerror (errno));
+	  mi_dicho_symb.dic_taille = nouvta;
+	  mi_dicho_symb.dic_table = nouvzon;
+	}
+      else
+	{
+	  memmove (mi_dicho_symb.dic_table + 1,
+		   mi_dicho_symb.dic_table,
+		   sizeof (struct mi_baquet_symbole_st) * cpt);
+
+	}
+      mi_dicho_symb.dic_compte = 1;
+    }
+  /// remplir mi_dicho_symb.dic_table[ix] correctement
+  struct mi_baquet_symbole_st *baq = mi_dicho_symb.dic_table + ix;
+  baq->baq_nom = (Mit_Chaine*)mi_creer_chaine (ch);
+  Mit_Symbole *symb = mi_allouer_valeur (MiTy_Symbole, sizeof (Mit_Symbole));
+  symb->mi_nom = baq->baq_nom;
+  symb->mi_indice = 0;
+  baq->baq_symbprim = symb;
+  baq->baq_tabsec = NULL;
+}				/// fin mi_inserer_symbole_baquet
+
 Mit_Symbole *
 mi_creer_symbole_chaine (const char *ch, unsigned ind)
 {
@@ -240,13 +311,14 @@ mi_creer_symbole_chaine (const char *ch, unsigned ind)
     return NULL;
 
   // recherche dichotomique
-  unsigned bas = 0, hau = mi_dicho_symb.dic_taille, mil = 0;
+  unsigned bas = 0, hau = mi_dicho_symb.dic_compte, mil = 0;
+  assert (hau <= mi_dicho_symb.dic_taille);
   while (bas + 5 < hau)
     {
       mil = (bas + hau) / 2;
       const Mit_Chaine *nom = mi_dicho_symb.dic_table[mil].baq_nom;
       assert (nom != NULL && nom->mi_type == MiTy_Chaine);
-      int cmp = strcmp (ch, nom->mi_str);
+      int cmp = strcmp (ch, nom->mi_car);
       if (cmp == 0)
 	return mi_creer_symbole_baquet (mi_dicho_symb.dic_table + mil, ind);
       else if (cmp < 0)
@@ -258,7 +330,7 @@ mi_creer_symbole_chaine (const char *ch, unsigned ind)
     {
       const Mit_Chaine *nom = mi_dicho_symb.dic_table[mil].baq_nom;
       assert (nom != NULL && nom->mi_type == MiTy_Chaine);
-      int cmp = strcmp (ch, nom->mi_str);
+      int cmp = strcmp (ch, nom->mi_car);
       if (cmp == 0)
 	return mi_creer_symbole_baquet (mi_dicho_symb.dic_table + mil, ind);
 #warning faudrait inserer un baquet
