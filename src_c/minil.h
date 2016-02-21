@@ -1,7 +1,7 @@
 // fichier minil.h
 #ifndef MINIL_INCLUDED_
 #define MINIL_INCLUDED_
-/* la notice de copyright GPL est légalement en anglais */
+/* la notice de copyright GPL est lÃ©galement en anglais */
 
 // (C) 2016 Basile Starynkevitch
 //   this file minil.h is part of Minil
@@ -22,11 +22,26 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <getopt.h>
+#include <ctype.h>
+#include <assert.h>
+#include <string.h>
 
-/// les constantes d'empreinte dans le fichier généré _timestamp.c
+/// les constantes d'empreinte dans le fichier gÃ©nÃ©rÃ© _timestamp.c
 extern const char minil_timestamp[];
 extern const char minil_lastgitcommit[];
 extern const char minil_checksum[];
+
+/// une macro, Ã  la printf, pour les messages d'erreur fatale
+#define MI_FATALPRINTF(Fmt,...) do { \
+	fprintf (stderr, "%s:%d(%s) FATAL:" Fmt "\n", __FILE__, __LINE__, \
+        __func__, #__VA_ARGS__); fflush(NULL); \
+	abort(); } while(0)
+
+//////////////////////////////////////
+// Les nombres premiers sont utiles, notamment pour les tables de hash
+// Donne un nombre premier aprÃ¨s ou bien avant l'argument, ou 0 en Ã©chec.
+unsigned mi_nombre_premier_apres (unsigned i);
+unsigned mi_nombre_premier_avant (unsigned i);
 //////////////////////////////////////
 // Les differents types de valeurs
 enum mi_typeval_en
@@ -45,7 +60,6 @@ typedef struct MiSt_Double_st Mit_Double;
 typedef struct MiSt_Chaine_st Mit_Chaine;
 typedef struct MiSt_Noeud_st Mit_Noeud;
 typedef struct MiSt_Symbole_st Mit_Symbole;
-
 // Une valeur est un pointeur, mais de plusieurs types possibles, donc une union.
 // Toute valeur non-nulle commence par son type et sa marque de ramasse-miettes.
 struct MiStValeurMarquee_st
@@ -65,8 +79,7 @@ union MiSt_Val_un
   Mit_Symbole *miva_sym;
 };
 typedef union MiSt_Val_un Mit_Val;
-
-// Une valeur entière a un type, une marque, et un nombre entier.
+// Une valeur entiÃ¨re a un type, une marque, et un nombre entier.
 struct MiSt_Entier_st
 {
   enum mi_typeval_en mi_type;
@@ -82,8 +95,8 @@ struct MiSt_Double_st
   double mi_dbl;
 };
 
-// Une valeur chaîne a un type, une marque, et les octets de la chaîne 
-// (terminés par l'octet nul).
+// Une valeur chaÃ®ne a un type, une marque, et les octets de la chaÃ®ne 
+// (terminÃ©s par l'octet nul).
 // C'est une structure de taille "variable" se terminant par un membre flexible
 // https://en.wikipedia.org/wiki/Flexible_array_member
 struct MiSt_Chaine_st
@@ -93,7 +106,7 @@ struct MiSt_Chaine_st
   char mi_str[];
 };
 
-// Une valeur noeud a un type, une marque, une connective, une arité, des fils
+// Une valeur noeud a un type, une marque, une connective, une aritÃ©, des fils
 struct MiSt_Noeud_st
 {
   enum mi_typeval_en mi_type;
@@ -102,15 +115,12 @@ struct MiSt_Noeud_st
   unsigned mi_arite;
   Mit_Val mi_fils[];
 };
-
 // Une association par table de hashage entre symboles et valeurs.
-// Ce n'est pas une valeur, mais une donnée interne.
+// Ce n'est pas une valeur, mais une donnÃ©e interne.
 struct Mi_Assoc_st;
-
-// Un vecteur n'est pas une valeur, mais une donnée interne.
+// Un vecteur n'est pas une valeur, mais une donnÃ©e interne.
 struct Mi_Vecteur_st;
-
-// Une valeur symbole a un type, une marque, une chaîne nom, un indice, une association pour les attributs
+// Une valeur symbole a un type, une marque, une chaÃ®ne nom, un indice, une association pour les attributs
 // et un vecteur de composants
 struct MiSt_Symbole_st
 {
@@ -121,8 +131,7 @@ struct MiSt_Symbole_st
   struct Mi_Assoc_st *mi_attrs;
   struct Mi_Vecteur_st *mi_comps;
 };
-
-////////////////////// conversions sûres, car verifiantes
+////////////////////// conversions sÃ»res, car verifiantes
 static inline const Mit_Entier *
 mi_en_entier (const Mit_Val v)
 {
@@ -147,7 +156,7 @@ mi_en_chaine (const Mit_Val v)
   return v.miva_chn;
 }				// fin mi_en_chaine
 
-static inline Mit_Symbole *	// sans const, car on touchera l'intérieur du symbole
+static inline Mit_Symbole *	// sans const, car on touchera l'intÃ©rieur du symbole
 mi_en_symbole (const Mit_Val v)
 {
   if (!v.miva_ptr || *v.miva_type != MiTy_Symbole)
@@ -163,11 +172,13 @@ mi_en_noeud (const Mit_Val v)
   return v.miva_noe;
 }				// fin mi_en_noeud
 
+// hash code d'une chaine
+unsigned mi_hashage_chaine (const char *ch);
 // tester si une valeur chaine est licite pour un nom
 bool mi_nom_licite (Mit_Chaine *nom);
 // tester si une chaine C est licite
 bool mi_nom_licite_chaine (const char *ch);
-// Trouver un symbole de nom et indice donnés
+// Trouver un symbole de nom et indice donnÃ©s
 Mit_Symbole *mi_trouver_symbole_nom (const Mit_Chaine *nom, unsigned ind);
-
+Mit_Symbole *mi_trouver_symbole_chaine (const char *ch, unsigned ind);
 #endif /*MINIL_INCLUDED_ */
