@@ -180,3 +180,88 @@ mi_trouver_symbole_chaine (const char *ch, unsigned ind)
     }
   return NULL;
 }				// fin mi_trouver_symbole_chaine
+
+
+
+
+// Créer un symbole de nom et indice donnés
+Mit_Symbole *
+mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind)
+{
+  if (!nom || nom->mi_type != MiTy_Chaine)
+    return NULL;
+  if (!mi_nom_licite_chaine (nom->mi_str))
+    return NULL;
+  return mi_creer_symbole_chaine (nom->mi_str, ind);
+}				// fin mi_creer_symbole_nom
+
+
+static Mit_Symbole *
+mi_creer_symbole_baquet (struct mi_baquet_symbole_st *baq, unsigned ind)
+{
+  if (!baq)
+    return NULL;
+  if (!ind)
+    return baq->baq_symbprim;
+  struct mi_tabhashsymb_secondaire_st *th = baq->baq_tabsec;
+  unsigned t = th->ths_taille;
+  assert (t > 2);
+  unsigned d = ind % t;
+  for (unsigned i = d; i < t; i++)
+    {
+      Mit_Symbole *syc = th->ths_symboles[i];
+      if (syc == NULL)
+	return NULL;
+      if (syc == MI_TROU_SYMBOLE)
+	continue;
+      assert (syc->mi_type == MiTy_Symbole);
+      if (syc->mi_indice == ind)
+	return syc;
+    }
+  for (unsigned i = 0; i < d; i++)
+    {
+      Mit_Symbole *syc = th->ths_symboles[i];
+      if (syc == NULL)
+	return NULL;
+      if (syc == MI_TROU_SYMBOLE)
+	continue;
+      assert (syc->mi_type == MiTy_Symbole);
+      if (syc->mi_indice == ind)
+	return syc;
+    }
+  return NULL;
+}				// fin mi_creer_symbole_baquet
+
+
+Mit_Symbole *
+mi_creer_symbole_chaine (const char *ch, unsigned ind)
+{
+  if (!mi_nom_licite_chaine (ch))
+    return NULL;
+
+  // recherche dichotomique
+  unsigned bas = 0, hau = mi_dicho_symb.dic_taille, mil = 0;
+  while (bas + 5 < hau)
+    {
+      mil = (bas + hau) / 2;
+      const Mit_Chaine *nom = mi_dicho_symb.dic_table[mil].baq_nom;
+      assert (nom != NULL && nom->mi_type == MiTy_Chaine);
+      int cmp = strcmp (ch, nom->mi_str);
+      if (cmp == 0)
+	return mi_creer_symbole_baquet (mi_dicho_symb.dic_table + mil, ind);
+      else if (cmp < 0)
+	hau = mil;
+      else
+	bas = mil;
+    }
+  for (mil = bas; mil < hau; mil++)
+    {
+      const Mit_Chaine *nom = mi_dicho_symb.dic_table[mil].baq_nom;
+      assert (nom != NULL && nom->mi_type == MiTy_Chaine);
+      int cmp = strcmp (ch, nom->mi_str);
+      if (cmp == 0)
+	return mi_creer_symbole_baquet (mi_dicho_symb.dic_table + mil, ind);
+#warning faudrait inserer un baquet
+    }
+  return NULL;
+}				// fin mi_creer_symbole_chaine

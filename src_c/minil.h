@@ -181,4 +181,7 @@ bool mi_nom_licite_chaine (const char *ch);
 // Trouver un symbole de nom et indice donnés
 Mit_Symbole *mi_trouver_symbole_nom (const Mit_Chaine *nom, unsigned ind);
 Mit_Symbole *mi_trouver_symbole_chaine (const char *ch, unsigned ind);
+// Créer (ou trouver, s'il existe déjà) un symbole de nom et indice donnés
+Mit_Symbole *mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind);
+Mit_Symbole *mi_creer_symbole_chaine (const char *ch, unsigned ind);
 #endif /*MINIL_INCLUDED_ */
