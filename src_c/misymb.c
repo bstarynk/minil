@@ -1,5 +1,5 @@
 // fichier misymb.c - gestion des symboles
-/* la notice de copyright est legalement en anglais */
+/* la notice de copyright est légalement en anglais */
 
 // (C) 2016 Basile Starynkevitch
 //   this file minil.h is part of Minil
@@ -301,7 +301,16 @@ mi_inserer_symbole_baquet (unsigned ix, const char *ch)
   symb->mi_nom = baq->baq_nom;
   symb->mi_indice = 0;
   baq->baq_symbprim = symb;
-  baq->baq_tabsec = NULL;
+  unsigned tailsec = 5;
+  struct mi_tabhashsymb_secondaire_st *tsec =	//
+    calloc (1,
+	    sizeof (struct mi_tabhashsymb_secondaire_st)
+	    + tailsec * sizeof (Mit_Symbole *));
+  if (!tsec)
+    MI_FATALPRINTF ("Plus de mémoire pour un baquet de %d symboles (%s)",
+		    tailsec, strerror (errno));
+  tsec->ths_taille = tailsec;
+  baq->baq_tabsec = tsec;
   return baq;
 }				/// fin mi_inserer_symbole_baquet
 
@@ -344,7 +353,8 @@ mi_creer_symbole_chaine (const char *ch, unsigned ind)
 	    mi_inserer_symbole_baquet (mil, ch);
 	  if (ind == 0)
 	    return baq->baq_symbprim;
-#warning traiter l insertion de symbole secondaire
+	  else
+	    return mi_creer_symbole_baquet (baq, ind);
 	}
 
     }
@@ -352,6 +362,8 @@ mi_creer_symbole_chaine (const char *ch, unsigned ind)
     struct mi_baquet_symbole_st *baq = mi_inserer_symbole_baquet (hau, ch);
     if (ind == 0)
       return baq->baq_symbprim;
+    else
+      return mi_creer_symbole_baquet (baq, ind);
   }
   return NULL;
 }				// fin mi_creer_symbole_chaine
