@@ -60,3 +60,19 @@ mi_creer_chaine_printf (const char *fmt, ...)
       return valch;
     }
 }				// fin mi_creer_chaine_printf
+
+const Mit_Entier *
+mi_creer_entier (long l)
+{
+  Mit_Entier *valen = mi_allouer_valeur (MiTy_Entier, sizeof (Mit_Entier));
+  valen->mi_ent = l;
+  return valen;
+}				// fin mi_creer_entier
+
+const Mit_Double *
+mi_creer_double (double d)
+{
+  Mit_Double *valdb = mi_allouer_valeur (MiTy_Double, sizeof (Mit_Double));
+  valdb->mi_dbl = d;
+  return valdb;
+}				// fin mi_creer_double

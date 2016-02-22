@@ -234,7 +234,7 @@ mi_creer_symbole_baquet (struct mi_baquet_symbole_st *baq, unsigned ind)
 }				// fin mi_creer_symbole_baquet
 
 
-static void
+static struct mi_baquet_symbole_st *
 mi_inserer_symbole_baquet (unsigned ix, const char *ch)
 {
   unsigned cpt = mi_dicho_symb.dic_compte;
@@ -296,12 +296,13 @@ mi_inserer_symbole_baquet (unsigned ix, const char *ch)
     }
   /// remplir mi_dicho_symb.dic_table[ix] correctement
   struct mi_baquet_symbole_st *baq = mi_dicho_symb.dic_table + ix;
-  baq->baq_nom = (Mit_Chaine*)mi_creer_chaine (ch);
+  baq->baq_nom = (Mit_Chaine *) mi_creer_chaine (ch);
   Mit_Symbole *symb = mi_allouer_valeur (MiTy_Symbole, sizeof (Mit_Symbole));
   symb->mi_nom = baq->baq_nom;
   symb->mi_indice = 0;
   baq->baq_symbprim = symb;
   baq->baq_tabsec = NULL;
+  return baq;
 }				/// fin mi_inserer_symbole_baquet
 
 Mit_Symbole *
@@ -329,11 +330,28 @@ mi_creer_symbole_chaine (const char *ch, unsigned ind)
   for (mil = bas; mil < hau; mil++)
     {
       const Mit_Chaine *nom = mi_dicho_symb.dic_table[mil].baq_nom;
+      const Mit_Chaine *nomsuiv = NULL;
       assert (nom != NULL && nom->mi_type == MiTy_Chaine);
       int cmp = strcmp (ch, nom->mi_car);
       if (cmp == 0)
 	return mi_creer_symbole_baquet (mi_dicho_symb.dic_table + mil, ind);
-#warning faudrait inserer un baquet
+      else
+	if (cmp < 0 && mil + 1 < hau
+	    && (nomsuiv = mi_dicho_symb.dic_table[mil + 1].baq_nom) != NULL
+	    && strcmp (ch, nomsuiv->mi_car) > 0)
+	{
+	  struct mi_baquet_symbole_st *baq =
+	    mi_inserer_symbole_baquet (mil, ch);
+	  if (ind == 0)
+	    return baq->baq_symbprim;
+#warning traiter l insertion de symbole secondaire
+	}
+
     }
+  {
+    struct mi_baquet_symbole_st *baq = mi_inserer_symbole_baquet (hau, ch);
+    if (ind == 0)
+      return baq->baq_symbprim;
+  }
   return NULL;
 }				// fin mi_creer_symbole_chaine

@@ -1,7 +1,7 @@
 // fichier minil.h
 #ifndef MINIL_INCLUDED_
 #define MINIL_INCLUDED_
-/* la notice de copyright GPL est légalement en anglais */
+/* la notice de copyright GPL est lÃ©galement en anglais */
 
 // (C) 2016 Basile Starynkevitch
 //   this file minil.h is part of Minil
@@ -34,7 +34,7 @@ extern const char minil_timestamp[];
 extern const char minil_lastgitcommit[];
 extern const char minil_checksum[];
 
-/// une macro, à la printf, pour les messages d'erreur fatale
+/// une macro, à la printf, pour les messages d'erreur fatale
 #define MI_FATALPRINTF(Fmt,...) do { \
 	fprintf (stderr, "%s:%d(%s) FATAL:" Fmt "\n", __FILE__, __LINE__, \
         __func__, ##__VA_ARGS__); fflush(NULL); \
@@ -82,6 +82,15 @@ union MiSt_Val_un
   Mit_Symbole *miva_sym;
 };
 typedef union MiSt_Val_un Mit_Val;
+
+static inline enum mi_typeval_en
+mi_vtype (const Mit_Val v)
+{
+  if (!v.miva_ptr)
+    return MiTy_Nil;
+  return *v.miva_type;
+}				// fi mi_vtype
+
 // Une valeur entière a un type, une marque, et un nombre entier.
 struct MiSt_Entier_st
 {
@@ -110,6 +119,7 @@ struct MiSt_Chaine_st
 };
 
 // Une valeur noeud a un type, une marque, une connective, une arité, des fils
+// C'est la seule valeur composite....
 struct MiSt_Noeud_st
 {
   enum mi_typeval_en mi_type;
@@ -123,7 +133,8 @@ struct MiSt_Noeud_st
 struct Mi_Assoc_st;
 // Un vecteur n'est pas une valeur, mais une donnée interne.
 struct Mi_Vecteur_st;
-// Une valeur symbole a un type, une marque, une chaîne nom, un indice, une association pour les attributs
+// Une valeur symbole a un type, une marque, une chaîne nom, un indice, 
+// une association pour les attributs
 // et un vecteur de composants
 struct MiSt_Symbole_st
 {
@@ -176,13 +187,53 @@ mi_en_noeud (const Mit_Val v)
 }				// fin mi_en_noeud
 
 
-
+/// allocation de bas niveau d'une valeur, utilisée par les routines de création
 void *mi_allouer_valeur (enum mi_typeval_en typv, size_t tail);
 
+/// création de chaine
 const Mit_Chaine *mi_creer_chaine (const char *ch);
-
+/// création à la printf
 const Mit_Chaine *mi_creer_chaine_printf (const char *fmt, ...)
   __attribute__ ((format (printf, 1, 2)));
+/// accès à la chaîne, ou bien NULL
+static inline const char *
+mi_val_chaine (const Mit_Val v)
+{
+  if (mi_vtype (v) == MiTy_Chaine)
+    return v.miva_chn->mi_car;
+  else
+    return NULL;
+}
+
+/// accès à la chaine avec valeur par défaut
+static inline const char *
+mi_vald_chaine (const Mit_Val v, const char *def)
+{
+  const char *ch = mi_val_chaine (v);
+  return ch ? ch : def;
+}
+
+/// création d'entier
+const Mit_Entier *mi_creer_entier (long l);
+/// accès à l'entier ou une valeur par défaut
+static inline long
+mi_vald_entier (const Mit_Val v, long def)
+{
+  if (mi_vtype (v) == MiTy_Entier)
+    return v.miva_ent->mi_ent;
+  return def;
+}
+
+/// création d'un double
+const Mit_Double *mi_creer_double (double d);
+/// accès au double ou une valeur par défaut
+static inline double
+mi_vald_double (const Mit_Val v, double def)
+{
+  if (mi_vtype (v) == MiTy_Double)
+    return v.miva_dbl->mi_dbl;
+  return def;
+}
 
 // hash code d'une chaine
 unsigned mi_hashage_chaine (const char *ch);
@@ -193,7 +244,7 @@ bool mi_nom_licite_chaine (const char *ch);
 // Trouver un symbole de nom et indice donnés
 Mit_Symbole *mi_trouver_symbole_nom (const Mit_Chaine *nom, unsigned ind);
 Mit_Symbole *mi_trouver_symbole_chaine (const char *ch, unsigned ind);
-// Créer (ou trouver, s'il existe déjà) un symbole de nom et indice donnés
+// Creer (ou trouver, s'il existe déjà) un symbole de nom et indice donnés
 Mit_Symbole *mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind);
 Mit_Symbole *mi_creer_symbole_chaine (const char *ch, unsigned ind);
 #endif /*MINIL_INCLUDED_ */
