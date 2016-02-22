@@ -19,7 +19,7 @@
 #include "minil.h"
 
 /// mis à vrai quand faut lancer un ramasse miettes
-static bool mi_faut_ramiet;
+bool mi_faut_ramiet;
 
 #define MI_MAXNBVAL (UINT_MAX/3)
 static struct

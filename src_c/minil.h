@@ -74,11 +74,11 @@ union MiSt_Val_un
 {
   void *miva_ptr;
   struct MiStValeurMarquee_st *miva_vmrq;
-  enum mi_typeval_en *miva_type;
-  Mit_Entier *miva_ent;
-  Mit_Double *miva_dbl;
-  Mit_Chaine *miva_chn;
-  Mit_Noeud *miva_noe;
+  const enum mi_typeval_en *miva_type;
+  const Mit_Entier *miva_ent;
+  const Mit_Double *miva_dbl;
+  const Mit_Chaine *miva_chn;
+  const Mit_Noeud *miva_noe;
   Mit_Symbole *miva_sym;
 };
 typedef union MiSt_Val_un Mit_Val;
@@ -140,7 +140,7 @@ struct MiSt_Symbole_st
 {
   enum mi_typeval_en mi_type;
   bool mi_marq;
-  Mit_Chaine *mi_nom;
+  const Mit_Chaine *mi_nom;
   unsigned mi_indice;
   struct Mi_Assoc_st *mi_attrs;
   struct Mi_Vecteur_st *mi_comps;
@@ -187,6 +187,9 @@ mi_en_noeud (const Mit_Val v)
 }				// fin mi_en_noeud
 
 
+/// mis à vrai quand faut lancer un ramasse miettes, ne doit pas être
+/// modifié ailleurs...
+extern bool mi_faut_ramiet;
 /// allocation de bas niveau d'une valeur, utilisée par les routines de création
 void *mi_allouer_valeur (enum mi_typeval_en typv, size_t tail);
 
@@ -234,6 +237,12 @@ mi_vald_double (const Mit_Val v, double def)
     return v.miva_dbl->mi_dbl;
   return def;
 }
+
+/// création d'un noeud d'arité donnée
+const Mit_Noeud *mi_creer_noeud (const Mit_Symbole *consymb, unsigned arite,
+				 const Mit_Val fils[]);
+const Mit_Noeud *mi_creer_noeud_va (const Mit_Symbole *consymb,
+				    unsigned arite, ...);
 
 // hash code d'une chaine
 unsigned mi_hashage_chaine (const char *ch);

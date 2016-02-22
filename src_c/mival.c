@@ -19,6 +19,8 @@
 #include "minil.h"
 
 #define MI_MAXLONGCHAINE (INT_MAX/4)
+#define MI_MAXARITE (INT_MAX/4)
+
 const Mit_Chaine *
 mi_creer_chaine (const char *ch)
 {
@@ -76,3 +78,45 @@ mi_creer_double (double d)
   valdb->mi_dbl = d;
   return valdb;
 }				// fin mi_creer_double
+
+const Mit_Noeud *
+mi_creer_noeud (const Mit_Symbole *consymb, unsigned arite,
+		const Mit_Val fils[])
+{
+  if (!consymb || consymb->mi_type != MiTy_Symbole)
+    return NULL;
+  if (arite >= MI_MAXARITE)
+    MI_FATALPRINTF ("arite trop grande %u pour noeud %s",
+		    arite, mi_val_chaine ((Mit_Val)
+					  {
+					  .miva_chn = consymb->mi_nom}
+		    ));
+  Mit_Noeud *valnd =		//
+    mi_allouer_valeur (MiTy_Noeud,
+		       sizeof (Mit_Noeud) + arite * sizeof (Mit_Val));
+  valnd->mi_conn = (Mit_Symbole *) consymb;
+  valnd->mi_arite = arite;
+  for (unsigned ix = 0; ix < arite; ix++)
+    valnd->mi_fils[ix] = fils[ix];
+  return valnd;
+}				// fin mi_creer_noeud
+
+const Mit_Noeud *
+mi_creer_noeud_va (const Mit_Symbole *consymb, unsigned arite, ...)
+{
+  if (!consymb || consymb->mi_type != MiTy_Symbole)
+    return NULL;
+  if (arite >= MI_MAXARITE)
+    MI_FATALPRINTF ("arite trop grande %u pour noeud %s",
+		    arite, mi_val_chaine ((Mit_Val) consymb->mi_nom));
+  Mit_Noeud *valnd =		//
+    mi_allouer_valeur (MiTy_Noeud,
+		       sizeof (Mit_Noeud) + arite * sizeof (Mit_Val));
+  va_list args;
+  valnd->mi_conn = (Mit_Symbole *) consymb;
+  va_start (args, arite);
+  for (unsigned ix = 0; ix < arite; ix++)
+    valnd->mi_fils[ix] = va_arg (args, Mit_Val);
+  va_end (args);
+  return valnd;
+}				// fin mi_creer_noeud_va
