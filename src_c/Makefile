@@ -1,7 +1,7 @@
 # fichier Makefile ---- lancer "make" pour compiler
 # pour l'utilitaire `GNU make` https://www.gnu.org/software/make
 
-# la commande de calcul d'empreinte (ou somme de contr�le)
+# la commande de calcul d'empreinte (ou somme de contrôle)
 MD5SUM= md5sum
 
 # la commande pour supprimer les fichiers
@@ -14,7 +14,11 @@ CC= gcc
 INDENT= indent
 INDENTFLAGS= -gnu
 
-# les options du compilateur ; on veut le standard C99 am�liorépar GCC
+## dépendance : GNU libunistring http://www.gnu.org/software/libunistring/
+## dépendance : GNU readline http://www.gnu.org/software/readline
+LDLIBS= -lunistring -lreadline
+
+# les options du compilateur ; on veut le standard C99 amÃliorÃ©par GCC
 CFLAGS= -std=gnu99 $(OPTIMFLAGS) $(DIAGFLAGS) $(PREPROFLAGS)
 # optimisation:
 OPTIMFLAGS= -g -O
@@ -27,7 +31,7 @@ PREPROFLAGS= -I /usr/local/include/
 SRCFILES=$(wildcard mi*.c)
 OBJFILES=$(patsubst %.c,%.o,$(SRCFILES))
 
-## les cibles de la commande make, la premi�re �tant par d�faut
+## les cibles de la commande make, la première étant par défaut
 .PHONY: all clean indent
 all: minil
 
@@ -52,7 +56,7 @@ clean:
 # le programme minil
 minil: $(OBJFILES)
 	$(MAKE) _timestamp.o
-	$(LINK.c) $(LINKFLAGS) -rdynamic $(OBJFILES) _timestamp.o -o $@
+	$(LINK.c) $(LINKFLAGS) -rdynamic $(OBJFILES) _timestamp.o $(LDLIBS) -o $@
 	$(RM) _timestamp.*
 
 ## pour indenter

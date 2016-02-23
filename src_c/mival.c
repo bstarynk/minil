@@ -29,11 +29,16 @@ mi_creer_chaine (const char *ch)
   size_t ln = strlen (ch);
   if (ln >= MI_MAXLONGCHAINE)
     MI_FATALPRINTF ("chaine %.50s trop longue (%ld)", ch, (long) ln);
+  if (u8_check ((const uint8_t *) ch, ln))
+    MI_FATALPRINTF ("chaine %.50s invcorrecte", ch);
   Mit_Chaine *valch = mi_allouer_valeur (MiTy_Chaine,
 					 (unsigned) (ln +
 						     sizeof (Mit_Chaine) +
 						     1));
   strcpy (valch->mi_car, ch);
+  valch->mi_taille = ln;
+  valch->mi_long = u8_mblen ((const uint8_t *) ch, ln);
+  valch->mi_hash = mi_hashage_chaine (ch);
   return valch;
 }
 

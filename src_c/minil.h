@@ -1,7 +1,7 @@
 // fichier minil.h
 #ifndef MINIL_INCLUDED_
 #define MINIL_INCLUDED_
-/* la notice de copyright GPL est lÃ©galement en anglais */
+/* la notice de copyright GPL est légalement en anglais */
 
 // (C) 2016 Basile Starynkevitch
 //   this file minil.h is part of Minil
@@ -28,13 +28,15 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <limits.h>
+#include <unistr.h>		// GNU libunistring
+#include <readline/readline.h>	// GNU readline
 
 /// les constantes d'empreinte dans le fichier généré _timestamp.c
 extern const char minil_timestamp[];
 extern const char minil_lastgitcommit[];
 extern const char minil_checksum[];
 
-/// une macro, à la printf, pour les messages d'erreur fatale
+/// une macro, à la printf, pour les messages d'erreur fatale
 #define MI_FATALPRINTF(Fmt,...) do { \
 	fprintf (stderr, "%s:%d(%s) FATAL:" Fmt "\n", __FILE__, __LINE__, \
         __func__, ##__VA_ARGS__); fflush(NULL); \
@@ -115,6 +117,9 @@ struct MiSt_Chaine_st
 {
   enum mi_typeval_en mi_type;
   bool mi_marq;
+  unsigned mi_hash;
+  unsigned mi_taille;
+  unsigned mi_long;
   char mi_car[];
 };
 
@@ -244,6 +249,7 @@ const Mit_Noeud *mi_creer_noeud (const Mit_Symbole *consymb, unsigned arite,
 const Mit_Noeud *mi_creer_noeud_va (const Mit_Symbole *consymb,
 				    unsigned arite, ...);
 
+
 // hash code d'une chaine
 unsigned mi_hashage_chaine (const char *ch);
 // tester si une valeur chaine est licite pour un nom
@@ -256,4 +262,33 @@ Mit_Symbole *mi_trouver_symbole_chaine (const char *ch, unsigned ind);
 // Creer (ou trouver, s'il existe déjà) un symbole de nom et indice donnés
 Mit_Symbole *mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind);
 Mit_Symbole *mi_creer_symbole_chaine (const char *ch, unsigned ind);
+static inline const char *
+mi_symbole_chaine (const Mit_Symbole *sy)
+{
+  if (sy && sy->mi_type == MiTy_Symbole)
+    return mi_vald_chaine ((Mit_Val)
+			   {
+			   .miva_chn = sy->mi_nom}
+			   , NULL);
+  return NULL;
+}
+
+static inline unsigned
+mi_symbole_indice (const Mit_Symbole *sy)
+{
+  if (sy && sy->mi_type == MiTy_Symbole)
+    return sy->mi_indice;
+  return 0;
+}
+
+static inline const char *
+mi_symbole_indice_ch (char tamp[16], const Mit_Symbole *sy)
+{
+  unsigned i = mi_symbole_indice (sy);
+  if (i)
+    snprintf (tamp, 16, "_%d", i);
+  else
+    tamp[0] = (char) 0;
+  return tamp;
+}
 #endif /*MINIL_INCLUDED_ */
