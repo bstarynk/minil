@@ -40,14 +40,14 @@ mi_allouer_valeur (enum mi_typeval_en typv, size_t tail)
     {
       mi_faut_ramiet = true;
       unsigned nouvtail =
-	mi_nombre_premier_apres (5 * mi_mem.mm_nbval / 4 + 50);
+        mi_nombre_premier_apres (5 * mi_mem.mm_nbval / 4 + 50);
       if (nouvtail >= MI_MAXNBVAL || nouvtail == 0)
-	MI_FATALPRINTF ("trop (%d) de valeurs, mémoire pleine",
-			mi_mem.mm_nbval);
+        MI_FATALPRINTF ("trop (%d) de valeurs, mémoire pleine",
+                        mi_mem.mm_nbval);
       Mit_Val *nouvtab = calloc (nouvtail, sizeof (Mit_Val));
       if (!nouvtab)
-	MI_FATALPRINTF ("trop (%d) de valeurs, mémoire pleine (%s)",
-			nouvtail, strerror (errno));
+        MI_FATALPRINTF ("trop (%d) de valeurs, mémoire pleine (%s)",
+                        nouvtail, strerror (errno));
       memcpy (nouvtab, mi_mem.mm_vtab, mi_mem.mm_nbval * sizeof (Mit_Val));
       free (mi_mem.mm_vtab);
       mi_mem.mm_vtab = nouvtab;
@@ -56,8 +56,8 @@ mi_allouer_valeur (enum mi_typeval_en typv, size_t tail)
   void *ptr = calloc (1, tail);
   if (!ptr)
     MI_FATALPRINTF
-      ("manque de mémoire pour allouer une valeur de %ld octets (%s)",
-       (long) tail, strerror (errno));
+    ("manque de mémoire pour allouer une valeur de %ld octets (%s)",
+     (long) tail, strerror (errno));
   *(enum mi_typeval_en *) ptr = typv;
   mi_mem.mm_vtab[mi_mem.mm_nbval++].miva_ptr = ptr;
   return ptr;

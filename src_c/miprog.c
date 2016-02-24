@@ -20,7 +20,8 @@
 
 
 /// pour getopt_long, décrit les arguments de programme
-const struct option minil_options[] = {
+const struct option minil_options[] =
+{
   {"--help", no_argument, NULL, 'h'},
   {"--version", no_argument, NULL, 'V'},
   {NULL, 0, NULL, 0}
@@ -42,24 +43,25 @@ mi_arguments_programme (int argc, char **argv)
   while ((ch = getopt_long (argc, argv, "hV", minil_options, NULL)) > 0)
     {
       switch (ch)
-	{
-	case 'h':		// --help
-	  mi_usage (argv[0]);
-	  break;
-	case 'V':		// --version
-	  printf ("%s daté du %s, modif. %s, somme de contrôle %s\n",
-		  argv[0], minil_timestamp, minil_lastgitcommit,
-		  minil_checksum);
-	  exit (EXIT_SUCCESS);
-	  break;
-	}
+        {
+        case 'h':		// --help
+          mi_usage (argv[0]);
+          break;
+        case 'V':		// --version
+          printf ("%s daté du %s, modif. %s, somme de contrôle %s\n",
+                  argv[0], minil_timestamp, minil_lastgitcommit,
+                  minil_checksum);
+          exit (EXIT_SUCCESS);
+          break;
+        }
     }
 }				// fin de mi_arguments_programme
 
 
 // un tableau croissant de certains nombres premiers, obtenu par exemple avec
-//     /usr/games/primes 3 2000000000  | awk '($1>p+p/9){print $1, ","; p=$1}' 
-static const unsigned mi_tableau_premiers[] = {
+//     /usr/games/primes 3 2000000000  | awk '($1>p+p/9){print $1, ","; p=$1}'
+static const unsigned mi_tableau_premiers[] =
+{
   3, 5, 7, 11, 13, 17, 19, 23, 29, 37, 43, 53, 59, 67, 79, 89, 101, 113,
   127, 149, 167, 191, 223, 251, 281, 313, 349, 389, 433, 487, 547, 613,
   683, 761, 853, 953, 1061, 1181, 1319, 1471, 1637, 1823, 2027, 2267,
@@ -98,7 +100,7 @@ mi_nombre_premier_apres (unsigned i)
     {
       unsigned p = mi_tableau_premiers[ix];
       if (p > i)
-	return p;
+        return p;
     }
   return 0;
 }				// mi_nombre_premier_apres
@@ -119,7 +121,7 @@ mi_nombre_premier_avant (unsigned i)
     {
       unsigned p = mi_tableau_premiers[k];
       if (p < i)
-	return p;
+        return p;
     }
   return 0;
 }				// fin mi_nombre_premier_avant

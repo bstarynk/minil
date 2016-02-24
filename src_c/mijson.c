@@ -34,30 +34,31 @@ mi_json_val (const Mit_Val v)
     case MiTy_Chaine:
       return json_string (mi_vald_chaine (v, ""));
     case MiTy_Symbole:
-      {
-	const Mit_Symbole *sy = mi_en_symbole (v);
-	const char *chn = mi_symbole_chaine (sy);
-	unsigned ind = mi_symbole_indice (sy);
-	if (ind)
-	  return json_pack ("{sssi}", "symb", chn, "ind", ind);
-	else
-	  return json_pack ("{ss}", "symb", chn);
-      }
-      break;
+    {
+      const Mit_Symbole *sy = mi_en_symbole (v);
+      const char *chn = mi_symbole_chaine (sy);
+      unsigned ind = mi_symbole_indice (sy);
+      if (ind)
+        return json_pack ("{sssi}", "symb", chn, "ind", ind);
+      else
+        return json_pack ("{ss}", "symb", chn);
+    }
+    break;
     case MiTy_Noeud:
+    {
+      const Mit_Noeud *nd = mi_en_noeud (v);
+      const Mit_Symbole *sycon = mi_connective_noeud (nd);
+      unsigned ar = mi_arite_noeud (nd);
+      const json_t *jsymb = mi_json_val ((Mit_Val)
       {
-	const Mit_Noeud *nd = mi_en_noeud (v);
-	const Mit_Symbole *sycon = mi_connective_noeud (nd);
-	unsigned ar = mi_arite_noeud (nd);
-	const json_t *jsymb = mi_json_val ((Mit_Val) {.miva_sym =
-					   (Mit_Symbole *) sycon
-					   });
-	json_t *jfils = json_array ();
-	for (unsigned ix = 0; ix < ar; ix++)
-	  json_array_append_new (jfils,
-				 (json_t *) mi_json_val (nd->mi_fils[ix]));
-	return json_pack ("{soso}", "conn", jsymb, "fils", jfils);
-      }
+        .miva_sym = (Mit_Symbole *) sycon
+      });
+      json_t *jfils = json_array ();
+      for (unsigned ix = 0; ix < ar; ix++)
+        json_array_append_new (jfils,
+                               (json_t *) mi_json_val (nd->mi_fils[ix]));
+      return json_pack ("{soso}", "conn", jsymb, "fils", jfils);
+    }
     }
   return NULL;
 }				// fin mi_json_val
@@ -68,11 +69,63 @@ mi_json_val (const Mit_Val v)
 Mit_Val
 mi_val_json (const json_t * j)
 {
-  if (!j)
+  if (!j || json_is_null (j))
     return (Mit_Val)
     {
-    .miva_ptr = NULL};
-#warning mi_val_json doit être codé
-  MI_FATALPRINTF ("mi_val_json à implementer");
-
+      .miva_ptr = NULL
+    };
+  if (json_is_integer (j))
+    return (Mit_Val)
+    {
+      .miva_ent = mi_creer_entier (json_integer_value (j))
+    };
+  else if (json_is_real (j))
+    return (Mit_Val)
+    {
+      .miva_dbl = mi_creer_double (json_real_value (j))
+    };
+  else if (json_is_string (j))
+    return (Mit_Val)
+    {
+      .miva_chn = mi_creer_chaine (json_string_value (j))
+    };
+  else if (json_is_object (j))
+    {
+      json_t *js = json_object_get (j, "symb");
+      if (js && json_is_string (js))
+        {
+          unsigned ind = json_integer_value (json_object_get (j, "ind"));
+          return (Mit_Val)
+          {
+            .miva_sym = mi_creer_symbole_chaine (json_string_value (js), ind)
+          };
+        };
+      json_t *jc = json_object_get (j, "conn");
+      json_t *jf = json_object_get (j, "fils");
+      if (jc && json_is_array (jf))
+        {
+          Mit_Val petitab[8] = {};
+          Mit_Symbole *sycon = mi_en_symbole (mi_val_json (jc));
+          unsigned ar = json_array_size (jc);
+          if (sycon) return (Mit_Val)
+            {
+              NULL
+            };
+          Mit_Val* tab = (ar<sizeof(petitab)/sizeof(petitab[0]))?petitab
+                         :calloc(ar+1,sizeof(Mit_Val));
+          if (!tab) MI_FATALPRINTF("impossible d'allouer tampon pour %d fils", ar);
+          for (unsigned ix=0; ix<ar; ix++)
+            tab[ix] = mi_val_json(json_array_get(jc,ix));
+          Mit_Val res = (Mit_Val)
+          {
+            .miva_noe= mi_creer_noeud(sycon,ar,tab)
+          };
+          if (tab != petitab) free (tab);
+          return res;
+        }
+    }
+      fprintf(stderr, "JSON incorrect:\n");
+      json_dumpf(j, stderr, JSON_INDENT(1)|JSON_SORT_KEYS);
+      fputc('\n', stderr);
+      return (Mit_Val){.miva_ptr=NULL};
 }				// fin mi_val_json

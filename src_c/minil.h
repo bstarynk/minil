@@ -109,7 +109,7 @@ struct MiSt_Double_st
   double mi_dbl;
 };
 
-// Une valeur chaîne a un type, une marque, et les octets de la chaîne 
+// Une valeur chaîne a un type, une marque, et les octets de la chaîne
 // (terminés par l'octet nul).
 // C'est une structure de taille "variable" se terminant par un membre flexible
 // https://en.wikipedia.org/wiki/Flexible_array_member
@@ -138,7 +138,7 @@ struct MiSt_Noeud_st
 struct Mi_Assoc_st;
 // Un vecteur n'est pas une valeur, mais une donnée interne.
 struct Mi_Vecteur_st;
-// Une valeur symbole a un type, une marque, une chaîne nom, un indice, 
+// Une valeur symbole a un type, une marque, une chaîne nom, un indice,
 // une association pour les attributs
 // et un vecteur de composants
 struct MiSt_Symbole_st
@@ -202,7 +202,7 @@ void *mi_allouer_valeur (enum mi_typeval_en typv, size_t tail);
 const Mit_Chaine *mi_creer_chaine (const char *ch);
 /// création à la printf
 const Mit_Chaine *mi_creer_chaine_printf (const char *fmt, ...)
-  __attribute__ ((format (printf, 1, 2)));
+__attribute__ ((format (printf, 1, 2)));
 /// accès à la chaîne, ou bien NULL
 static inline const char *
 mi_val_chaine (const Mit_Val v)
@@ -277,9 +277,9 @@ mi_fils_noeud (const Mit_Noeud *nd, int rk, const Mit_Val def)
 
 /// création d'un noeud d'arité donnée
 const Mit_Noeud *mi_creer_noeud (const Mit_Symbole *consymb, unsigned arite,
-				 const Mit_Val fils[]);
+                                 const Mit_Val fils[]);
 const Mit_Noeud *mi_creer_noeud_va (const Mit_Symbole *consymb,
-				    unsigned arite, ...);
+                                    unsigned arite, ...);
 
 
 // hash code d'une chaine
@@ -299,9 +299,10 @@ mi_symbole_chaine (const Mit_Symbole *sy)
 {
   if (sy && sy->mi_type == MiTy_Symbole)
     return mi_vald_chaine ((Mit_Val)
-			   {
-			   .miva_chn = sy->mi_nom}
-			   , NULL);
+    {
+      .miva_chn = sy->mi_nom
+    }
+  , NULL);
   return NULL;
 }
 

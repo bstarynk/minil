@@ -10,9 +10,9 @@ RM= rm -vf
 # le compilateur C
 CC= gcc
 
-# l'indenteur de code et ses options
-INDENT= indent
-INDENTFLAGS= -gnu
+# l'indenteur de code ASTYLE et ses options
+ASTYLE= astyle
+ASTYLEFLAGS= -s2 --style=gnu
 
 ## dépendance : GNU libunistring http://www.gnu.org/software/libunistring/
 ## dépendance : GNU readline http://www.gnu.org/software/readline
@@ -61,4 +61,4 @@ minil: $(OBJFILES)
 
 ## pour indenter
 indent: .indent.pro
-	for f in minil.h $(SRCFILES) ; do $(INDENT) $(INDENTFLAGS) $$f ; done
+	for f in minil.h $(SRCFILES) ; do $(ASTYLE) $(ASTYLEFLAGS) $$f ; done

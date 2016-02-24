@@ -32,9 +32,9 @@ mi_creer_chaine (const char *ch)
   if (u8_check ((const uint8_t *) ch, ln))
     MI_FATALPRINTF ("chaine %.50s invcorrecte", ch);
   Mit_Chaine *valch = mi_allouer_valeur (MiTy_Chaine,
-					 (unsigned) (ln +
-						     sizeof (Mit_Chaine) +
-						     1));
+                                         (unsigned) (ln +
+                                             sizeof (Mit_Chaine) +
+                                             1));
   strcpy (valch->mi_car, ch);
   valch->mi_taille = ln;
   valch->mi_long = u8_mblen ((const uint8_t *) ch, ln);
@@ -56,11 +56,11 @@ mi_creer_chaine_printf (const char *fmt, ...)
     return mi_creer_chaine (tampon);
   else if (ln >= MI_MAXLONGCHAINE)
     MI_FATALPRINTF ("chaine %.50s trop longue pour format %s (%d)",
-		    tampon, fmt, ln);
+                    tampon, fmt, ln);
   else
     {
       Mit_Chaine *valch =
-	mi_allouer_valeur (MiTy_Chaine, ln + sizeof (Mit_Chaine) + 1);
+        mi_allouer_valeur (MiTy_Chaine, ln + sizeof (Mit_Chaine) + 1);
       va_start (args, fmt);
       vsnprintf (valch->mi_car, ln, fmt, args);
       va_end (args);
@@ -86,19 +86,20 @@ mi_creer_double (double d)
 
 const Mit_Noeud *
 mi_creer_noeud (const Mit_Symbole *consymb, unsigned arite,
-		const Mit_Val fils[])
+                const Mit_Val fils[])
 {
   if (!consymb || consymb->mi_type != MiTy_Symbole)
     return NULL;
   if (arite >= MI_MAXARITE)
     MI_FATALPRINTF ("arite trop grande %u pour noeud %s",
-		    arite, mi_val_chaine ((Mit_Val)
-					  {
-					  .miva_chn = consymb->mi_nom}
-		    ));
+                    arite, mi_val_chaine ((Mit_Val)
+    {
+      .miva_chn = consymb->mi_nom
+    }
+                                       ));
   Mit_Noeud *valnd =		//
     mi_allouer_valeur (MiTy_Noeud,
-		       sizeof (Mit_Noeud) + arite * sizeof (Mit_Val));
+                       sizeof (Mit_Noeud) + arite * sizeof (Mit_Val));
   valnd->mi_conn = (Mit_Symbole *) consymb;
   valnd->mi_arite = arite;
   for (unsigned ix = 0; ix < arite; ix++)
@@ -113,10 +114,10 @@ mi_creer_noeud_va (const Mit_Symbole *consymb, unsigned arite, ...)
     return NULL;
   if (arite >= MI_MAXARITE)
     MI_FATALPRINTF ("arite trop grande %u pour noeud %s",
-		    arite, mi_val_chaine ((Mit_Val) consymb->mi_nom));
+                    arite, mi_val_chaine ((Mit_Val) consymb->mi_nom));
   Mit_Noeud *valnd =		//
     mi_allouer_valeur (MiTy_Noeud,
-		       sizeof (Mit_Noeud) + arite * sizeof (Mit_Val));
+                       sizeof (Mit_Noeud) + arite * sizeof (Mit_Val));
   va_list args;
   valnd->mi_conn = (Mit_Symbole *) consymb;
   va_start (args, arite);
