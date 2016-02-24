@@ -2,7 +2,7 @@
 /* la notice de copyright est légalement en anglais */
 
 // (C) 2016 Basile Starynkevitch
-//   this file minil.h is part of Minil
+//   this file misymb.c is part of Minil
 //   Minil is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
 //   the Free Software Foundation, either version 3 of the License, or

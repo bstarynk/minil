@@ -16,7 +16,7 @@ INDENTFLAGS= -gnu
 
 ## dépendance : GNU libunistring http://www.gnu.org/software/libunistring/
 ## dépendance : GNU readline http://www.gnu.org/software/readline
-LDLIBS= -lunistring -lreadline
+LDLIBS= -lunistring -lreadline -ljansson
 
 # les options du compilateur ; on veut le standard C99 amÃliorÃ©par GCC
 CFLAGS= -std=gnu99 $(OPTIMFLAGS) $(DIAGFLAGS) $(PREPROFLAGS)

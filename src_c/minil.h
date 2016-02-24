@@ -30,7 +30,7 @@
 #include <limits.h>
 #include <unistr.h>		// GNU libunistring
 #include <readline/readline.h>	// GNU readline
-
+#include <jansson.h>		// JSON parsing library
 /// les constantes d'empreinte dans le fichier généré _timestamp.c
 extern const char minil_timestamp[];
 extern const char minil_lastgitcommit[];
@@ -243,6 +243,38 @@ mi_vald_double (const Mit_Val v, double def)
   return def;
 }
 
+
+/// connective d'un noeud
+static inline const Mit_Symbole *
+mi_connective_noeud (const Mit_Noeud *nd)
+{
+  if (!nd || nd->mi_type != MiTy_Noeud)
+    return NULL;
+  return nd->mi_conn;
+}
+
+/// arité d'un noeud
+static inline unsigned
+mi_arite_noeud (const Mit_Noeud *nd)
+{
+  if (!nd || nd->mi_type != MiTy_Noeud)
+    return 0;
+  return nd->mi_arite;
+}
+
+static inline Mit_Val
+mi_fils_noeud (const Mit_Noeud *nd, int rk, const Mit_Val def)
+{
+  if (!nd || nd->mi_type != MiTy_Noeud)
+    return def;
+  unsigned ar = nd->mi_arite;
+  if (rk < 0)
+    rk += ar;
+  if (rk >= 0 && rk < (int) ar)
+    return nd->mi_fils[rk];
+  return def;
+}
+
 /// création d'un noeud d'arité donnée
 const Mit_Noeud *mi_creer_noeud (const Mit_Symbole *consymb, unsigned arite,
 				 const Mit_Val fils[]);
@@ -291,4 +323,13 @@ mi_symbole_indice_ch (char tamp[16], const Mit_Symbole *sy)
     tamp[0] = (char) 0;
   return tamp;
 }
+
+//// sérialisation en JSON
+//
+// serialiser une valeur en JSON
+json_t *mi_json_val (const Mit_Val v);
+
+// construire une valeur à partir d'un JSON
+Mit_Val mi_val_json (const json_t * j);
+
 #endif /*MINIL_INCLUDED_ */
