@@ -120,6 +120,29 @@ struct Mi_Assoc_st*mi_assoc_reserver(struct Mi_Assoc_st*a, unsigned nb)
           return nouva;
         }
     }
+  else if (t>10 && 3*(n+nb)<t)
+    {
+      unsigned nouvtail = mi_nombre_premier_apres(4*(n+nb)/3 + nb/16 + 4);
+      if (nouvtail < t)
+        {
+          struct Mi_Assoc_st*nouva = calloc(1,sizeof(struct Mi_Assoc_st)+nouvtail*sizeof(struct Mi_EntAss_st));
+          if (!nouva)
+            MI_FATALPRINTF("mémoire pleine pour association de %d entrées (%s)", nouvtail, strerror(errno));
+          nouva->a_tai = nouvtail;
+          for (int ix=0; ix<(int)t; ix++)
+            {
+              struct Mi_EntAss_st*ent = a->a_ent+ix;
+              const Mit_Symbole*esy = ent->e_symb;
+              if (esy == MI_TROU_SYMBOLE || !esy) continue;
+              int pos = mi_assoc_indice(nouva, esy);
+              assert (pos>=0 && pos<(int)nouvtail);
+              nouva->a_ent[pos] = *ent;
+              nouva->a_nbe++;
+            }
+          free (a);
+          return nouva;
+        }
+    }
   return a;
 } /* fin mi_assoc_reserver */
 
@@ -148,5 +171,35 @@ mi_assoc_mettre(struct Mi_Assoc_st*a, const Mit_Symbole* sy, const Mit_Val va)
     }
 } /* fin mi_assoc_mettre */
 
-struct Mi_Assoc_st*mi_assoc_enlever(struct Mi_Assoc_st*a, const Mit_Symbole*sy);
-struct Mi_trouve_st mi_assoc_chercher(const struct Mi_Assoc_st*a, Mit_Symbole*sy);
+struct Mi_Assoc_st*mi_assoc_enlever(struct Mi_Assoc_st*a, const Mit_Symbole*sy)
+{
+  if (!a || !sy || sy->mi_type != MiTy_Symbole) return a;
+  assert (sy != MI_TROU_SYMBOLE);
+  int pos = mi_assoc_indice(a, sy);
+  if (pos<0) return a;
+  assert (pos>=0 && pos<(int)a->a_tai);
+  if (a->a_ent[pos].e_symb == sy)
+    {
+      a->a_ent[pos].e_symb = MI_TROU_SYMBOLE;
+      a->a_ent[pos].e_val = MI_NILV;
+      a->a_nbe--;
+      if (a->a_tai>11 && 3*a->a_nbe<a->a_tai)
+        a = mi_assoc_reserver(a, 1);
+    }
+  return a;
+} /* fin mi_assoc_enlever */
+
+struct Mi_trouve_st mi_assoc_chercher(const struct Mi_Assoc_st*a, Mit_Symbole*sy)
+{
+  struct Mi_trouve_st r = {MI_NILV,false};
+  if (!a || !sy || sy->mi_type != MiTy_Symbole) return r;
+  int pos = mi_assoc_indice(a,sy);
+  if (pos<0) return r;
+  assert (pos>=0 && pos<(int)a->a_tai);
+  if (a->a_ent[pos].e_symb == sy)
+    {
+      r.t_val = a->a_ent[pos].e_val;
+      r.t_pres = true;
+    }
+  return r;
+} // fin mi_assoc_chercher
