@@ -158,6 +158,10 @@ struct MiSt_Symbole_st
   struct Mi_Assoc_st *mi_attrs;
   struct Mi_Vecteur_st *mi_comps;
 };
+
+int mi_cmp_symbole(const Mit_Symbole*sy1, const Mit_Symbole*sy2);
+int mi_cmp_symboleptr(const void*, const void*); // pour qsort
+
 // aussi bien dans la table des symboles que dans les associations
 // on a besoin d'un trou qui ne soit pas nil. Aucune fonction publique
 // ne doit renvoyer ce trou...
@@ -353,16 +357,59 @@ struct Mi_trouve_st
   Mit_Val t_val;
   bool t_pres;
 };
-struct Mi_trouve_st mi_assoc_chercher(const struct Mi_Assoc_st*a, Mit_Symbole*sy);
+struct Mi_trouve_st mi_assoc_chercher(const struct Mi_Assoc_st*a, const Mit_Symbole*sy);
+/// la fonction d'iteration renvoie true pour arrêter l'itération
+typedef bool mi_assoc_sigt (const Mit_Symbole*sy, const Mit_Val va, void*client);
+unsigned mi_assoc_taille(const struct Mi_Assoc_st*a);
+void mi_assoc_iterer(const struct Mi_Assoc_st*a, mi_assoc_sigt*f, void*client);
 
 
+//// le type abstrait des vecteurs
+struct Mi_Vecteur_st*mi_vecteur_reserver(struct Mi_Vecteur_st*v, unsigned nb);
+struct Mi_Vecteur_st*mi_vecteur_ajouter(struct Mi_Vecteur_st*v, const Mit_Val va);
+struct Mi_trouve_st mi_vecteur_comp(struct Mi_Vecteur_st*v, int rang);
+void mi_vecteur_mettre(struct Mi_Vecteur_st*v, int rank, const Mit_Val va);
+unsigned mi_vecteur_taille (const struct Mi_Vecteur_st*v);
+/// la fonction d'iteration renvoie true pour arrêter l'itération
+typedef bool mi_vect_sigt(const Mit_Val va, unsigned ix, void*client);
+void mi_vecteur_iterer(const struct Mi_Vecteur_st*v, mi_vect_sigt*f, void*client);
 
 //// sérialisation en JSON
 //
+
+/// types  pour la sauvegarde
+#define MI_QUEUE_LONG_ELEM 15
+struct Mi_Queuesauve_st
+{
+  struct Mi_Queuesauve_st*q_suiv;
+  Mit_Symbole*q_symb[MI_QUEUE_LONG_ELEM];
+};
+
+struct Mi_Sauvegarde_st  	  /* à allouer sur la pile */
+{
+  struct Mi_Assoc_st*sv_assosymb; // association des symboles
+  const char*sv_rep;		  // repertoire de sauvegarde
+  struct Mi_Queuesauve_st*sv_que; // queue des symboles à parcourir
+};
+void mi_sauvegarde_init(struct Mi_Sauvegarde_st*sv, const char*dir);
+
+void mi_sauvegarde_symbole(struct Mi_Sauvegarde_st*sv, const Mit_Symbole*sy);
+bool mi_sauvegarde_symbole_oublie(struct Mi_Sauvegarde_st*sv, const Mit_Symbole*sy);
+bool mi_sauvegarde_symbole_connu(struct Mi_Sauvegarde_st*sv, const Mit_Symbole*sy);
+void mi_sauvegarde_oublier(struct Mi_Sauvegarde_st*sv, const Mit_Symbole*sy);
+void mi_sauvegarde_finir(struct Mi_Sauvegarde_st*sv);
+
 // serialiser une valeur en JSON
-json_t *mi_json_val (const Mit_Val v);
+json_t *mi_json_val (struct Mi_Sauvegarde_st*sv, const Mit_Val v);
+// serialiser le contenu d'un symbole en JSON
+json_t *mi_json_contenu_symbole (struct Mi_Sauvegarde_st*sv, const Mit_Symbole*sy);
 
 // construire une valeur à partir d'un JSON
 Mit_Val mi_val_json (const json_t * j);
+// remplir un symbole à partir de son contenu
+void mi_remplir_symbole_json (const json_t*j);
 
+#define MI_PREDEFINI(Nom) mipred_##Nom
+#define MI_TRAITER_PREDEFINI(Nom,Hash) extern Mit_Symbole*MI_PREDEFINI(Nom);
+#include "_mi_predef.h"
 #endif /*MINIL_INCLUDED_ */

@@ -91,9 +91,11 @@ struct Mi_Assoc_st*mi_assoc_reserver(struct Mi_Assoc_st*a, unsigned nb)
       a = calloc(1,sizeof(struct Mi_Assoc_st)+nouvtail*sizeof(struct Mi_EntAss_st));
       if (!a)
         MI_FATALPRINTF("mémoire pleine pour association de %d entrées (%s)", nouvtail, strerror(errno));
+      a->a_mag = MI_ASSOC_NMAGIQ;
       a->a_tai = nouvtail;
       return a;
     }
+  assert (a->a_mag == MI_ASSOC_NMAGIQ);
   unsigned t = a->a_tai;
   unsigned n = a->a_nbe;
   assert (n < t);
@@ -106,6 +108,7 @@ struct Mi_Assoc_st*mi_assoc_reserver(struct Mi_Assoc_st*a, unsigned nb)
           if (!nouva)
             MI_FATALPRINTF("mémoire pleine pour association de %d entrées (%s)", nouvtail, strerror(errno));
           nouva->a_tai = nouvtail;
+          nouva->a_mag = MI_ASSOC_NMAGIQ;
           for (int ix=0; ix<(int)t; ix++)
             {
               struct Mi_EntAss_st*ent = a->a_ent+ix;
@@ -129,6 +132,7 @@ struct Mi_Assoc_st*mi_assoc_reserver(struct Mi_Assoc_st*a, unsigned nb)
           if (!nouva)
             MI_FATALPRINTF("mémoire pleine pour association de %d entrées (%s)", nouvtail, strerror(errno));
           nouva->a_tai = nouvtail;
+          nouva->a_mag = MI_ASSOC_NMAGIQ;
           for (int ix=0; ix<(int)t; ix++)
             {
               struct Mi_EntAss_st*ent = a->a_ent+ix;
@@ -154,6 +158,7 @@ mi_assoc_mettre(struct Mi_Assoc_st*a, const Mit_Symbole* sy, const Mit_Val va)
   assert (sy->mi_type == MiTy_Symbole);
   if (!a || 6*a->a_tai + 2 < 5*a->a_nbe)
     a = mi_assoc_reserver(a, 3+a->a_nbe/4);
+  assert (a->a_mag == MI_ASSOC_NMAGIQ);
   int pos = mi_assoc_indice(a, sy);
   assert (pos>=0 && pos<(int)a->a_tai);
   if (!a->a_ent[pos].e_symb || a->a_ent[pos].e_symb == MI_TROU_SYMBOLE)
@@ -175,6 +180,7 @@ struct Mi_Assoc_st*mi_assoc_enlever(struct Mi_Assoc_st*a, const Mit_Symbole*sy)
 {
   if (!a || !sy || sy->mi_type != MiTy_Symbole) return a;
   assert (sy != MI_TROU_SYMBOLE);
+  assert (a->a_mag == MI_ASSOC_NMAGIQ);
   int pos = mi_assoc_indice(a, sy);
   if (pos<0) return a;
   assert (pos>=0 && pos<(int)a->a_tai);
@@ -189,10 +195,12 @@ struct Mi_Assoc_st*mi_assoc_enlever(struct Mi_Assoc_st*a, const Mit_Symbole*sy)
   return a;
 } /* fin mi_assoc_enlever */
 
-struct Mi_trouve_st mi_assoc_chercher(const struct Mi_Assoc_st*a, Mit_Symbole*sy)
+struct Mi_trouve_st mi_assoc_chercher(const struct Mi_Assoc_st*a,
+                                      const Mit_Symbole*sy)
 {
   struct Mi_trouve_st r = {MI_NILV,false};
   if (!a || !sy || sy->mi_type != MiTy_Symbole) return r;
+  assert (a->a_mag == MI_ASSOC_NMAGIQ);
   int pos = mi_assoc_indice(a,sy);
   if (pos<0) return r;
   assert (pos>=0 && pos<(int)a->a_tai);
@@ -203,3 +211,24 @@ struct Mi_trouve_st mi_assoc_chercher(const struct Mi_Assoc_st*a, Mit_Symbole*sy
     }
   return r;
 } // fin mi_assoc_chercher
+
+unsigned mi_assoc_taille(const struct Mi_Assoc_st*a)
+{
+  if (!a) return 0;
+  assert (a->a_mag == MI_ASSOC_NMAGIQ);
+  return a->a_tai;
+} /* fin mi_assoc_taille */
+
+void mi_assoc_iterer(const struct Mi_Assoc_st*a, mi_assoc_sigt*f, void*client)
+{
+  if (!a || !f) return;
+  assert (a->a_mag == MI_ASSOC_NMAGIQ);
+  unsigned t = a->a_tai;
+  for (unsigned ix=0; ix<t; ix++)
+    {
+      const Mit_Symbole*sy = a->a_ent[ix].e_symb;
+      if (!sy || sy == MI_TROU_SYMBOLE) continue;
+      const Mit_Val val = a->a_ent[ix].e_val;
+      if (f (sy, val, client)) return;
+    }
+} /* fin mi_assoc_iterer */

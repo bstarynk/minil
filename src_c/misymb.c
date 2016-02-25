@@ -415,3 +415,32 @@ mi_creer_symbole_chaine (const char *ch, unsigned ind)
   Mit_Symbole*sy = mi_creer_symbole_baquet(baq, ind);
   return sy;
 }				// fin mi_creer_symbole_chaine
+
+
+int mi_cmp_symbole(const Mit_Symbole*sy1, const Mit_Symbole*sy2)
+{
+  if (sy1==sy2) return 0;
+  if (!sy1 || sy1->mi_type != MiTy_Symbole) return -1;
+  if (!sy2 || sy2->mi_type != MiTy_Symbole) return 1;
+  const Mit_Chaine*nom1 = sy1->mi_nom;
+  const Mit_Chaine*nom2 = sy2->mi_nom;
+  assert (nom1 && nom1->mi_type == MiTy_Chaine);
+  assert (nom2 && nom2->mi_type == MiTy_Chaine);
+  if (nom1 != nom2)
+    {
+      int cmp = strcmp(nom1->mi_car, nom2->mi_car);
+      if (cmp<0) return -1;
+      else if (cmp>0) return 1;
+    }
+  if (sy1->mi_indice < sy2->mi_indice) return -1;
+  if (sy1->mi_indice > sy2->mi_indice) return +1;
+  MI_FATALPRINTF("symboles corrompus differents mais de même noms %s et indice %u",
+                 nom1->mi_car, sy1->mi_indice);
+}
+
+int mi_cmp_symboleptr(const void*p1, const void*p2)
+{
+  assert (p1 != NULL);
+  assert (p2 != NULL);
+  return mi_cmp_symbole(*(const Mit_Symbole**)p1, *(const Mit_Symbole**)p2);
+}

@@ -1,0 +1,7 @@
+// fichier _mi_predef.h
+#ifndef MI_TRAITER_PREDEFINI
+#error MI_TRAITER_PREDEFINI indefini
+#endif
+MI_TRAITER_PREDEFINI(sauvegarder,3524233920)
+MI_TRAITER_PREDEFINI(oublier,3854974091)
+#undef MI_TRAITER_PREDEFINI

@@ -126,8 +126,29 @@ mi_nombre_premier_avant (unsigned i)
   return 0;
 }				// fin mi_nombre_premier_avant
 
+static void
+mi_initialiser_predefinis(void);
 int
 main (int argc, char **argv)
 {
   mi_arguments_programme (argc, argv);
+  mi_initialiser_predefinis ();
 }				// fin de main
+
+/// declarer les prédéfinis
+#define MI_TRAITER_PREDEFINI(Nom,Hash) Mit_Symbole*MI_PREDEFINI(Nom);
+#include "_mi_predef.h"
+
+
+void mi_initialiser_predefinis(void)
+{
+#define MI_TRAITER_PREDEFINI(Nom,Hash) do {				\
+    MI_PREDEFINI(Nom) =							\
+      mi_creer_symbole_chaine(#Nom,0);					\
+    if (MI_PREDEFINI(Nom)->mi_hash != (Hash))				\
+      MI_FATALPRINTF("symbole predefini %s hash %u, devrait être %u",	\
+		     #Nom, MI_PREDEFINI(Nom)->mi_hash, \
+		     (unsigned)(Hash));		       \
+  } while(0);
+#include "_mi_predef.h"
+}

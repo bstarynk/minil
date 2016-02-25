@@ -18,9 +18,29 @@
 
 #include "minil.h"
 
+bool
+mi_sauvegarde_symbole_oublie(struct Mi_Sauvegarde_st*sv,
+                             const Mit_Symbole*sy)
+{
+  if (!sv) return false;
+  if (!sy || sy->mi_type != MiTy_Symbole) return false;
+  return mi_assoc_chercher(sv->sv_assosymb,sy).t_val.miva_sym
+         == (MI_PREDEFINI(oublier));
+}
+
+bool
+mi_sauvegarde_symbole_connu(struct Mi_Sauvegarde_st*sv,
+                            const Mit_Symbole*sy)
+{
+  if (!sv) return false;
+  if (!sy || sy->mi_type != MiTy_Symbole) return false;
+  return mi_assoc_chercher(sv->sv_assosymb,sy).t_val.miva_sym
+         == (MI_PREDEFINI(sauvegarder));
+}
+
 //// sérialisation d'une valeur en JSON
 json_t *
-mi_json_val (const Mit_Val v)
+mi_json_val (struct Mi_Sauvegarde_st*sv, const Mit_Val v)
 {
   enum mi_typeval_en ty = mi_vtype (v);
   switch (ty)
@@ -38,6 +58,10 @@ mi_json_val (const Mit_Val v)
       const Mit_Symbole *sy = mi_en_symbole (v);
       const char *chn = mi_symbole_chaine (sy);
       unsigned ind = mi_symbole_indice (sy);
+      if (mi_sauvegarde_symbole_oublie(sv,sy))
+        return json_null();
+      if (!mi_sauvegarde_symbole_connu(sv,sy))
+        return json_null();
       if (ind)
         return json_pack ("{sssi}", "symb", chn, "ind", ind);
       else
@@ -48,12 +72,16 @@ mi_json_val (const Mit_Val v)
     {
       const Mit_Noeud *nd = mi_en_noeud (v);
       const Mit_Symbole *sycon = mi_connective_noeud (nd);
+      if (mi_sauvegarde_symbole_oublie(sv, sycon))
+        return json_null();
+      if (!mi_sauvegarde_symbole_connu(sv, sycon))
+        return json_null();
       unsigned ar = mi_arite_noeud (nd);
-      const json_t *jsymb = mi_json_val (MI_SYMBOLEV((Mit_Symbole*)sycon));
+      const json_t *jsymb = mi_json_val (sv,MI_SYMBOLEV((Mit_Symbole*)sycon));
       json_t *jfils = json_array ();
       for (unsigned ix = 0; ix < ar; ix++)
         json_array_append_new (jfils,
-                               (json_t *) mi_json_val (nd->mi_fils[ix]));
+                               (json_t *) mi_json_val (sv,nd->mi_fils[ix]));
       return json_pack ("{soso}", "conn", jsymb, "fils", jfils);
     }
     }
@@ -105,3 +133,66 @@ mi_val_json (const json_t * j)
   fputc('\n', stderr);
   return MI_NILV;
 }				// fin mi_val_json
+
+
+
+struct mi_vectatt_st
+{
+  unsigned vat_taille;
+  unsigned vat_compte;
+  const Mit_Symbole*vat_symb[];
+};
+
+static bool mi_iterateur_attr(const Mit_Symbole*sy, const Mit_Val va, void*client)
+{
+  struct mi_vectatt_st*vat = client;
+  assert (va.miva_ptr != (void*)-1);
+  if (vat->vat_compte < vat->vat_taille)
+    {
+      vat->vat_symb[vat->vat_compte++] = sy;
+      return false;
+    }
+  else return true;
+}
+
+json_t *mi_json_contenu_symbole (struct Mi_Sauvegarde_st*sv, const Mit_Symbole*sy)
+{
+  if (!sv || !sy) return NULL;
+  if (!mi_sauvegarde_symbole_connu(sv,sy)) return json_null();
+  json_t*jsym = mi_json_val(sv, MI_SYMBOLEV((Mit_Symbole*)sy));
+  unsigned nbat = mi_assoc_taille(sy->mi_attrs);
+  struct mi_vectatt_st *va = //
+  calloc(1, sizeof(struct mi_vectatt_st)+(nbat+1)*sizeof(Mit_Symbole*));
+  va->vat_taille = nbat+1;
+  if (!va)
+    MI_FATALPRINTF("impossible d'allouer vecteur de %d attributs (%s)",
+                   nbat, strerror(errno));
+  mi_assoc_iterer(sy->mi_attrs, mi_iterateur_attr, va);
+  assert (va->vat_compte==nbat);
+  if (nbat>1)
+    qsort(va->vat_symb, nbat, sizeof(Mit_Symbole*), mi_cmp_symboleptr);
+  json_t *jattrs = json_array ();
+  for (unsigned ix=0; ix < nbat; ix++)
+    {
+      const Mit_Symbole*syat = va->vat_symb[ix];
+      if (!mi_sauvegarde_symbole_connu(sv, syat))
+        continue;
+      struct Mi_trouve_st tr = mi_assoc_chercher(sy->mi_attrs, syat);
+      if (!tr.t_pres) continue;
+      json_t*jent = json_pack ("{soso}", "at", mi_json_val(sv, MI_SYMBOLEV((Mit_Symbole*)syat)),
+                               "va", mi_json_val(sv, tr.t_val));
+
+      json_array_append_new (jattrs, jent);
+    }
+  json_t*jcont = json_pack("{soso}", "ContSymb", jsym,
+                           "attrs", jattrs);
+  return jcont;
+} /* fin de mi_json_contenu_symbole */
+
+
+
+void mi_remplir_symbole_json(const json_t*j)
+{
+  if (!j) return;
+  if (!json_is_object(j)) return;
+} // fin mi_remplir_symbole_json

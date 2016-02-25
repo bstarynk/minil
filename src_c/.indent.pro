@@ -4,3 +4,4 @@
 -T Mit_Chaine
 -T Mit_Symbole
 -T Mit_Noeud
+-T json_t

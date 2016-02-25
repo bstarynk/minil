@@ -51,7 +51,7 @@ $(OBJFILES): minil.h
 
 ## pour nettoyer
 clean:
-	$(RM) $(OBJFILES) _timestamp.* *~ *% minil
+	$(RM) $(OBJFILES) _timestamp.* *~ *% minil *.i
 
 # le programme minil
 minil: $(OBJFILES)
