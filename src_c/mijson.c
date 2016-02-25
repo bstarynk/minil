@@ -1,8 +1,8 @@
-// fichier mival.c - sérialisation en JSON
+// fichier mijson.c - sérialisation en JSON
 /* la notice de copyright est legalement en anglais */
 
 // (C) 2016 Basile Starynkevitch
-//   this file mival.c is part of Minil
+//   this file mijson.c is part of Minil
 //   Minil is free software: you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
 //   the Free Software Foundation, either version 3 of the License, or
@@ -49,10 +49,7 @@ mi_json_val (const Mit_Val v)
       const Mit_Noeud *nd = mi_en_noeud (v);
       const Mit_Symbole *sycon = mi_connective_noeud (nd);
       unsigned ar = mi_arite_noeud (nd);
-      const json_t *jsymb = mi_json_val ((Mit_Val)
-      {
-        .miva_sym = (Mit_Symbole *) sycon
-      });
+      const json_t *jsymb = mi_json_val (MI_SYMBOLEV((Mit_Symbole*)sycon));
       json_t *jfils = json_array ();
       for (unsigned ix = 0; ix < ar; ix++)
         json_array_append_new (jfils,
@@ -70,35 +67,20 @@ Mit_Val
 mi_val_json (const json_t * j)
 {
   if (!j || json_is_null (j))
-    return (Mit_Val)
-    {
-      .miva_ptr = NULL
-    };
+    return MI_NILV;
   if (json_is_integer (j))
-    return (Mit_Val)
-    {
-      .miva_ent = mi_creer_entier (json_integer_value (j))
-    };
+    return MI_ENTIERV(mi_creer_entier(json_integer_value(j)));
   else if (json_is_real (j))
-    return (Mit_Val)
-    {
-      .miva_dbl = mi_creer_double (json_real_value (j))
-    };
+    return MI_DOUBLEV(mi_creer_double(json_real_value(j)));
   else if (json_is_string (j))
-    return (Mit_Val)
-    {
-      .miva_chn = mi_creer_chaine (json_string_value (j))
-    };
+    return MI_CHAINEV(mi_creer_chaine(json_string_value(j)));
   else if (json_is_object (j))
     {
       json_t *js = json_object_get (j, "symb");
       if (js && json_is_string (js))
         {
           unsigned ind = json_integer_value (json_object_get (j, "ind"));
-          return (Mit_Val)
-          {
-            .miva_sym = mi_creer_symbole_chaine (json_string_value (js), ind)
-          };
+          return MI_SYMBOLEV( mi_creer_symbole_chaine (json_string_value (js), ind));
         };
       json_t *jc = json_object_get (j, "conn");
       json_t *jf = json_object_get (j, "fils");
@@ -107,25 +89,19 @@ mi_val_json (const json_t * j)
           Mit_Val petitab[8] = {};
           Mit_Symbole *sycon = mi_en_symbole (mi_val_json (jc));
           unsigned ar = json_array_size (jc);
-          if (sycon) return (Mit_Val)
-            {
-              NULL
-            };
+          if (!sycon) return MI_NILV;
           Mit_Val* tab = (ar<sizeof(petitab)/sizeof(petitab[0]))?petitab
                          :calloc(ar+1,sizeof(Mit_Val));
           if (!tab) MI_FATALPRINTF("impossible d'allouer tampon pour %d fils", ar);
           for (unsigned ix=0; ix<ar; ix++)
             tab[ix] = mi_val_json(json_array_get(jc,ix));
-          Mit_Val res = (Mit_Val)
-          {
-            .miva_noe= mi_creer_noeud(sycon,ar,tab)
-          };
+          Mit_Val res = MI_NOEUDV(mi_creer_noeud(sycon,ar,tab));
           if (tab != petitab) free (tab);
           return res;
         }
     }
-      fprintf(stderr, "JSON incorrect:\n");
-      json_dumpf(j, stderr, JSON_INDENT(1)|JSON_SORT_KEYS);
-      fputc('\n', stderr);
-      return (Mit_Val){.miva_ptr=NULL};
+  fprintf(stderr, "JSON incorrect:\n");
+  json_dumpf(j, stderr, JSON_INDENT(1)|JSON_SORT_KEYS);
+  fputc('\n', stderr);
+  return MI_NILV;
 }				// fin mi_val_json

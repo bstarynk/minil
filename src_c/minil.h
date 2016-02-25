@@ -85,6 +85,13 @@ union MiSt_Val_un
 };
 typedef union MiSt_Val_un Mit_Val;
 
+#define MI_NILV ((Mit_Val){.miva_ptr=NULL})
+#define MI_ENTIERV(E) ((Mit_Val){.miva_ent=(E)})
+#define MI_DOUBLEV(D) ((Mit_Val){.miva_dbl=(D)})
+#define MI_CHAINEV(C) ((Mit_Val){.miva_chn=(C)})
+#define MI_NOEUDV(N) ((Mit_Val){.miva_noe=(N)})
+#define MI_SYMBOLEV(S) ((Mit_Val){.miva_sym=(S)})
+
 static inline enum mi_typeval_en
 mi_vtype (const Mit_Val v)
 {
@@ -145,11 +152,16 @@ struct MiSt_Symbole_st
 {
   enum mi_typeval_en mi_type;
   bool mi_marq;
-  const Mit_Chaine *mi_nom;
+  unsigned mi_hash;
   unsigned mi_indice;
+  const Mit_Chaine *mi_nom;
   struct Mi_Assoc_st *mi_attrs;
   struct Mi_Vecteur_st *mi_comps;
 };
+// aussi bien dans la table des symboles que dans les associations
+// on a besoin d'un trou qui ne soit pas nil. Aucune fonction publique
+// ne doit renvoyer ce trou...
+#define MI_TROU_SYMBOLE (Mit_Symbole*)(-1)
 ////////////////////// conversions sûres, car verifiantes
 static inline const Mit_Entier *
 mi_en_entier (const Mit_Val v)
@@ -298,11 +310,7 @@ static inline const char *
 mi_symbole_chaine (const Mit_Symbole *sy)
 {
   if (sy && sy->mi_type == MiTy_Symbole)
-    return mi_vald_chaine ((Mit_Val)
-    {
-      .miva_chn = sy->mi_nom
-    }
-  , NULL);
+    return mi_vald_chaine (MI_CHAINEV(sy->mi_nom), NULL);
   return NULL;
 }
 
@@ -324,6 +332,30 @@ mi_symbole_indice_ch (char tamp[16], const Mit_Symbole *sy)
     tamp[0] = (char) 0;
   return tamp;
 }
+
+static inline unsigned
+mi_hashage_symbole(const Mit_Symbole*sy)
+{
+  if (!sy || sy->mi_type != MiTy_Symbole) return 0;
+}
+
+//// le type abstrait des associations entre symbole et valeur -quelconque-
+//// On distingue la valeur nulle de l'absence de valeur
+// reserver de la place, ou bien allouer
+struct Mi_Assoc_st*mi_assoc_reserver(struct Mi_Assoc_st*a, unsigned nb);
+// mettre une entrée
+struct Mi_Assoc_st*mi_assoc_mettre(struct Mi_Assoc_st*a, const Mit_Symbole* sy, const Mit_Val va);
+// supprimer une entrée
+struct Mi_Assoc_st*mi_assoc_enlever(struct Mi_Assoc_st*a, const Mit_Symbole*sy);
+// chercher une valeur, donc renvoyer la valeur et un drapeau de présence
+struct Mi_trouve_st
+{
+  Mit_Val t_val;
+  bool t_pres;
+};
+struct Mi_trouve_st mi_assoc_chercher(const struct Mi_Assoc_st*a, Mit_Symbole*sy);
+
+
 
 //// sérialisation en JSON
 //
