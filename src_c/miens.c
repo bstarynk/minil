@@ -20,6 +20,27 @@
 
 #define MI_ENSHASH_NMAGIQ 0x30e595d7 /*820352471*/
 
+
+void mi_calculer_hash_ensemble(Mit_Ensemble*e)
+{
+  unsigned c=e->mi_taille;
+  assert (e->mi_type == MiTy_Ensemble && e->mi_hash == 0);
+  unsigned h1=0, h2=c;
+  for (unsigned ix=0; ix<c; ix++)
+    {
+      const Mit_Symbole*sy = e->mi_elements[ix];
+      assert (sy != NULL);
+      assert (sy->mi_type == MiTy_Symbole);
+      if (ix %2)
+        h1 = (25031*sy->mi_hash + ix) ^ (271*h1);
+      else
+        h2 = (31033*sy->mi_hash) ^ (151*h2+ix*11);
+    }
+  unsigned h=(11*h1) ^ (31*h2);
+  if (!h) h = (h1&0xffff) + (h2&0xfffff) + (c%31091) + 11;
+  e->mi_hash = h;
+}
+
 const Mit_Ensemble* mi_creer_ensemble_enshash(struct Mi_EnsHash_st*eh)
 {
   if (!eh || eh->eh_magic != MI_ENSHASH_NMAGIQ) return NULL;
@@ -38,21 +59,8 @@ const Mit_Ensemble* mi_creer_ensemble_enshash(struct Mi_EnsHash_st*eh)
     }
   assert (n==c);
   qsort (e->mi_elements, n, sizeof(Mit_Symbole*), mi_cmp_symboleptr);
-  unsigned h1=0, h2=c;
-  for (unsigned ix=0; ix<n; ix++)
-    {
-      const Mit_Symbole*sy = e->mi_elements[ix];
-      assert (sy != NULL);
-      assert (sy->mi_type == MiTy_Symbole);
-      if (ix %2)
-        h1 = (25031*sy->mi_hash + ix) ^ (271*h1);
-      else
-        h2 = (31033*sy->mi_hash) ^ (151*h2+ix*11);
-    }
-  unsigned h=(11*h1) ^ (31*h2);
-  if (!h) h = (h1&0xffff) + (h2&0xfffff) + (n%31091) + 11;
   e->mi_taille = c;
-  e->mi_hash = h;
+  mi_calculer_hash_ensemble(e);
   return e;
 } // fin mi_creer_ensemble_enshash
 
@@ -104,11 +112,24 @@ const Mit_Ensemble* mi_creer_ensemble_varsym(unsigned nb, ...)
   const Mit_Ensemble*ens = mi_creer_ensemble_enshash(&eh);
   mi_enshash_detruire (&eh);
   return ens;
+
 } // fin mi_creer_ensemble_varsym
 
 const Mit_Ensemble* mi_creer_ensemble_varval(unsigned nb, ...)
 {
-#warning mi_creer_ensemble_varval à coder
+  va_list args;
+  struct Mi_EnsHash_st eh= {};
+  mi_enshash_initialiser (&eh, 4*nb/3+5);
+  va_start (args, nb);
+  for (unsigned ix=0; ix<nb; ix++)
+    {
+      const Mit_Val v = va_arg(args, Mit_Val);
+      mi_enshash_ajouter_valeur (&eh, v);
+    }
+  va_end(args);
+  const Mit_Ensemble*ens = mi_creer_ensemble_enshash(&eh);
+  mi_enshash_detruire (&eh);
+  return ens;
 } // fin mi_creer_ensemble_varval
 
 
@@ -295,3 +316,13 @@ void mi_enshash_iterer(struct Mi_EnsHash_st*eh, mi_ens_sigt*f, void*client)
       if ((*f)(sy,client)) return;
     }
 } // fin mi_enshash_iterer
+
+
+void mi_ensemble_iterer(const Mit_Ensemble*en, mi_ens_sigt*f, void*client)
+{
+  if (!en || en->mi_type != MiTy_Ensemble || !f) return;
+  unsigned t = en->mi_taille;
+  for (unsigned ix=0; ix<t; ix++)
+    if ((*f)(en->mi_elements[ix],client)) return;
+}
+

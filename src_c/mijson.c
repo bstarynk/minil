@@ -68,6 +68,20 @@ mi_json_val (struct Mi_Sauvegarde_st*sv, const Mit_Val v)
         return json_pack ("{ss}", "symb", chn);
     }
     break;
+    case MiTy_Ensemble:
+    {
+      const Mit_Ensemble*en = mi_en_ensemble(v);
+      unsigned t = en->mi_taille;
+      json_t* jel = json_array();
+      for (unsigned ix=0; ix<t; ix++)
+        {
+          const Mit_Symbole* sy = en->mi_elements[ix];
+          if (mi_sauvegarde_symbole_connu(sv, sy))
+            json_array_append_new(jel,  mi_json_val(sv, MI_SYMBOLEV((Mit_Symbole*)sy)));
+        }
+      return json_pack("{so}", "elem", jel);
+    }
+    break;
     case MiTy_Noeud:
     {
       const Mit_Noeud *nd = mi_en_noeud (v);
@@ -110,6 +124,21 @@ mi_val_json (const json_t * j)
           unsigned ind = json_integer_value (json_object_get (j, "ind"));
           return MI_SYMBOLEV( mi_creer_symbole_chaine (json_string_value (js), ind));
         };
+      json_t* je = json_object_get(j, "elem");
+      if (je && json_is_array(je))
+        {
+          struct Mi_EnsHash_st eh= {};
+          unsigned ln = json_array_size(je);
+          mi_enshash_initialiser (&eh, 4*ln/3+ln/32+5);
+          for (unsigned ix=0; ix<ln; ix++)
+            {
+              Mit_Symbole*sy = mi_en_symbole(mi_val_json(json_array_get(je,ix)));
+              if (sy) mi_enshash_ajouter(&eh,sy);
+            }
+          const Mit_Ensemble*e = mi_creer_ensemble_enshash(&eh);
+          mi_enshash_detruire(&eh);
+          return MI_ENSEMBLEV(e);
+        }
       json_t *jc = json_object_get (j, "conn");
       json_t *jf = json_object_get (j, "fils");
       if (jc && json_is_array (jf))
