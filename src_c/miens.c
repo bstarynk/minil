@@ -56,10 +56,62 @@ const Mit_Ensemble* mi_creer_ensemble_enshash(struct Mi_EnsHash_st*eh)
   return e;
 } // fin mi_creer_ensemble_enshash
 
-const Mit_Ensemble* mi_creer_ensemble_symboles(unsigned nb, const Mit_Symbole**tab);
-const Mit_Ensemble* mi_creer_ensemble_valeurs(unsigned nb, const Mit_Val*tabval);
-const Mit_Ensemble* mi_creer_ensemble_varsym(unsigned nb, ...);
-const Mit_Ensemble* mi_creer_ensemble_varval(unsigned nb, ...);
+const Mit_Ensemble* mi_creer_ensemble_symboles(unsigned nb, const Mit_Symbole**tab)
+{
+  if (nb && !tab) return NULL;
+  struct Mi_EnsHash_st eh= {};
+  mi_enshash_initialiser (&eh, 4*nb/3+5);
+  for (unsigned ix=0; ix<nb; ix++)
+    {
+      const Mit_Symbole*sy = tab[ix];
+      if (!sy || sy==MI_TROU_SYMBOLE || sy->mi_type != MiTy_Symbole) continue;
+      mi_enshash_ajouter(&eh, sy);
+    }
+  const Mit_Ensemble*ens = mi_creer_ensemble_enshash(&eh);
+  mi_enshash_detruire (&eh);
+  return ens;
+
+} // fin mi_creer_ensemble_symboles
+
+const Mit_Ensemble*
+mi_creer_ensemble_valeurs(unsigned nb, const Mit_Val*tabval)
+{
+  if (nb && !tabval) return NULL;
+  struct Mi_EnsHash_st eh= {};
+  mi_enshash_initialiser (&eh, 4*nb/3+nb/8+5);
+  for (unsigned ix=0; ix<nb; ix++)
+    {
+      mi_enshash_ajouter_valeur(&eh, tabval[ix]);
+    }
+  const Mit_Ensemble*ens = mi_creer_ensemble_enshash(&eh);
+  mi_enshash_detruire (&eh);
+  return ens;
+} // fin mi_creer_ensemble_valeurs
+
+const Mit_Ensemble* mi_creer_ensemble_varsym(unsigned nb, ...)
+{
+  va_list args;
+  struct Mi_EnsHash_st eh= {};
+  mi_enshash_initialiser (&eh, 4*nb/3+5);
+  va_start (args, nb);
+  for (unsigned ix=0; ix<nb; ix++)
+    {
+      const Mit_Symbole*sy = va_arg(args, Mit_Symbole*);
+      if (!sy || sy == MI_TROU_SYMBOLE || sy->mi_type != MiTy_Symbole) continue;
+      mi_enshash_ajouter(&eh, sy);
+    }
+  va_end(args);
+  const Mit_Ensemble*ens = mi_creer_ensemble_enshash(&eh);
+  mi_enshash_detruire (&eh);
+  return ens;
+} // fin mi_creer_ensemble_varsym
+
+const Mit_Ensemble* mi_creer_ensemble_varval(unsigned nb, ...)
+{
+#warning mi_creer_ensemble_varval à coder
+} // fin mi_creer_ensemble_varval
+
+
 void mi_ensemble_iterer(const Mit_Ensemble*en, mi_ens_sigt*f, void*client);
 
 void mi_enshash_initialiser(struct Mi_EnsHash_st*eh, unsigned nb)
