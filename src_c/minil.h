@@ -55,6 +55,7 @@ enum mi_typeval_en
   MiTy_Entier,
   MiTy_Double,
   MiTy_Chaine,
+  MiTy_Ensemble,
   MiTy_Noeud,
   MiTy_Symbole,
 };
@@ -63,8 +64,10 @@ enum mi_typeval_en
 typedef struct MiSt_Entier_st Mit_Entier;
 typedef struct MiSt_Double_st Mit_Double;
 typedef struct MiSt_Chaine_st Mit_Chaine;
+typedef struct MiSt_Ensemble_st Mit_Ensemble;
 typedef struct MiSt_Noeud_st Mit_Noeud;
 typedef struct MiSt_Symbole_st Mit_Symbole;
+
 // Une valeur est un pointeur, mais de plusieurs types possibles, donc une union.
 // Toute valeur non-nulle commence par son type et sa marque de ramasse-miettes.
 struct MiStValeurMarquee_st
@@ -80,6 +83,7 @@ union MiSt_Val_un
   const Mit_Entier *miva_ent;
   const Mit_Double *miva_dbl;
   const Mit_Chaine *miva_chn;
+  const Mit_Ensemble* miva_ens;
   const Mit_Noeud *miva_noe;
   Mit_Symbole *miva_sym;
 };
@@ -89,6 +93,7 @@ typedef union MiSt_Val_un Mit_Val;
 #define MI_ENTIERV(E) ((Mit_Val){.miva_ent=(E)})
 #define MI_DOUBLEV(D) ((Mit_Val){.miva_dbl=(D)})
 #define MI_CHAINEV(C) ((Mit_Val){.miva_chn=(C)})
+#define MI_ENSEMBLEV(E) ((Mit_Val){.miva_ens=(E)})
 #define MI_NOEUDV(N) ((Mit_Val){.miva_noe=(N)})
 #define MI_SYMBOLEV(S) ((Mit_Val){.miva_sym=(S)})
 
@@ -130,6 +135,16 @@ struct MiSt_Chaine_st
   char mi_car[];
 };
 
+// Une valeur ensemble a un type, une marque, une taille, et les symboles en ordre croissant
+
+struct MiSt_Ensemble_st
+{
+  enum mi_typeval_en mi_type;
+  bool mi_marq;
+  unsigned mi_hash;
+  unsigned mi_taille;
+  Mit_Symbole*mi_elements[];
+};
 // Une valeur noeud a un type, une marque, une connective, une arité, des fils
 // C'est la seule valeur composite....
 struct MiSt_Noeud_st
@@ -145,6 +160,7 @@ struct MiSt_Noeud_st
 struct Mi_Assoc_st;
 // Un vecteur n'est pas une valeur, mais une donnée interne.
 struct Mi_Vecteur_st;
+
 // Une valeur symbole a un type, une marque, une chaîne nom, un indice,
 // une association pour les attributs
 // et un vecteur de composants
@@ -205,6 +221,14 @@ mi_en_noeud (const Mit_Val v)
   if (!v.miva_ptr || *v.miva_type != MiTy_Noeud)
     return NULL;
   return v.miva_noe;
+}				// fin mi_en_noeud
+
+static inline const Mit_Ensemble *
+mi_en_ensemble (const Mit_Val v)
+{
+  if (!v.miva_ptr || *v.miva_type != MiTy_Ensemble)
+    return NULL;
+  return v.miva_ens;
 }				// fin mi_en_noeud
 
 
@@ -278,18 +302,76 @@ mi_arite_noeud (const Mit_Noeud *nd)
   return nd->mi_arite;
 }
 
+// obtenir le fils de rang rg ou bien une valeur par défaut
 static inline Mit_Val
-mi_fils_noeud (const Mit_Noeud *nd, int rk, const Mit_Val def)
+mi_fils_noeud (const Mit_Noeud *nd, int rg, const Mit_Val def)
 {
   if (!nd || nd->mi_type != MiTy_Noeud)
     return def;
   unsigned ar = nd->mi_arite;
-  if (rk < 0)
-    rk += ar;
-  if (rk >= 0 && rk < (int) ar)
-    return nd->mi_fils[rk];
+  if (rg < 0)
+    rg += (int)ar;
+  if (rg >= 0 && rg < (int) ar)
+    return nd->mi_fils[rg];
   return def;
 }
+
+static inline unsigned
+mi_cardinal_ensemble (const Mit_Ensemble*en)
+{
+  if (!en || en->mi_type != MiTy_Ensemble)
+    return 0;
+  return en->mi_taille;
+}
+
+static inline Mit_Symbole*
+mi_ensemble_nieme(const Mit_Ensemble*en, int n)
+{
+  if (!en || en->mi_type != MiTy_Ensemble)
+    return NULL;
+  unsigned ca = en->mi_taille;
+  if (n<(int)ca) n += (int)ca;
+  if (n>=0 && n<(int)ca) return en->mi_elements[n];
+  return NULL;
+}
+
+static inline const Mit_Ensemble*
+mi_vald_ensemble (const Mit_Val v)
+{
+  if (mi_vtype (v) == MiTy_Ensemble)
+    return v.miva_ens;
+  return NULL;
+}
+
+bool mi_ensemble_contient(const Mit_Ensemble*en, const Mit_Symbole*sy);
+
+/// ensemble de hash, alloué sur la pile
+struct Mi_EnsHash_st
+{
+  unsigned eh_magic;
+  unsigned eh_taille;
+  unsigned eh_compte;
+  const Mit_Symbole**eh_table;
+};
+void mi_enshash_initialiser(struct Mi_EnsHash_st*eh, unsigned nb);
+void mi_enshash_reserver(struct Mi_EnsHash_st*eh, unsigned nb);
+void mi_enshash_detruire(struct Mi_EnsHash_st*eh);
+void mi_enshash_ajouter(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy);
+void mi_enshash_ajouter_valeur(struct Mi_EnsHash_st*eh, const Mit_Val va);
+void mi_enshash_oter(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy);
+bool mi_enshash_contient(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy);
+/// la fonction d'iteration renvoie true pour arrêter l'itération
+typedef bool mi_ens_sigt (const Mit_Symbole*sy, void*client);
+void mi_enshash_iterer(struct Mi_EnsHash_st*eh, mi_ens_sigt*f, void*client);
+
+const Mit_Ensemble* mi_creer_ensemble_enshash(struct Mi_EnsHash_st*eh);
+const Mit_Ensemble* mi_creer_ensemble_symboles(unsigned nb, const Mit_Symbole**tab);
+const Mit_Ensemble* mi_creer_ensemble_valeurs(unsigned nb, const Mit_Val*tabval);
+const Mit_Ensemble* mi_creer_ensemble_varsym(unsigned nb, ...);
+const Mit_Ensemble* mi_creer_ensemble_varval(unsigned nb, ...);
+void mi_ensemble_iterer(const Mit_Ensemble*en, mi_ens_sigt*f, void*client);
+
+
 
 /// création d'un noeud d'arité donnée
 const Mit_Noeud *mi_creer_noeud (const Mit_Symbole *consymb, unsigned arite,
