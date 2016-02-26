@@ -20,7 +20,42 @@
 
 #define MI_ENSHASH_NMAGIQ 0x30e595d7 /*820352471*/
 
-const Mit_Ensemble* mi_creer_ensemble_enshash(struct Mi_EnsHash_st*eh);
+const Mit_Ensemble* mi_creer_ensemble_enshash(struct Mi_EnsHash_st*eh)
+{
+  if (!eh || eh->eh_magic != MI_ENSHASH_NMAGIQ) return NULL;
+  unsigned c= eh->eh_compte;
+  unsigned t= eh->eh_taille;
+  assert (c<t);
+  unsigned n=0;
+  Mit_Ensemble* e=mi_allouer_valeur(MiTy_Ensemble, sizeof(Mit_Ensemble)+c*sizeof(Mit_Symbole*));
+  for (unsigned ix=0; ix<t; ix++)
+    {
+      const Mit_Symbole*sy = eh->eh_table[ix];
+      if (!sy || sy==MI_TROU_SYMBOLE) continue;
+      assert (sy->mi_type == MiTy_Symbole);
+      assert (n<c);
+      e->mi_elements[n++] = (Mit_Symbole*)sy;
+    }
+  assert (n==c);
+  qsort (e->mi_elements, n, sizeof(Mit_Symbole*), mi_cmp_symboleptr);
+  unsigned h1=0, h2=c;
+  for (unsigned ix=0; ix<n; ix++)
+    {
+      const Mit_Symbole*sy = e->mi_elements[ix];
+      assert (sy != NULL);
+      assert (sy->mi_type == MiTy_Symbole);
+      if (ix %2)
+        h1 = (25031*sy->mi_hash + ix) ^ (271*h1);
+      else
+        h2 = (31033*sy->mi_hash) ^ (151*h2+ix*11);
+    }
+  unsigned h=(11*h1) ^ (31*h2);
+  if (!h) h = (h1&0xffff) + (h2&0xfffff) + (n%31091) + 11;
+  e->mi_taille = c;
+  e->mi_hash = h;
+  return e;
+} // fin mi_creer_ensemble_enshash
+
 const Mit_Ensemble* mi_creer_ensemble_symboles(unsigned nb, const Mit_Symbole**tab);
 const Mit_Ensemble* mi_creer_ensemble_valeurs(unsigned nb, const Mit_Val*tabval);
 const Mit_Ensemble* mi_creer_ensemble_varsym(unsigned nb, ...);
@@ -97,7 +132,7 @@ void mi_enshash_reserver(struct Mi_EnsHash_st*eh, unsigned nb)
   if (!eh || eh->eh_magic != MI_ENSHASH_NMAGIQ) return;
   unsigned t = eh->eh_taille;
   unsigned c = eh->eh_compte;
-  if (5*(c+nb) + 3 >= 4*t)
+  if (5*(c+nb) + 3 >= 4*t || 3*(c+nb)+2 < t)
     {
       unsigned nouvtail = mi_nombre_premier_apres (4*(c+nb)/3 + nb/8 + c/32 + 3);
       if (!nouvtail || nouvtail) MI_FATALPRINTF("débordement ensemble de hash (%d+%d)", c, nb);
@@ -152,9 +187,59 @@ void mi_enshash_ajouter(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy)
 void mi_enshash_ajouter_valeur(struct Mi_EnsHash_st*eh, const Mit_Val va)
 {
   if (!eh || eh->eh_magic != MI_ENSHASH_NMAGIQ) return;
-#warning mi_enshash_ajouter_valeur incomplet
+  switch (mi_vtype(va))
+    {
+    case MiTy_Symbole:
+      mi_enshash_ajouter(eh, va.miva_sym);
+      return;
+    case MiTy_Ensemble:
+    {
+      const Mit_Ensemble*e = va.miva_ens;
+      unsigned c = e->mi_taille;
+      mi_enshash_reserver (eh, 5*c/4+2);
+      for (unsigned ix=0; ix<c; ix++)
+        mi_enshash_ajouter(eh, e->mi_elements[ix]);
+    }
+    break;
+    default:
+      return;
+    }
 } // fin mi_enshash_ajouter_valeur
 
-void mi_enshash_oter(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy);
-bool mi_enshash_contient(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy);
-void mi_enshash_iterer(struct Mi_EnsHash_st*eh, mi_ens_sigt*f, void*client);
+void
+mi_enshash_oter(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy)
+{
+  if (!eh || eh->eh_magic != MI_ENSHASH_NMAGIQ) return;
+  if (!sy || sy==MI_TROU_SYMBOLE || sy->mi_type != MiTy_Symbole) return;
+  int pos = mi_enshash_pos(eh, sy);
+  if (pos>=0 && pos<(int)(eh->eh_taille) && eh->eh_table[pos]==sy)
+    {
+      eh->eh_table[pos] = MI_TROU_SYMBOLE;
+      eh->eh_compte--;
+    }
+  if (3*eh->eh_compte < eh->eh_taille)
+    mi_enshash_reserver(eh, 3);
+} // fin mi_enshash_oter
+
+
+bool mi_enshash_contient(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy)
+{
+  if (!eh || eh->eh_magic != MI_ENSHASH_NMAGIQ) return false;
+  if (!sy || sy==MI_TROU_SYMBOLE || sy->mi_type != MiTy_Symbole) return false;
+  int pos = mi_enshash_pos(eh, sy);
+  if (pos>=0 && pos<(int)(eh->eh_taille) && eh->eh_table[pos]==sy) return true;
+  return false;
+} // fin mi_enshash_contient
+
+
+void mi_enshash_iterer(struct Mi_EnsHash_st*eh, mi_ens_sigt*f, void*client)
+{
+  if (!eh || eh->eh_magic != MI_ENSHASH_NMAGIQ || !f) return;
+  unsigned t=eh->eh_taille;
+  for (unsigned ix=0; ix<t; ix++)
+    {
+      const Mit_Symbole* sy = eh->eh_table[ix];
+      if (!sy || sy == MI_TROU_SYMBOLE) continue;
+      if ((*f)(sy,client)) return;
+    }
+} // fin mi_enshash_iterer
