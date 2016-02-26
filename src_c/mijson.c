@@ -24,8 +24,7 @@ mi_sauvegarde_symbole_oublie(struct Mi_Sauvegarde_st*sv,
 {
   if (!sv) return false;
   if (!sy || sy->mi_type != MiTy_Symbole) return false;
-  return mi_assoc_chercher(sv->sv_assosymb,sy).t_val.miva_sym
-         == (MI_PREDEFINI(oublier));
+  return mi_enshash_contient(&sv->sv_syoubli, sy);
 }
 
 bool
@@ -34,8 +33,7 @@ mi_sauvegarde_symbole_connu(struct Mi_Sauvegarde_st*sv,
 {
   if (!sv) return false;
   if (!sy || sy->mi_type != MiTy_Symbole) return false;
-  return mi_assoc_chercher(sv->sv_assosymb,sy).t_val.miva_sym
-         == (MI_PREDEFINI(sauvegarder));
+  return mi_enshash_contient(&sv->sv_syconnu, sy);
 }
 
 //// sérialisation d'une valeur en JSON
@@ -200,7 +198,7 @@ json_t *mi_json_contenu_symbole (struct Mi_Sauvegarde_st*sv, const Mit_Symbole*s
   assert (va->vat_compte==nbat);
   if (nbat>1)
     qsort(va->vat_symb, nbat, sizeof(Mit_Symbole*), mi_cmp_symboleptr);
-  json_t *jattrs = json_array ();
+  json_t *jattrs = sy->mi_attrs?json_array ():json_null();
   for (unsigned ix=0; ix < nbat; ix++)
     {
       const Mit_Symbole*syat = va->vat_symb[ix];
@@ -212,9 +210,16 @@ json_t *mi_json_contenu_symbole (struct Mi_Sauvegarde_st*sv, const Mit_Symbole*s
                                "va", mi_json_val(sv, tr.t_val));
 
       json_array_append_new (jattrs, jent);
+    };
+  json_t* jcomps = sy->mi_comps?json_array ():json_null();
+  int nbcomp = mi_vecteur_taille(sy->mi_comps);
+  for (unsigned ix=0; ix<(unsigned)nbcomp; ix++)
+    {
+      json_array_append_new (jcomps, mi_json_val(sv, mi_vecteur_comp(sy->mi_comps, ix).t_val));
     }
-  json_t*jcont = json_pack("{soso}", "ContSymb", jsym,
-                           "attrs", jattrs);
+  json_t*jcont = json_pack("{sososo}", "ContSymb", jsym,
+                           "attrs", jattrs,
+                           "comps", jcomps);
   return jcont;
 } /* fin de mi_json_contenu_symbole */
 
@@ -224,4 +229,33 @@ void mi_remplir_symbole_json(const json_t*j)
 {
   if (!j) return;
   if (!json_is_object(j)) return;
+  const json_t*jsymb = json_object_get (j, "ContSymb");
+  Mit_Symbole* sy = mi_en_symbole(mi_val_json(jsymb));
+  if (!sy) return;
+  const json_t*jattrs = json_object_get(j, "attrs");
+  if (json_is_array(jattrs))
+    {
+      unsigned nbat = json_array_size(jattrs);
+      sy->mi_attrs = mi_assoc_reserver(NULL, 4*nbat/3+nbat/32+3);
+      for (unsigned ix=0; ix<nbat; ix++)
+        {
+          const json_t* jent = json_array_get(jattrs, ix);
+          if (!json_is_object(jent)) continue;
+          Mit_Symbole*syat = mi_en_symbole(mi_val_json(json_object_get(jent,"at")));
+          if (!syat) continue;
+          Mit_Val aval = mi_val_json(json_object_get(jent,"va"));
+          sy->mi_attrs = mi_assoc_mettre(sy->mi_attrs, syat, aval);
+        }
+    }
+  const json_t*jcomps = json_object_get(j, "comps");
+  if (json_is_array(jcomps))
+    {
+      unsigned nbcomp = json_array_size(jcomps);
+      sy->mi_comps = mi_vecteur_reserver(NULL, 6*nbcomp/5+2+nbcomp/32);
+      for (unsigned ix=0; ix<nbcomp; ix++)
+        {
+          Mit_Val cval = mi_val_json(json_array_get(jcomps, ix));
+          sy->mi_comps = mi_vecteur_ajouter(sy->mi_comps, cval);
+        }
+    }
 } // fin mi_remplir_symbole_json

@@ -473,7 +473,8 @@ struct Mi_Queuesauve_st
 
 struct Mi_Sauvegarde_st  	  /* à allouer sur la pile */
 {
-  struct Mi_Assoc_st*sv_assosymb; // association des symboles
+  struct Mi_EnsHash_st sv_syoubli;
+  struct Mi_EnsHash_st sv_syconnu;
   const char*sv_rep;		  // repertoire de sauvegarde
   struct Mi_Queuesauve_st*sv_que; // queue des symboles à parcourir
 };
