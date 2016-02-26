@@ -62,3 +62,5 @@ mi_allouer_valeur (enum mi_typeval_en typv, size_t tail)
   mi_mem.mm_vtab[mi_mem.mm_nbval++].miva_ptr = ptr;
   return ptr;
 }
+
+#warning le ramasse miettes ne doit pas libérer l'ensemble vide

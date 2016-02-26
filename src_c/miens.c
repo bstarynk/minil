@@ -21,6 +21,8 @@
 #define MI_ENSHASH_NMAGIQ 0x30e595d7 /*820352471*/
 
 
+
+
 void mi_calculer_hash_ensemble(Mit_Ensemble*e)
 {
   unsigned c=e->mi_taille;
@@ -40,6 +42,20 @@ void mi_calculer_hash_ensemble(Mit_Ensemble*e)
   if (!h) h = (h1&0xffff) + (h2&0xfffff) + (c%31091) + 11;
   e->mi_hash = h;
 }
+
+
+const Mit_Ensemble*
+mi_ensemble_vide()
+{
+  static Mit_Ensemble*evide;
+  if (!evide)
+    {
+      evide = mi_allouer_valeur(MiTy_Ensemble, sizeof(Mit_Ensemble));
+      evide->mi_taille = 0;
+      mi_calculer_hash_ensemble(evide);
+    };
+  return evide;
+} /* fin mi_ensemble_vide */
 
 const Mit_Ensemble* mi_creer_ensemble_enshash(struct Mi_EnsHash_st*eh)
 {
@@ -326,3 +342,105 @@ void mi_ensemble_iterer(const Mit_Ensemble*en, mi_ens_sigt*f, void*client)
     if ((*f)(en->mi_elements[ix],client)) return;
 }
 
+
+const Mit_Ensemble*
+mi_ensemble_union(const Mit_Ensemble*en1, const Mit_Ensemble*en2)
+{
+  unsigned ca1=0, ca2=0;
+  if (!en1 || en1->mi_type != MiTy_Ensemble) en1=NULL;
+  if (!en2 || en2->mi_type != MiTy_Ensemble) en2=NULL;
+  ca1 = en1?en1->mi_taille:0;
+  ca2 = en2?en2->mi_taille:0;
+  if (ca1==0 && ca2==0) return mi_ensemble_vide();
+  unsigned ta = ca1+ca2+1;
+  const Mit_Symbole**tab =calloc(ta,sizeof(Mit_Symbole*));
+  if (!tab) MI_FATALPRINTF("impossible d'allouer table de %u symboles", ta);
+  unsigned i1=0, i2=0, nbun=0;
+  while(i1<ca1 && i2<ca2)
+    {
+      const Mit_Symbole*sy1 = en1->mi_elements[i1];
+      const Mit_Symbole*sy2 = en2->mi_elements[i2];
+      assert (sy1 && sy1->mi_type == MiTy_Symbole);
+      assert (sy2 && sy2->mi_type == MiTy_Symbole);
+      assert (nbun<ta);
+      int cmp = mi_cmp_symbole(sy1, sy2);
+      if (cmp<0)
+        {
+          tab[nbun++] = sy1;
+          i1++;
+        }
+      else if (cmp>0)
+        {
+          tab[nbun++] = sy2;
+          i2++;
+        }
+      else
+        {
+          assert (sy1 == sy2);
+          tab[nbun++] = sy1;
+          i1++, i2++;
+        }
+    }
+  if (i1<ca1)
+    for (unsigned ix=i1; ix<ca1; ix++)
+      tab[nbun++] = en1->mi_elements[ix];
+  else if (i2<ca2)
+    for (unsigned ix=i2; ix<ca2; ix++)
+      tab[nbun++] = en2->mi_elements[ix];
+  if (nbun>INT_MAX/2)
+    MI_FATALPRINTF("trop d'elements %d dans l'union de deux ensembles", nbun);
+  Mit_Ensemble*enr = mi_allouer_valeur(MiTy_Ensemble,
+                                       sizeof(Mit_Ensemble)+nbun*sizeof(Mit_Symbole*));
+  enr->mi_taille = nbun;
+  if (nbun>0)
+    memcpy (enr->mi_elements, tab, nbun*sizeof(Mit_Symbole*));
+  mi_calculer_hash_ensemble(enr);
+  free(tab);
+  return enr;
+} /* fin mi_ensemble_union */
+
+
+const Mit_Ensemble*
+mi_ensemble_intersection(const Mit_Ensemble*en1, const Mit_Ensemble*en2)
+{
+  unsigned ca1=0, ca2=0;
+  if (!en1 || en1->mi_type != MiTy_Ensemble) en1=NULL;
+  if (!en2 || en2->mi_type != MiTy_Ensemble) en2=NULL;
+  ca1 = en1?en1->mi_taille:0;
+  ca2 = en2?en2->mi_taille:0;
+  if (ca1==0 || ca2==0) return mi_ensemble_vide();
+  unsigned ta = ((ca1>ca2)?ca1:ca2)+1;
+  const Mit_Symbole**tab =calloc(ta,sizeof(Mit_Symbole*));
+  if (!tab) MI_FATALPRINTF("impossible d'allouer table de %u symboles", ta);
+  unsigned i1=0, i2=0, nbin=0;
+  while (i1 < ca1 && i2 < ca2)
+    {
+      const Mit_Symbole*sy1 = en1->mi_elements[i1];
+      const Mit_Symbole*sy2 = en2->mi_elements[i2];
+      assert (sy1 && sy1->mi_type == MiTy_Symbole);
+      assert (sy2 && sy2->mi_type == MiTy_Symbole);
+      assert (nbin<ta);
+      int cmp = mi_cmp_symbole(sy1, sy2);
+      if (cmp<0) i1++;
+      else if (cmp>0) i2++;
+      else
+        {
+          assert (sy1==sy2);
+          tab[nbin++] = sy1;
+          i1++, i2++;
+        }
+    }
+  if (nbin==0)
+    {
+      free (tab);
+      return mi_ensemble_vide();
+    }
+  Mit_Ensemble*enr = mi_allouer_valeur(MiTy_Ensemble,
+                                       sizeof(Mit_Ensemble)+nbin*sizeof(Mit_Symbole*));
+  enr->mi_taille = nbin;
+  if (nbin>0)
+    memcpy (enr->mi_elements, tab, nbin*sizeof(Mit_Symbole*));
+  mi_calculer_hash_ensemble(enr);
+  free(tab);
+  return enr;
+} /* fin mi_ensemble_intersection */

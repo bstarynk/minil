@@ -379,6 +379,10 @@ const Mit_Noeud *mi_creer_noeud (const Mit_Symbole *consymb, unsigned arite,
 const Mit_Noeud *mi_creer_noeud_va (const Mit_Symbole *consymb,
                                     unsigned arite, ...);
 
+const Mit_Ensemble*
+mi_ensemble_union(const Mit_Ensemble*en1, const Mit_Ensemble*en2);
+const Mit_Ensemble*
+mi_ensemble_intersection(const Mit_Ensemble*en1, const Mit_Ensemble*en2);
 
 // hash code d'une chaine
 unsigned mi_hashage_chaine (const char *ch);
