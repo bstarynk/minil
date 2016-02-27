@@ -520,6 +520,10 @@ void mi_sauvegarde_oublier (struct Mi_Sauvegarde_st *sv,
                             const Mit_Symbole *sy);
 void mi_sauvegarde_finir (struct Mi_Sauvegarde_st *sv);
 
+
+/// charger l'état depuis un répertoire
+void mi_charger_etat(const char*rep);
+
 // serialiser une valeur en JSON
 json_t *mi_json_val (struct Mi_Sauvegarde_st *sv, const Mit_Val v);
 // serialiser le contenu d'un symbole en JSON

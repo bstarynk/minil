@@ -24,8 +24,16 @@ const struct option minil_options[] =
 {
   {"--help", no_argument, NULL, 'h'},
   {"--version", no_argument, NULL, 'V'},
+  {"--sauvegarde", required_argument, NULL, 'S'},
+  {"--charge", required_argument, NULL, 'c'},
+  {"--oublier", required_argument, NULL, 'O'},
   {NULL, 0, NULL, 0}
 };
+
+// les répertoires de chargement et de sauvegarde
+static const char*mi_repcharge;
+static const char*mi_repsauve;
+struct Mi_Sauvegarde_st *mi_sauv;
 
 /// affiche l'usage, doit correspondre à minil_options
 static void
@@ -34,13 +42,17 @@ mi_usage (const char *nomprog)
   printf ("usage de %s, un mini interprète\n", nomprog);
   printf (" --help | -h #message d'aide\n");
   printf (" --version | -V #donne la version\n");
+  printf (" --charge | -c <repertoire> #charger l'état\n");
+  printf (" --sauvegarde | -S <repertoire> #sauvegarder l'état\n");
+  printf (" --oublier | -O <symbole> #oublier un symbole\n");
 }
 
 static void
 mi_arguments_programme (int argc, char **argv)
 {
   int ch = 0;
-  while ((ch = getopt_long (argc, argv, "hV", minil_options, NULL)) > 0)
+  while ((ch = getopt_long (argc, argv, "hVc:S:O:",
+                            minil_options, NULL)) > 0)
     {
       switch (ch)
         {
@@ -52,6 +64,23 @@ mi_arguments_programme (int argc, char **argv)
                   argv[0], minil_timestamp, minil_lastgitcommit,
                   minil_checksum);
           exit (EXIT_SUCCESS);
+          break;
+        case 'c': // --charge <rep>
+          mi_repcharge = optarg;
+          mi_charger_etat(optarg);
+          break;
+        case 'S': // --sauvegarde <rep>
+          mi_repsauve = optarg;
+          mi_sauv = calloc(1, sizeof(struct Mi_Sauvegarde_st));
+          if (!mi_sauv)
+            MI_FATALPRINTF("impossible de créer la sauvegarde (%s)",
+                           strerror(errno));
+          mi_sauvegarde_init(mi_sauv, mi_repsauve);
+          break;
+        case 'O':
+          if (!mi_sauv)
+            MI_FATALPRINTF("option de --sauvegarde <répertoire> manquante avant --oubli %s", optarg);
+#warning oubli non traite
           break;
         }
     }
@@ -126,12 +155,17 @@ mi_nombre_premier_avant (unsigned i)
   return 0;
 }				// fin mi_nombre_premier_avant
 
+
+
 static void mi_initialiser_predefinis (void);
+
 int
 main (int argc, char **argv)
 {
-  mi_arguments_programme (argc, argv);
   mi_initialiser_predefinis ();
+  mi_arguments_programme (argc, argv);
+  if (mi_sauv)
+    mi_sauvegarde_finir(mi_sauv);
 }				// fin de main
 
 /// declarer les prédéfinis
