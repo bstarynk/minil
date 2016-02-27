@@ -174,6 +174,7 @@ struct MiSt_Symbole_st
   bool mi_marq;
   unsigned mi_hash;
   unsigned mi_indice;
+  bool mi_predef;
   const Mit_Chaine *mi_nom;
   struct Mi_Assoc_st *mi_attrs;
   struct Mi_Vecteur_st *mi_comps;

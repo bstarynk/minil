@@ -306,25 +306,37 @@ mi_remplir_symbole_json (const json_t *j)
     }
 }				// fin mi_remplir_symbole_json
 
+
+
+// la longueur maximale d'un nom de fichier
+// ce n'est pas une bonne idée,
+// .... voir http://programmers.stackexchange.com/a/289441/40065
+#define MI_NOMFICHMAX 384
+
 void
-mi_sauvegarde_init (struct Mi_Sauvegarde_st *sv, const char *dir)
+mi_sauvegarde_init (struct Mi_Sauvegarde_st *sv, const char *rep)
 {
   assert (sv != NULL);
-  assert (dir != NULL);
-  if (access (dir, F_OK))
+  assert (rep != NULL);
+  if (strlen (rep) > 2 * MI_NOMFICHMAX / 3)
+    MI_FATALPRINTF ("nom de répertoire '%s' trop long (> %d)",
+                    rep, 2 * MI_NOMFICHMAX / 3);
+  if (!rep[0])
+    rep = ".";
+  if (access (rep, F_OK))
     {
-      if (mkdir (dir, 0750))
+      if (mkdir (rep, 0750))
         MI_FATALPRINTF ("impossible de créer le répertoire %s (%s)",
-                        dir, strerror (errno));
+                        rep, strerror (errno));
     }
   memset (sv, 0, sizeof (*sv));
   sv->sv_magiq = MI_SAUVEGARDE_NMAGIQ;
   mi_enshash_initialiser (&sv->sv_syoubli, 5);
   mi_enshash_initialiser (&sv->sv_syconnu, 100);
-  sv->sv_rep = strdup (dir);
+  sv->sv_rep = strdup (rep);
   if (!sv->sv_rep)
     MI_FATALPRINTF ("mémoire pleine, impossible de dupliquer %s (%s)",
-                    dir, strerror (errno));
+                    rep, strerror (errno));
 }
 
 void
@@ -490,6 +502,45 @@ mi_traitersymboleprimairesv (const Mit_Symbole *sy, void *client)
   return false;
 }
 
+static bool
+mi_ecrirecontenusymbole (const Mit_Symbole *sy, void *client)
+{
+  struct Mi_Sauvegarde_st *sv = client;
+  assert (sy && sy->mi_type == MiTy_Symbole);
+  assert (sv != NULL && sv->sv_magiq == MI_SAUVEGARDE_NMAGIQ);
+  unsigned h = sy->mi_hash;
+  char nomfich[MI_NOMFICHMAX];
+  char sufind[16];
+  snprintf (nomfich, sizeof (nomfich), "%s/data%02d", sv->sv_rep, h % 100);
+  if (access (nomfich, F_OK))
+    {
+      if (mkdir (nomfich, 0750))
+        MI_FATALPRINTF ("impossible de créer sous-répertoire %s (%s)",
+                        nomfich, strerror (errno));
+    }
+  snprintf (nomfich, sizeof (nomfich), "%s/data%02d/%s%s.json",
+            sv->sv_rep, h % 100, mi_symbole_chaine (sy),
+            mi_symbole_indice_ch (sufind, sy));
+  if (access (nomfich, F_OK))
+    {
+      char nomvieux[MI_NOMFICHMAX];
+      snprintf (nomvieux, sizeof (nomvieux), "%s~", nomfich);
+      rename (nomfich, nomvieux);
+    }
+  FILE *fich = fopen (nomfich, "w");
+  if (!fich)
+    MI_FATALPRINTF ("impossible d'écrire le fichier %s (%s)",
+                    nomfich, strerror (errno));
+  json_t *j = mi_json_contenu_symbole (sv, sy);
+  assert (json_is_object (j));
+  if (json_dumpf
+      (j, fich, JSON_INDENT (1) | JSON_ENSURE_ASCII | JSON_SORT_KEYS))
+    MI_FATALPRINTF ("échec d'écriture de JSON dans %s", nomfich);
+  fputc ('\n', fich);
+  fclose (fich);
+  return false;
+}				// fin mi_ecrirecontenusymbole
+
 void
 mi_sauvegarde_finir (struct Mi_Sauvegarde_st *sv)
 {
@@ -513,6 +564,61 @@ mi_sauvegarde_finir (struct Mi_Sauvegarde_st *sv)
       free (sq);
     }
   assert (sv->sv_tet == NULL && sv->sv_que == NULL);
-  // faut parcourir la queue et appeler mi_sauvegarde_balayer_contenu_symbole
-#warning mi_sauvegarde_finir incomplet
-}
+  mi_enshash_iterer (&sv->sv_syconnu, mi_ecrirecontenusymbole, sv);
+  // ecrire la liste des symboles connus
+  const Mit_Ensemble *ensy = mi_creer_ensemble_enshash (&sv->sv_syconnu);
+  assert (ensy && ensy->mi_type == MiTy_Ensemble);
+  char nomfic[MI_NOMFICHMAX];
+  FILE *fs = NULL;
+  snprintf (nomfic, sizeof (nomfic), "%s/symbolist", sv->sv_rep);
+  if (!access (nomfic, R_OK))
+    {
+      char nomanc[MI_NOMFICHMAX];
+      snprintf (nomanc, sizeof (nomanc), "%s~", nomfic);
+      rename (nomfic, nomanc);
+    }
+  fs = fopen (nomfic, "w");
+  mi_emettre_notice_gplv3 (fs, "# ", "", "symbolist");
+  for (unsigned ix = 0; ix < ensy->mi_taille; ix++)
+    {
+      char tampsuf[16];
+      const Mit_Symbole *syel = ensy->mi_elements[ix];
+      assert (syel && syel->mi_type == MiTy_Symbole);
+      fprintf (fs, "%s%s\n",
+               mi_symbole_chaine (syel),
+               mi_symbole_indice_ch (tampsuf,     syel));
+    }
+  fprintf (fs, "# fin %d symboles\n", ensy->mi_taille);
+  fclose (fs), fs = NULL;
+  // écrire le fichier d'entête pour les symboles prédéfinis
+  snprintf (nomfic, sizeof (nomfic), "%s/_mi_predef.h", sv->sv_rep);
+  if (!access (nomfic, R_OK))
+    {
+      char nomanc[MI_NOMFICHMAX];
+      snprintf (nomanc, sizeof (nomanc), "%s~", nomfic);
+      rename (nomfic, nomanc);
+    }
+  fs = fopen (nomfic, "w");
+  int nbpredef = 0;
+  mi_emettre_notice_gplv3 (fs, "/// ", "", "_mi_predef.h");
+  fprintf (fs, "\n#ifndef MI_TRAITER_PREDEFINI\n"
+           "#error " "MI_TRAITER_PREDEFINI indefini\n" "#endif \n");
+  for (unsigned ix = 0; ix < ensy->mi_taille; ix++)
+    {
+      char tampsuf[16];
+      const Mit_Symbole *syel = ensy->mi_elements[ix];
+      assert (syel && syel->mi_type == MiTy_Symbole);
+      if (!syel->mi_predef)
+        continue;
+      fprintf(fs, "MI_TRAITER_PREDEFINI(%s%s,%u)\n",
+              mi_symbole_chaine (syel),
+              mi_symbole_indice_ch (tampsuf,syel),
+              syel->mi_hash);
+      nbpredef++;
+    }
+  fprintf (fs, "\n#undef MI_NB_PREDEFINIS\n"
+           "\n#define MI_NB_PREDEFINIS %d\n",
+           nbpredef);
+  fprintf(fs, "// fin fichier _mi_predef.h\n");
+  fclose(fs), fs=NULL;
+}				/* fin mi_sauvegarde_finir */
