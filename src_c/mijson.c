@@ -238,10 +238,11 @@ mi_json_contenu_symbole (struct Mi_Sauvegarde_st *sv, const Mit_Symbole *sy)
       struct Mi_trouve_st tr = mi_assoc_chercher (sy->mi_attrs, syat);
       if (!tr.t_pres)
         continue;
-      json_t *jent =
-        json_pack ("{soso}", "at",
-                   mi_json_val (sv, MI_SYMBOLEV ((Mit_Symbole *) syat)),
-                   "va", mi_json_val (sv, tr.t_val));
+      json_t *jent = json_pack ("{soso}", "at",
+                                mi_json_val (sv,
+                                             MI_SYMBOLEV ((Mit_Symbole *)
+                                                 syat)),
+                                "va", mi_json_val (sv, tr.t_val));
 
       json_array_append_new (jattrs, jent);
     };
@@ -446,14 +447,26 @@ mi_sauvegarde_balayer (struct Mi_Sauvegarde_st *sv, const Mit_Val v)
 }				/* fin mi_sauvegarde_balayer */
 
 static bool
-mi_sauvassocsy (const Mit_Symbole*sy, const Mit_Val va, void*client)
+mi_sauvassocsy (const Mit_Symbole *sy, const Mit_Val va, void *client)
 {
-  struct Mi_Sauvegarde_st* sv = client;
+  struct Mi_Sauvegarde_st *sv = client;
   assert (sv && sv->sv_magiq == MI_SAUVEGARDE_NMAGIQ);
-  if (mi_sauvegarde_symbole_oublie(sv, sy)) return false;
-  mi_sauvegarde_symbole(sv, sy);
-  mi_sauvegarde_balayer(sv, va);
+  if (mi_sauvegarde_symbole_oublie (sv, sy))
+    return false;
+  mi_sauvegarde_symbole (sv, sy);
+  mi_sauvegarde_balayer (sv, va);
   return false;
+}
+
+static bool
+mi_sauvcomp (const Mit_Val va, unsigned ix, void *client)
+{
+  struct Mi_Sauvegarde_st *sv = client;
+  assert (sv && sv->sv_magiq == MI_SAUVEGARDE_NMAGIQ);
+  assert (ix < INT_MAX / 2);
+  mi_sauvegarde_balayer (sv, va);
+  return false;
+
 }
 
 static void
@@ -461,16 +474,13 @@ mi_sauvegarde_balayer_contenu_symbole (struct Mi_Sauvegarde_st *sv,
                                        const Mit_Symbole *sy)
 {
   assert (sv != NULL && sv->sv_magiq == MI_SAUVEGARDE_NMAGIQ);
-  assert (sy != NULL && sy != MI_TROU_SYMBOLE
-          && sy->mi_type == MiTy_Symbole);
+  assert (sy != NULL && sy != MI_TROU_SYMBOLE && sy->mi_type == MiTy_Symbole);
   if (mi_sauvegarde_symbole_oublie (sv, sy))
     return;
   if (sy->mi_attrs)
-    mi_assoc_iterer(sy->mi_attrs, mi_sauvassocsy, sv);
-#warning mi_sauvegarde_balayer_contenu_symbole incomplet
+    mi_assoc_iterer (sy->mi_attrs, mi_sauvassocsy, sv);
   if (sy->mi_comps)
-    {
-    }
+    mi_vecteur_iterer (sy->mi_comps, mi_sauvcomp, sv);
 }				/* fin mi_sauvegarde_balayer_contenu_symbole */
 
 static bool
@@ -485,6 +495,24 @@ mi_sauvegarde_finir (struct Mi_Sauvegarde_st *sv)
 {
   assert (sv != NULL && sv->sv_magiq == MI_SAUVEGARDE_NMAGIQ);
   mi_iterer_symbole_primaire (mi_traitersymboleprimairesv, sv);
+  while (sv->sv_tet != NULL)
+    {
+      struct Mi_Queuesauve_st *sq = sv->sv_tet;
+      if (sv->sv_tet == sv->sv_que)
+        sv->sv_tet = sv->sv_que = NULL;
+      else
+        sv->sv_tet = sq->q_suiv;
+      sq->q_suiv = NULL;
+      for (unsigned ix = 0; ix < MI_QUEUE_LONG_ELEM; ix++)
+        {
+          const Mit_Symbole *sy = sq->q_symb[ix];
+          sq->q_symb[ix] = NULL;
+          if (sy && sy != MI_TROU_SYMBOLE)
+            mi_sauvegarde_balayer_contenu_symbole (sv, sy);
+        }
+      free (sq);
+    }
+  assert (sv->sv_tet == NULL && sv->sv_que == NULL);
   // faut parcourir la queue et appeler mi_sauvegarde_balayer_contenu_symbole
 #warning mi_sauvegarde_finir incomplet
 }

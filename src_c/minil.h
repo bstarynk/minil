@@ -31,6 +31,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistr.h>		// GNU libunistring
 #include <readline/readline.h>	// GNU readline
 #include <jansson.h>		// JSON parsing library
@@ -86,7 +87,7 @@ union MiSt_Val_un
   const Mit_Entier *miva_ent;
   const Mit_Double *miva_dbl;
   const Mit_Chaine *miva_chn;
-  const Mit_Ensemble* miva_ens;
+  const Mit_Ensemble *miva_ens;
   const Mit_Noeud *miva_noe;
   Mit_Symbole *miva_sym;
 };
@@ -146,7 +147,7 @@ struct MiSt_Ensemble_st
   bool mi_marq;
   unsigned mi_hash;
   unsigned mi_taille;
-  Mit_Symbole*mi_elements[];
+  Mit_Symbole *mi_elements[];
 };
 // Une valeur noeud a un type, une marque, une connective, une arité, des fils
 // C'est la seule valeur composite....
@@ -178,8 +179,8 @@ struct MiSt_Symbole_st
   struct Mi_Vecteur_st *mi_comps;
 };
 
-int mi_cmp_symbole(const Mit_Symbole*sy1, const Mit_Symbole*sy2);
-int mi_cmp_symboleptr(const void*, const void*); // pour qsort
+int mi_cmp_symbole (const Mit_Symbole *sy1, const Mit_Symbole *sy2);
+int mi_cmp_symboleptr (const void *, const void *);	// pour qsort
 
 // aussi bien dans la table des symboles que dans les associations
 // on a besoin d'un trou qui ne soit pas nil. Aucune fonction publique
@@ -313,32 +314,34 @@ mi_fils_noeud (const Mit_Noeud *nd, int rg, const Mit_Val def)
     return def;
   unsigned ar = nd->mi_arite;
   if (rg < 0)
-    rg += (int)ar;
+    rg += (int) ar;
   if (rg >= 0 && rg < (int) ar)
     return nd->mi_fils[rg];
   return def;
 }
 
 static inline unsigned
-mi_cardinal_ensemble (const Mit_Ensemble*en)
+mi_cardinal_ensemble (const Mit_Ensemble * en)
 {
   if (!en || en->mi_type != MiTy_Ensemble)
     return 0;
   return en->mi_taille;
 }
 
-static inline Mit_Symbole*
-mi_ensemble_nieme(const Mit_Ensemble*en, int n)
+static inline Mit_Symbole *
+mi_ensemble_nieme (const Mit_Ensemble * en, int n)
 {
   if (!en || en->mi_type != MiTy_Ensemble)
     return NULL;
   unsigned ca = en->mi_taille;
-  if (n<(int)ca) n += (int)ca;
-  if (n>=0 && n<(int)ca) return en->mi_elements[n];
+  if (n < (int) ca)
+    n += (int) ca;
+  if (n >= 0 && n < (int) ca)
+    return en->mi_elements[n];
   return NULL;
 }
 
-static inline const Mit_Ensemble*
+static inline const Mit_Ensemble *
 mi_vald_ensemble (const Mit_Val v)
 {
   if (mi_vtype (v) == MiTy_Ensemble)
@@ -346,7 +349,7 @@ mi_vald_ensemble (const Mit_Val v)
   return NULL;
 }
 
-bool mi_ensemble_contient(const Mit_Ensemble*en, const Mit_Symbole*sy);
+bool mi_ensemble_contient (const Mit_Ensemble * en, const Mit_Symbole *sy);
 
 /// ensemble de hash, alloué sur la pile
 struct Mi_EnsHash_st
@@ -354,25 +357,29 @@ struct Mi_EnsHash_st
   unsigned eh_magiq;
   unsigned eh_taille;
   unsigned eh_compte;
-  const Mit_Symbole**eh_table;
+  const Mit_Symbole **eh_table;
 };
-void mi_enshash_initialiser(struct Mi_EnsHash_st*eh, unsigned nb);
-void mi_enshash_reserver(struct Mi_EnsHash_st*eh, unsigned nb);
-void mi_enshash_detruire(struct Mi_EnsHash_st*eh);
-void mi_enshash_ajouter(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy);
-void mi_enshash_ajouter_valeur(struct Mi_EnsHash_st*eh, const Mit_Val va);
-void mi_enshash_oter(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy);
-bool mi_enshash_contient(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy);
+void mi_enshash_initialiser (struct Mi_EnsHash_st *eh, unsigned nb);
+void mi_enshash_reserver (struct Mi_EnsHash_st *eh, unsigned nb);
+void mi_enshash_detruire (struct Mi_EnsHash_st *eh);
+void mi_enshash_ajouter (struct Mi_EnsHash_st *eh, const Mit_Symbole *sy);
+void mi_enshash_ajouter_valeur (struct Mi_EnsHash_st *eh, const Mit_Val va);
+void mi_enshash_oter (struct Mi_EnsHash_st *eh, const Mit_Symbole *sy);
+bool mi_enshash_contient (struct Mi_EnsHash_st *eh, const Mit_Symbole *sy);
 /// la fonction d'iteration renvoie true pour arrêter l'itération
-typedef bool mi_itersymb_sigt (const Mit_Symbole*sy, void*client);
-void mi_enshash_iterer(struct Mi_EnsHash_st*eh, mi_itersymb_sigt*f, void*client);
+typedef bool mi_itersymb_sigt (const Mit_Symbole *sy, void *client);
+void mi_enshash_iterer (struct Mi_EnsHash_st *eh, mi_itersymb_sigt * f,
+                        void *client);
 
-const Mit_Ensemble* mi_creer_ensemble_enshash(struct Mi_EnsHash_st*eh);
-const Mit_Ensemble* mi_creer_ensemble_symboles(unsigned nb, const Mit_Symbole**tab);
-const Mit_Ensemble* mi_creer_ensemble_valeurs(unsigned nb, const Mit_Val*tabval);
-const Mit_Ensemble* mi_creer_ensemble_varsym(unsigned nb, ...);
-const Mit_Ensemble* mi_creer_ensemble_varval(unsigned nb, ...);
-void mi_ensemble_iterer(const Mit_Ensemble*en, mi_itersymb_sigt*f, void*client);
+const Mit_Ensemble *mi_creer_ensemble_enshash (struct Mi_EnsHash_st *eh);
+const Mit_Ensemble *mi_creer_ensemble_symboles (unsigned nb,
+    const Mit_Symbole **tab);
+const Mit_Ensemble *mi_creer_ensemble_valeurs (unsigned nb,
+    const Mit_Val *tabval);
+const Mit_Ensemble *mi_creer_ensemble_varsym (unsigned nb, ...);
+const Mit_Ensemble *mi_creer_ensemble_varval (unsigned nb, ...);
+void mi_ensemble_iterer (const Mit_Ensemble * en, mi_itersymb_sigt * f,
+                         void *client);
 
 
 
@@ -382,10 +389,10 @@ const Mit_Noeud *mi_creer_noeud (const Mit_Symbole *consymb, unsigned arite,
 const Mit_Noeud *mi_creer_noeud_va (const Mit_Symbole *consymb,
                                     unsigned arite, ...);
 
-const Mit_Ensemble*
-mi_ensemble_union(const Mit_Ensemble*en1, const Mit_Ensemble*en2);
-const Mit_Ensemble*
-mi_ensemble_intersection(const Mit_Ensemble*en1, const Mit_Ensemble*en2);
+const Mit_Ensemble *mi_ensemble_union (const Mit_Ensemble * en1,
+                                       const Mit_Ensemble * en2);
+const Mit_Ensemble *mi_ensemble_intersection (const Mit_Ensemble * en1,
+    const Mit_Ensemble * en2);
 
 // hash code d'une chaine
 unsigned mi_hashage_chaine (const char *ch);
@@ -401,15 +408,16 @@ Mit_Symbole *mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind);
 Mit_Symbole *mi_creer_symbole_chaine (const char *ch, unsigned ind);
 
 /// itérer sur chaque symbole primaire
-void mi_iterer_symbole_primaire(mi_itersymb_sigt*f, void*client);
+void mi_iterer_symbole_primaire (mi_itersymb_sigt * f, void *client);
 /// itérer sur chaque symbole primaire ou secondaire de nom donné
-void mi_iterer_symbole_nomme(const char*ch, mi_itersymb_sigt*f, void*client);
+void mi_iterer_symbole_nomme (const char *ch, mi_itersymb_sigt * f,
+                              void *client);
 
 static inline const char *
 mi_symbole_chaine (const Mit_Symbole *sy)
 {
   if (sy && sy->mi_type == MiTy_Symbole)
-    return mi_vald_chaine (MI_CHAINEV(sy->mi_nom), NULL);
+    return mi_vald_chaine (MI_CHAINEV (sy->mi_nom), NULL);
   return NULL;
 }
 
@@ -433,42 +441,51 @@ mi_symbole_indice_ch (char tamp[16], const Mit_Symbole *sy)
 }
 
 static inline unsigned
-mi_hashage_symbole(const Mit_Symbole*sy)
+mi_hashage_symbole (const Mit_Symbole *sy)
 {
-  if (!sy || sy->mi_type != MiTy_Symbole) return 0;
+  if (!sy || sy->mi_type != MiTy_Symbole)
+    return 0;
 }
 
 
 //// le type abstrait des associations entre symbole et valeur -quelconque-
 //// On distingue la valeur nulle de l'absence de valeur
 // reserver de la place, ou bien allouer
-struct Mi_Assoc_st*mi_assoc_reserver(struct Mi_Assoc_st*a, unsigned nb);
+struct Mi_Assoc_st *mi_assoc_reserver (struct Mi_Assoc_st *a, unsigned nb);
 // mettre une entrée
-struct Mi_Assoc_st*mi_assoc_mettre(struct Mi_Assoc_st*a, const Mit_Symbole* sy, const Mit_Val va);
+struct Mi_Assoc_st *mi_assoc_mettre (struct Mi_Assoc_st *a,
+                                     const Mit_Symbole *sy, const Mit_Val va);
 // supprimer une entrée
-struct Mi_Assoc_st*mi_assoc_enlever(struct Mi_Assoc_st*a, const Mit_Symbole*sy);
+struct Mi_Assoc_st *mi_assoc_enlever (struct Mi_Assoc_st *a,
+                                      const Mit_Symbole *sy);
 // chercher une valeur, donc renvoyer la valeur et un drapeau de présence
 struct Mi_trouve_st
 {
   Mit_Val t_val;
   bool t_pres;
 };
-struct Mi_trouve_st mi_assoc_chercher(const struct Mi_Assoc_st*a, const Mit_Symbole*sy);
+struct Mi_trouve_st mi_assoc_chercher (const struct Mi_Assoc_st *a,
+                                       const Mit_Symbole *sy);
 /// la fonction d'iteration renvoie true pour arrêter l'itération
-typedef bool mi_assoc_sigt (const Mit_Symbole*sy, const Mit_Val va, void*client);
-unsigned mi_assoc_taille(const struct Mi_Assoc_st*a);
-void mi_assoc_iterer(const struct Mi_Assoc_st*a, mi_assoc_sigt*f, void*client);
+typedef bool mi_assoc_sigt (const Mit_Symbole *sy, const Mit_Val va,
+                            void *client);
+unsigned mi_assoc_taille (const struct Mi_Assoc_st *a);
+void mi_assoc_iterer (const struct Mi_Assoc_st *a, mi_assoc_sigt * f,
+                      void *client);
 
 
 //// le type abstrait des vecteurs
-struct Mi_Vecteur_st*mi_vecteur_reserver(struct Mi_Vecteur_st*v, unsigned nb);
-struct Mi_Vecteur_st*mi_vecteur_ajouter(struct Mi_Vecteur_st*v, const Mit_Val va);
-struct Mi_trouve_st mi_vecteur_comp(struct Mi_Vecteur_st*v, int rang);
-void mi_vecteur_mettre(struct Mi_Vecteur_st*v, int rank, const Mit_Val va);
-unsigned mi_vecteur_taille (const struct Mi_Vecteur_st*v);
+struct Mi_Vecteur_st *mi_vecteur_reserver (struct Mi_Vecteur_st *v,
+    unsigned nb);
+struct Mi_Vecteur_st *mi_vecteur_ajouter (struct Mi_Vecteur_st *v,
+    const Mit_Val va);
+struct Mi_trouve_st mi_vecteur_comp (struct Mi_Vecteur_st *v, int rang);
+void mi_vecteur_mettre (struct Mi_Vecteur_st *v, int rank, const Mit_Val va);
+unsigned mi_vecteur_taille (const struct Mi_Vecteur_st *v);
 /// la fonction d'iteration renvoie true pour arrêter l'itération
-typedef bool mi_vect_sigt(const Mit_Val va, unsigned ix, void*client);
-void mi_vecteur_iterer(const struct Mi_Vecteur_st*v, mi_vect_sigt*f, void*client);
+typedef bool mi_vect_sigt (const Mit_Val va, unsigned ix, void *client);
+void mi_vecteur_iterer (const struct Mi_Vecteur_st *v, mi_vect_sigt * f,
+                        void *client);
 
 //// sérialisation en JSON
 //
@@ -477,36 +494,46 @@ void mi_vecteur_iterer(const struct Mi_Vecteur_st*v, mi_vect_sigt*f, void*client
 #define MI_QUEUE_LONG_ELEM 15
 struct Mi_Queuesauve_st
 {
-  struct Mi_Queuesauve_st*q_suiv;
-  const Mit_Symbole*q_symb[MI_QUEUE_LONG_ELEM];
+  struct Mi_Queuesauve_st *q_suiv;
+  const Mit_Symbole *q_symb[MI_QUEUE_LONG_ELEM];
 };
 
-struct Mi_Sauvegarde_st  	  /* à allouer sur la pile */
+struct Mi_Sauvegarde_st		/* à allouer sur la pile */
 {
   unsigned sv_magiq;
   struct Mi_EnsHash_st sv_syoubli;
   struct Mi_EnsHash_st sv_syconnu;
-  const char*sv_rep;		  // repertoire de sauvegarde
-  struct Mi_Queuesauve_st*sv_tet; // tête des symboles à parcourir
-  struct Mi_Queuesauve_st*sv_que; // queue des symboles à parcourir
+  const char *sv_rep;		// repertoire de sauvegarde
+  struct Mi_Queuesauve_st *sv_tet;	// tête des symboles à parcourir
+  struct Mi_Queuesauve_st *sv_que;	// queue des symboles à parcourir
 };
-void mi_sauvegarde_init(struct Mi_Sauvegarde_st*sv, const char*dir);
+void mi_sauvegarde_init (struct Mi_Sauvegarde_st *sv, const char *dir);
 
-void mi_sauvegarde_symbole(struct Mi_Sauvegarde_st*sv, const Mit_Symbole*sy);
-bool mi_sauvegarde_symbole_oublie(struct Mi_Sauvegarde_st*sv, const Mit_Symbole*sy);
-bool mi_sauvegarde_symbole_connu(struct Mi_Sauvegarde_st*sv, const Mit_Symbole*sy);
-void mi_sauvegarde_oublier(struct Mi_Sauvegarde_st*sv, const Mit_Symbole*sy);
-void mi_sauvegarde_finir(struct Mi_Sauvegarde_st*sv);
+void mi_sauvegarde_symbole (struct Mi_Sauvegarde_st *sv,
+                            const Mit_Symbole *sy);
+bool mi_sauvegarde_symbole_oublie (struct Mi_Sauvegarde_st *sv,
+                                   const Mit_Symbole *sy);
+bool mi_sauvegarde_symbole_connu (struct Mi_Sauvegarde_st *sv,
+                                  const Mit_Symbole *sy);
+void mi_sauvegarde_oublier (struct Mi_Sauvegarde_st *sv,
+                            const Mit_Symbole *sy);
+void mi_sauvegarde_finir (struct Mi_Sauvegarde_st *sv);
 
 // serialiser une valeur en JSON
-json_t *mi_json_val (struct Mi_Sauvegarde_st*sv, const Mit_Val v);
+json_t *mi_json_val (struct Mi_Sauvegarde_st *sv, const Mit_Val v);
 // serialiser le contenu d'un symbole en JSON
-json_t *mi_json_contenu_symbole (struct Mi_Sauvegarde_st*sv, const Mit_Symbole*sy);
+json_t *mi_json_contenu_symbole (struct Mi_Sauvegarde_st *sv,
+                                 const Mit_Symbole *sy);
 
 // construire une valeur à partir d'un JSON
-Mit_Val mi_val_json (const json_t * j);
+Mit_Val mi_val_json (const json_t *j);
 // remplir un symbole à partir de son contenu
-void mi_remplir_symbole_json (const json_t*j);
+void mi_remplir_symbole_json (const json_t *j);
+
+/// emettre la notice de copyright GPLv3
+void
+mi_emettre_notice_gplv3 (FILE * fichier, const char *prefixe,
+                         const char *suffixe, const char *nomfich);
 
 #define MI_PREDEFINI(Nom) mipred_##Nom
 #define MI_TRAITER_PREDEFINI(Nom,Hash) extern Mit_Symbole*MI_PREDEFINI(Nom);

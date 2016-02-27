@@ -92,7 +92,7 @@ mi_creer_noeud (const Mit_Symbole *consymb, unsigned arite,
     return NULL;
   if (arite >= MI_MAXARITE)
     MI_FATALPRINTF ("arite trop grande %u pour noeud %s",
-                    arite, mi_val_chaine (MI_CHAINEV(consymb->mi_nom)));
+                    arite, mi_val_chaine (MI_CHAINEV (consymb->mi_nom)));
   Mit_Noeud *valnd =		//
     mi_allouer_valeur (MiTy_Noeud,
                        sizeof (Mit_Noeud) + arite * sizeof (Mit_Val));

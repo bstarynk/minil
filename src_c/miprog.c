@@ -126,8 +126,7 @@ mi_nombre_premier_avant (unsigned i)
   return 0;
 }				// fin mi_nombre_premier_avant
 
-static void
-mi_initialiser_predefinis(void);
+static void mi_initialiser_predefinis (void);
 int
 main (int argc, char **argv)
 {
@@ -140,7 +139,8 @@ main (int argc, char **argv)
 #include "_mi_predef.h"
 
 
-void mi_initialiser_predefinis(void)
+void
+mi_initialiser_predefinis (void)
 {
 #define MI_TRAITER_PREDEFINI(Nom,Hash) do {				\
     MI_PREDEFINI(Nom) =							\
@@ -152,3 +152,60 @@ void mi_initialiser_predefinis(void)
   } while(0);
 #include "_mi_predef.h"
 }
+
+
+void
+mi_emettre_notice_gplv3 (FILE * fichier, const char *prefixe,
+                         const char *suffixe, const char *nomfich)
+{
+  time_t maintenant = 0;
+  time (&maintenant);
+  struct tm maintenanttm;
+  memset (&maintenanttm, 0, sizeof (maintenanttm));
+  localtime_r (&maintenant, &maintenanttm);
+  if (!prefixe)
+    prefixe = "";
+  if (!suffixe)
+    suffixe = "";
+  fprintf (fichier, "%s *** generated file %s - DO NOT EDIT %s\n", prefixe,
+           nomfich, suffixe);
+  fprintf (fichier,
+           "%s Copyright (C) %d Basile Starynkevitch. %s\n",
+           prefixe, 1900 + maintenanttm.tm_year, suffixe);
+  fprintf (fichier,
+           "%s This generated file %s is part of Minil %s\n",
+           prefixe, nomfich, suffixe);
+  fprintf (fichier, "%s%s\n", prefixe, suffixe);
+  fprintf (fichier,
+           "%s Minil is free software; you can redistribute it and/or modify %s\n",
+           prefixe, suffixe);
+  fprintf (fichier,
+           "%s it under the terms of the GNU General Public License as published by %s\n",
+           prefixe, suffixe);
+  fprintf (fichier,
+           "%s the Free Software Foundation; either version 3, or (at your option) %s\n",
+           prefixe, suffixe);
+  fprintf (fichier, "%s any later version. %s\n", prefixe, suffixe);
+  fprintf (fichier, "%s%s\n", prefixe, suffixe);
+  fprintf (fichier,
+           "%s  Minil is distributed in the hope that it will be useful, %s\n",
+           prefixe, suffixe);
+  fprintf (fichier,
+           "%s  but WITHOUT ANY WARRANTY; without even the implied warranty of %s\n",
+           prefixe, suffixe);
+  fprintf (fichier,
+           "%s  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the %s\n",
+           prefixe, suffixe);
+  fprintf (fichier, "%s  GNU General Public License for more details. %s\n",
+           prefixe, suffixe);
+  fprintf (fichier,
+           "%s  You should have received a copy of the GNU General Public License %s\n",
+           prefixe, suffixe);
+  fprintf (fichier,
+           "%s  along with Minil; see the file COPYING3.   If not see %s\n",
+           prefixe, suffixe);
+  fprintf (fichier, "%s  <http://www.gnu.org/licenses/>. %s\n", prefixe,
+           suffixe);
+  fprintf (fichier, "%s%s\n", prefixe, suffixe);
+  fflush (fichier);
+}				/* fin mi_emettre_notice_gplv3 */

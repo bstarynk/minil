@@ -63,4 +63,4 @@ mi_allouer_valeur (enum mi_typeval_en typv, size_t tail)
   return ptr;
 }
 
-#warning le ramasse miettes ne doit pas libérer l'ensemble vide
+#warning le ramasse miettes ne doit pas libérer l ensemble vide
