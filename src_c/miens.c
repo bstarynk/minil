@@ -59,7 +59,7 @@ mi_ensemble_vide()
 
 const Mit_Ensemble* mi_creer_ensemble_enshash(struct Mi_EnsHash_st*eh)
 {
-  if (!eh || eh->eh_magic != MI_ENSHASH_NMAGIQ) return NULL;
+  if (!eh || eh->eh_magiq != MI_ENSHASH_NMAGIQ) return NULL;
   unsigned c= eh->eh_compte;
   unsigned t= eh->eh_taille;
   assert (c<t);
@@ -149,7 +149,7 @@ const Mit_Ensemble* mi_creer_ensemble_varval(unsigned nb, ...)
 } // fin mi_creer_ensemble_varval
 
 
-void mi_ensemble_iterer(const Mit_Ensemble*en, mi_ens_sigt*f, void*client);
+void mi_ensemble_iterer(const Mit_Ensemble*en, mi_itersymb_sigt*f, void*client);
 
 void mi_enshash_initialiser(struct Mi_EnsHash_st*eh, unsigned nb)
 {
@@ -161,7 +161,7 @@ void mi_enshash_initialiser(struct Mi_EnsHash_st*eh, unsigned nb)
                    nouvtail, strerror(errno));
   assert (eh != NULL);
   memset (eh, 0, sizeof(*eh));
-  eh->eh_magic = MI_ENSHASH_NMAGIQ;
+  eh->eh_magiq = MI_ENSHASH_NMAGIQ;
   eh->eh_compte = 0;
   eh->eh_taille = nouvtail;
   eh->eh_table = tabsy;
@@ -170,7 +170,7 @@ void mi_enshash_initialiser(struct Mi_EnsHash_st*eh, unsigned nb)
 static int mi_enshash_pos(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy)
 {
   int pos = -1;
-  assert (eh && eh->eh_magic == MI_ENSHASH_NMAGIQ);
+  assert (eh && eh->eh_magiq == MI_ENSHASH_NMAGIQ);
   assert (sy && sy->mi_type == MiTy_Symbole);
   unsigned h = sy->mi_hash;
   assert (h>0);
@@ -218,7 +218,7 @@ static int mi_enshash_pos(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy)
 
 void mi_enshash_reserver(struct Mi_EnsHash_st*eh, unsigned nb)
 {
-  if (!eh || eh->eh_magic != MI_ENSHASH_NMAGIQ) return;
+  if (!eh || eh->eh_magiq != MI_ENSHASH_NMAGIQ) return;
   unsigned t = eh->eh_taille;
   unsigned c = eh->eh_compte;
   if (5*(c+nb) + 3 >= 4*t || 3*(c+nb)+2 < t)
@@ -248,14 +248,14 @@ void mi_enshash_reserver(struct Mi_EnsHash_st*eh, unsigned nb)
 
 void mi_enshash_detruire(struct Mi_EnsHash_st*eh)
 {
-  assert (eh && eh->eh_magic == MI_ENSHASH_NMAGIQ);
+  assert (eh && eh->eh_magiq == MI_ENSHASH_NMAGIQ);
   free (eh->eh_table);
   memset (eh, 0, sizeof(*eh));
 }// fin mi_enshash_detruire
 
 void mi_enshash_ajouter(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy)
 {
-  if (!eh || eh->eh_magic != MI_ENSHASH_NMAGIQ) return;
+  if (!eh || eh->eh_magiq != MI_ENSHASH_NMAGIQ) return;
   if (!sy || sy == MI_TROU_SYMBOLE || sy->mi_type != MiTy_Symbole) return;
   unsigned t = eh->eh_taille;
   unsigned c = eh->eh_compte;
@@ -275,7 +275,7 @@ void mi_enshash_ajouter(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy)
 
 void mi_enshash_ajouter_valeur(struct Mi_EnsHash_st*eh, const Mit_Val va)
 {
-  if (!eh || eh->eh_magic != MI_ENSHASH_NMAGIQ) return;
+  if (!eh || eh->eh_magiq != MI_ENSHASH_NMAGIQ) return;
   switch (mi_vtype(va))
     {
     case MiTy_Symbole:
@@ -298,7 +298,7 @@ void mi_enshash_ajouter_valeur(struct Mi_EnsHash_st*eh, const Mit_Val va)
 void
 mi_enshash_oter(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy)
 {
-  if (!eh || eh->eh_magic != MI_ENSHASH_NMAGIQ) return;
+  if (!eh || eh->eh_magiq != MI_ENSHASH_NMAGIQ) return;
   if (!sy || sy==MI_TROU_SYMBOLE || sy->mi_type != MiTy_Symbole) return;
   int pos = mi_enshash_pos(eh, sy);
   if (pos>=0 && pos<(int)(eh->eh_taille) && eh->eh_table[pos]==sy)
@@ -313,7 +313,7 @@ mi_enshash_oter(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy)
 
 bool mi_enshash_contient(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy)
 {
-  if (!eh || eh->eh_magic != MI_ENSHASH_NMAGIQ) return false;
+  if (!eh || eh->eh_magiq != MI_ENSHASH_NMAGIQ) return false;
   if (!sy || sy==MI_TROU_SYMBOLE || sy->mi_type != MiTy_Symbole) return false;
   int pos = mi_enshash_pos(eh, sy);
   if (pos>=0 && pos<(int)(eh->eh_taille) && eh->eh_table[pos]==sy) return true;
@@ -321,9 +321,9 @@ bool mi_enshash_contient(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy)
 } // fin mi_enshash_contient
 
 
-void mi_enshash_iterer(struct Mi_EnsHash_st*eh, mi_ens_sigt*f, void*client)
+void mi_enshash_iterer(struct Mi_EnsHash_st*eh, mi_itersymb_sigt*f, void*client)
 {
-  if (!eh || eh->eh_magic != MI_ENSHASH_NMAGIQ || !f) return;
+  if (!eh || eh->eh_magiq != MI_ENSHASH_NMAGIQ || !f) return;
   unsigned t=eh->eh_taille;
   for (unsigned ix=0; ix<t; ix++)
     {
@@ -334,7 +334,7 @@ void mi_enshash_iterer(struct Mi_EnsHash_st*eh, mi_ens_sigt*f, void*client)
 } // fin mi_enshash_iterer
 
 
-void mi_ensemble_iterer(const Mit_Ensemble*en, mi_ens_sigt*f, void*client)
+void mi_ensemble_iterer(const Mit_Ensemble*en, mi_itersymb_sigt*f, void*client)
 {
   if (!en || en->mi_type != MiTy_Ensemble || !f) return;
   unsigned t = en->mi_taille;

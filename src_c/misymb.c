@@ -444,3 +444,69 @@ int mi_cmp_symboleptr(const void*p1, const void*p2)
   assert (p2 != NULL);
   return mi_cmp_symbole(*(const Mit_Symbole**)p1, *(const Mit_Symbole**)p2);
 }
+
+
+
+/// itérer sur chaque symbole primaire
+void mi_iterer_symbole_primaire(mi_itersymb_sigt*f, void*client)
+{
+  if (!f) return;
+  for (unsigned ix=0; ix<mi_dicho_symb.dic_compte; ix++)
+    {
+      struct mi_baquet_symbole_st*baq = mi_dicho_symb.dic_table+ix;
+      if (!baq->baq_symbprim) continue;
+      if ((*f)(baq->baq_symbprim, client))
+        return;
+    }
+} /* fin mi_iterer_symbole_primaire */
+
+
+/// itérer sur chaque symbole primaire ou secondaire de nom donné
+void mi_iterer_symbole_nomme(const char*ch, mi_itersymb_sigt*f, void*client)
+{
+  if (!f || !ch) return;
+  if (!mi_nom_licite_chaine(ch)) return;
+  struct mi_baquet_symbole_st *baq = NULL;
+  // recherche dichotomique
+  unsigned bas = 0, hau = mi_dicho_symb.dic_compte, mil = 0;
+  assert (hau <= mi_dicho_symb.dic_taille);
+  while (bas + 5 < hau)
+    {
+      mil = (bas + hau) / 2;
+      const Mit_Chaine *nom = mi_dicho_symb.dic_table[mil].baq_nom;
+      assert (nom != NULL && nom->mi_type == MiTy_Chaine);
+      int cmp = strcmp (ch, nom->mi_car);
+      if (!cmp)
+        {
+          baq = mi_dicho_symb.dic_table+mil;
+          break;
+        }
+    };
+  if (!baq)
+    for (mil = bas; mil < hau; mil++)
+      {
+        const Mit_Chaine *nom = mi_dicho_symb.dic_table[mil].baq_nom;
+        assert (nom != NULL && nom->mi_type == MiTy_Chaine);
+        int cmp = strcmp (ch, nom->mi_car);
+        if (!cmp)
+          {
+            baq = mi_dicho_symb.dic_table+mil;
+            break;
+          }
+      }
+  if (baq->baq_symbprim)
+    if ((*f)(baq->baq_symbprim, client))
+      return;
+  if (baq->baq_tabsec)
+    {
+      for (unsigned ix=0; ix<baq->baq_tabsec->ths_taille; ix++)
+        {
+          Mit_Symbole*sy = baq->baq_tabsec->ths_symboles[ix];
+          if (sy && sy != MI_TROU_SYMBOLE)
+            {
+              assert (sy->mi_type == MiTy_Symbole);
+              if ((*f)(sy, client)) return;
+            }
+        }
+    }
+} // fin mi_iterer_symbole_nomme

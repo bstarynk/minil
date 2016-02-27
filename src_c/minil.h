@@ -28,6 +28,9 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <limits.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistr.h>		// GNU libunistring
 #include <readline/readline.h>	// GNU readline
 #include <jansson.h>		// JSON parsing library
@@ -348,7 +351,7 @@ bool mi_ensemble_contient(const Mit_Ensemble*en, const Mit_Symbole*sy);
 /// ensemble de hash, alloué sur la pile
 struct Mi_EnsHash_st
 {
-  unsigned eh_magic;
+  unsigned eh_magiq;
   unsigned eh_taille;
   unsigned eh_compte;
   const Mit_Symbole**eh_table;
@@ -361,15 +364,15 @@ void mi_enshash_ajouter_valeur(struct Mi_EnsHash_st*eh, const Mit_Val va);
 void mi_enshash_oter(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy);
 bool mi_enshash_contient(struct Mi_EnsHash_st*eh, const Mit_Symbole*sy);
 /// la fonction d'iteration renvoie true pour arrêter l'itération
-typedef bool mi_ens_sigt (const Mit_Symbole*sy, void*client);
-void mi_enshash_iterer(struct Mi_EnsHash_st*eh, mi_ens_sigt*f, void*client);
+typedef bool mi_itersymb_sigt (const Mit_Symbole*sy, void*client);
+void mi_enshash_iterer(struct Mi_EnsHash_st*eh, mi_itersymb_sigt*f, void*client);
 
 const Mit_Ensemble* mi_creer_ensemble_enshash(struct Mi_EnsHash_st*eh);
 const Mit_Ensemble* mi_creer_ensemble_symboles(unsigned nb, const Mit_Symbole**tab);
 const Mit_Ensemble* mi_creer_ensemble_valeurs(unsigned nb, const Mit_Val*tabval);
 const Mit_Ensemble* mi_creer_ensemble_varsym(unsigned nb, ...);
 const Mit_Ensemble* mi_creer_ensemble_varval(unsigned nb, ...);
-void mi_ensemble_iterer(const Mit_Ensemble*en, mi_ens_sigt*f, void*client);
+void mi_ensemble_iterer(const Mit_Ensemble*en, mi_itersymb_sigt*f, void*client);
 
 
 
@@ -396,6 +399,12 @@ Mit_Symbole *mi_trouver_symbole_chaine (const char *ch, unsigned ind);
 // Creer (ou trouver, s'il existe déjà) un symbole de nom et indice donnés
 Mit_Symbole *mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind);
 Mit_Symbole *mi_creer_symbole_chaine (const char *ch, unsigned ind);
+
+/// itérer sur chaque symbole primaire
+void mi_iterer_symbole_primaire(mi_itersymb_sigt*f, void*client);
+/// itérer sur chaque symbole primaire ou secondaire de nom donné
+void mi_iterer_symbole_nomme(const char*ch, mi_itersymb_sigt*f, void*client);
+
 static inline const char *
 mi_symbole_chaine (const Mit_Symbole *sy)
 {
@@ -428,6 +437,7 @@ mi_hashage_symbole(const Mit_Symbole*sy)
 {
   if (!sy || sy->mi_type != MiTy_Symbole) return 0;
 }
+
 
 //// le type abstrait des associations entre symbole et valeur -quelconque-
 //// On distingue la valeur nulle de l'absence de valeur
@@ -468,14 +478,16 @@ void mi_vecteur_iterer(const struct Mi_Vecteur_st*v, mi_vect_sigt*f, void*client
 struct Mi_Queuesauve_st
 {
   struct Mi_Queuesauve_st*q_suiv;
-  Mit_Symbole*q_symb[MI_QUEUE_LONG_ELEM];
+  const Mit_Symbole*q_symb[MI_QUEUE_LONG_ELEM];
 };
 
 struct Mi_Sauvegarde_st  	  /* à allouer sur la pile */
 {
+  unsigned sv_magiq;
   struct Mi_EnsHash_st sv_syoubli;
   struct Mi_EnsHash_st sv_syconnu;
   const char*sv_rep;		  // repertoire de sauvegarde
+  struct Mi_Queuesauve_st*sv_tet; // tête des symboles à parcourir
   struct Mi_Queuesauve_st*sv_que; // queue des symboles à parcourir
 };
 void mi_sauvegarde_init(struct Mi_Sauvegarde_st*sv, const char*dir);
