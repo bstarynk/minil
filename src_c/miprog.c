@@ -18,6 +18,12 @@
 
 #include "minil.h"
 
+enum
+{
+  xtraopt__debut=1000,
+  xtraopt_predefini,
+  xtraopt__fin
+};
 
 /// pour getopt_long, décrit les arguments de programme
 const struct option minil_options[] =
@@ -27,6 +33,7 @@ const struct option minil_options[] =
   {"--sauvegarde", required_argument, NULL, 'S'},
   {"--charge", required_argument, NULL, 'c'},
   {"--oublier", required_argument, NULL, 'O'},
+  {"--predefini", required_argument, NULL, xtraopt_predefini},
   {NULL, 0, NULL, 0}
 };
 
@@ -45,6 +52,7 @@ mi_usage (const char *nomprog)
   printf (" --charge | -c <repertoire> #charger l'état\n");
   printf (" --sauvegarde | -S <repertoire> #sauvegarder l'état\n");
   printf (" --oublier | -O <symbole> #oublier un symbole\n");
+  printf (" --predefini <symbole> #créer un symbole predefini\n");
 }
 
 static void
@@ -77,11 +85,26 @@ mi_arguments_programme (int argc, char **argv)
                            strerror(errno));
           mi_sauvegarde_init(mi_sauv, mi_repsauve);
           break;
-        case 'O':
+        case 'O': // --oublier <symb>
           if (!mi_sauv)
             MI_FATALPRINTF("option de --sauvegarde <répertoire> manquante avant --oubli %s", optarg);
-#warning oubli non traite
+          {
+            const Mit_Symbole*sy = mi_trouver_symbole(optarg, NULL);
+            if (!sy)
+              MI_FATALPRINTF("Le symbole à oublier '%s' n'existe pas!", optarg);
+            mi_sauvegarde_oublier(mi_sauv, sy);
+          }
           break;
+        case xtraopt_predefini: // --predefini <nom>
+        {
+          Mit_Symbole*sy = NULL;
+          if (!optarg || !isalpha(optarg[0]) || strchr(optarg, '_') ||
+              !mi_nom_licite_chaine(optarg) || !(sy=mi_creer_symbole_chaine(optarg, 0)))
+            MI_FATALPRINTF("Mauvais nom %s de symbole predefini", optarg?optarg:"??");
+          sy->mi_predef = true;
+          printf("symbole prédéfini %s créé\n", mi_symbole_chaine(sy));
+        }
+        break;
         }
     }
 }				// fin de mi_arguments_programme

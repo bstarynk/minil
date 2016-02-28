@@ -382,7 +382,7 @@ mi_enshash_iterer (struct Mi_EnsHash_st *eh, mi_itersymb_sigt * f,
       const Mit_Symbole *sy = eh->eh_table[ix];
       if (!sy || sy == MI_TROU_SYMBOLE)
         continue;
-      if ((*f) (sy, client))
+      if ((*f) ((Mit_Symbole*)sy, client))
         return;
     }
 }				// fin mi_enshash_iterer

@@ -263,17 +263,17 @@ mi_json_contenu_symbole (struct Mi_Sauvegarde_st *sv, const Mit_Symbole *sy)
 
 
 
-void
+const Mit_Symbole *
 mi_remplir_symbole_json (const json_t *j)
 {
   if (!j)
-    return;
+    return NULL;
   if (!json_is_object (j))
-    return;
+    return NULL;
   const json_t *jsymb = json_object_get (j, "ContSymb");
   Mit_Symbole *sy = mi_en_symbole (mi_val_json (jsymb));
   if (!sy)
-    return;
+    return NULL;
   const json_t *jattrs = json_object_get (j, "attrs");
   if (json_is_array (jattrs))
     {
@@ -304,6 +304,7 @@ mi_remplir_symbole_json (const json_t *j)
           sy->mi_comps = mi_vecteur_ajouter (sy->mi_comps, cval);
         }
     }
+  return sy;
 }				// fin mi_remplir_symbole_json
 
 
@@ -496,14 +497,14 @@ mi_sauvegarde_balayer_contenu_symbole (struct Mi_Sauvegarde_st *sv,
 }				/* fin mi_sauvegarde_balayer_contenu_symbole */
 
 static bool
-mi_traitersymboleprimairesv (const Mit_Symbole *sy, void *client)
+mi_traitersymboleprimairesv (Mit_Symbole *sy, void *client)
 {
   mi_sauvegarde_symbole ((struct Mi_Sauvegarde_st *) client, sy);
   return false;
 }
 
 static bool
-mi_ecrirecontenusymbole (const Mit_Symbole *sy, void *client)
+mi_ecrirecontenusymbole (Mit_Symbole *sy, void *client)
 {
   struct Mi_Sauvegarde_st *sv = client;
   assert (sy && sy->mi_type == MiTy_Symbole);
@@ -587,7 +588,7 @@ mi_sauvegarde_finir (struct Mi_Sauvegarde_st *sv)
       assert (syel && syel->mi_type == MiTy_Symbole);
       fprintf (fs, "%s%s\n",
                mi_symbole_chaine (syel),
-               mi_symbole_indice_ch (tampsuf,     syel));
+               mi_symbole_indice_ch (tampsuf, syel));
     }
   fprintf (fs, "# fin %d symboles\n", ensy->mi_taille);
   fclose (fs), fs = NULL;
@@ -611,85 +612,159 @@ mi_sauvegarde_finir (struct Mi_Sauvegarde_st *sv)
       assert (syel && syel->mi_type == MiTy_Symbole);
       if (!syel->mi_predef)
         continue;
-      fprintf(fs, "MI_TRAITER_PREDEFINI(%s%s,%u)\n",
-              mi_symbole_chaine (syel),
-              mi_symbole_indice_ch (tampsuf,syel),
-              syel->mi_hash);
+      fprintf (fs, "MI_TRAITER_PREDEFINI(%s%s,%u)\n",
+               mi_symbole_chaine (syel),
+               mi_symbole_indice_ch (tampsuf, syel), syel->mi_hash);
       nbpredef++;
     }
   fprintf (fs, "\n#undef MI_NB_PREDEFINIS\n"
-           "\n#define MI_NB_PREDEFINIS %d\n",
-           nbpredef);
-  fprintf(fs, "// fin fichier _mi_predef.h\n");
-  fclose(fs), fs=NULL;
-  mi_enshash_detruire(&sv->sv_syoubli);
-  mi_enshash_detruire(&sv->sv_syconnu);
-  printf("sauvegarde de %d symboles dont %d prédéfinis dans %s/\n",
-         nbsymb, nbpredef, sv->sv_rep);
-  free ((void*)sv->sv_rep), sv->sv_rep = NULL;
+           "\n#define MI_NB_PREDEFINIS %d\n", nbpredef);
+  fprintf (fs, "// fin fichier _mi_predef.h\n");
+  fclose (fs), fs = NULL;
+  mi_enshash_detruire (&sv->sv_syoubli);
+  mi_enshash_detruire (&sv->sv_syconnu);
+  printf ("sauvegarde de %d symboles dont %d prédéfinis dans %s/\n",
+          nbsymb, nbpredef, sv->sv_rep);
+  free ((void *) sv->sv_rep), sv->sv_rep = NULL;
   assert (sv->sv_tet == NULL && sv->sv_que == NULL);
-  memset (sv, 0, sizeof(*sv));
+  memset (sv, 0, sizeof (*sv));
 }				/* fin mi_sauvegarde_finir */
 
 
-static void mi_creer_symboles_charges (const char*rep)
+static void
+mi_creer_symboles_charges (const char *rep)
 {
   assert (rep != NULL);
   char nomfic[MI_NOMFICHMAX];
   char ligne[MI_NOMFICHMAX];
   FILE *fs = NULL;
   snprintf (nomfic, sizeof (nomfic), "%s/symbolist", rep);
-  fs = fopen(nomfic, "r");
+  fs = fopen (nomfic, "r");
   if (!fs)
-    MI_FATALPRINTF("impossible d'ouvrir la liste de symboles %s (%s)",
-                   nomfic, strerror(errno));
-  int numlin=0;
+    MI_FATALPRINTF ("impossible d'ouvrir la liste de symboles %s (%s)",
+                    nomfic, strerror (errno));
+  int numlin = 0;
   int nbsymb = 0;
   do
     {
-      memset(ligne, 0, sizeof(ligne));
-      if (!fgets(ligne, sizeof(ligne)-1, fs))
+      memset (ligne, 0, sizeof (ligne));
+      if (!fgets (ligne, sizeof (ligne) - 1, fs))
         break;
       numlin++;
-      if (ligne[0] == '#') continue;
-      if (!isalpha(ligne[0]))
-        MI_FATALPRINTF("ligne#%d de %s incorrecte: %s",
-                       numlin, nomfic, ligne);
-      if (strlen(ligne)>=sizeof(ligne)-2)
-        MI_FATALPRINTF("ligne#%d de %s trop longue: %s",
-                       numlin, nomfic, ligne);
-      int finom=0;
-      unsigned ind=0;
-      for (finom=0; finom<(int)sizeof(ligne) && isalnum(ligne[finom]); finom++);
-      if (isspace(ligne[finom]))
+      if (ligne[0] == '#')
+        continue;
+      if (!isalpha (ligne[0]))
+        MI_FATALPRINTF ("ligne#%d de %s incorrecte: %s",
+                        numlin, nomfic, ligne);
+      if (strlen (ligne) >= sizeof (ligne) - 2)
+        MI_FATALPRINTF ("ligne#%d de %s trop longue: %s",
+                        numlin, nomfic, ligne);
+      int finom = 0;
+      unsigned ind = 0;
+      for (finom = 0; finom < (int) sizeof (ligne) && isalnum (ligne[finom]);
+           finom++);
+      if (isspace (ligne[finom]))
         ligne[finom] = '\0';
-      else if (ligne[finom]=='_')
+      else if (ligne[finom] == '_')
         {
-          ind = atoi(ligne+finom+1);
+          ind = atoi (ligne + finom + 1);
           ligne[finom] = '\0';
         };
-      if (!mi_nom_licite_chaine(ligne))
-        MI_FATALPRINTF("ligne#%d de %s illicite: %s",
-                       numlin, nomfic, ligne);
-      Mit_Symbole*sy = mi_creer_symbole_chaine(ligne, ind);
+      if (!mi_nom_licite_chaine (ligne))
+        MI_FATALPRINTF ("ligne#%d de %s illicite: %s", numlin, nomfic, ligne);
+      Mit_Symbole *sy = mi_creer_symbole_chaine (ligne, ind);
       if (!sy)
-        MI_FATALPRINTF("ligne#%d de %s avec mauvais symbole: %s",
-                       numlin, nomfic, ligne);
+        MI_FATALPRINTF ("ligne#%d de %s avec mauvais symbole: %s",
+                        numlin, nomfic, ligne);
       nbsymb++;
     }
-  while (!feof(fs));
-  fclose(fs);
-  printf("%d symboles créés depuis %s\n", nbsymb, nomfic);
-} // fin mi_creer_symboles_charges
+  while (!feof (fs));
+  fclose (fs);
+  printf ("%d symboles créés depuis %s\n", nbsymb, nomfic);
+}				// fin mi_creer_symboles_charges
 
 
+static long mi_compte_symbole_charge;
 
-void mi_charger_etat(const char*rep)
+static void
+mi_charger_contenu_symbole (Mit_Symbole *sy, const char *rep)
 {
-  if (!rep || !rep[0]) rep = ".";
-  if (access(rep, R_OK))
-    MI_FATALPRINTF("mauvais répertoire à charger %s (%s)",
-                   rep, strerror(errno));
-  mi_creer_symboles_charges(rep);
-#warning faut charger le contenu de chaque symbole
-} // fin mi_charger_etat
+  assert (sy && sy->mi_type == MiTy_Symbole);
+  assert (rep != NULL && rep[0] != '\0');
+  char nomfich[MI_NOMFICHMAX];
+  char sufind[16];
+  unsigned h = sy->mi_hash;
+  if (snprintf
+      (nomfich, sizeof (nomfich), "%s/data%02d/%s%s.json", rep, h % 100,
+       mi_symbole_chaine (sy), mi_symbole_indice_ch (sufind,
+           sy)) >=
+      (int) sizeof (nomfich) - 1)
+    {
+      fprintf (stderr, "nom de fichier trop long %s/data%02d/%s%s.json\n",
+               rep, h % 100, mi_symbole_chaine (sy),
+               mi_symbole_indice_ch (sufind, sy));
+      return;
+    }
+  if (access (nomfich, R_OK))
+    {
+      fprintf (stderr, "impossible de lire %s: %s\n", nomfich,
+               strerror (errno));
+      return;
+    }
+  json_error_t jerr = { };
+  memset (&jerr, 0, sizeof (jerr));
+  json_t *j =
+    json_load_file (nomfich, JSON_DISABLE_EOF_CHECK | JSON_REJECT_DUPLICATES,
+                    &jerr);
+  if (!j)
+    {
+      fprintf (stderr,
+               "Décodage de JSON echoue dans %s, ligne %d, colonne %d, position %ld: %s\n",
+               jerr.source, jerr.line, jerr.column, (long) jerr.position,
+               jerr.text);
+      return;
+    }
+  if (sy != mi_remplir_symbole_json (j))
+    fprintf (stderr, "Remplissage du symbole %s%s échoue (fichier %s)\n",
+             mi_symbole_chaine (sy), mi_symbole_indice_ch (sufind, sy),
+             nomfich);
+  json_decref (j);
+  mi_compte_symbole_charge++;
+}				/* fin mi_charger_contenu_symbole */
+
+
+static bool
+mi_chargersymbolesecondaire (Mit_Symbole *sy, void *rep)
+{
+  assert (sy && sy->mi_type == MiTy_Symbole);
+  if (sy->mi_indice == 0)
+    return false;
+  mi_charger_contenu_symbole (sy, (const char *) rep);
+  return false;
+}				// fin mi_chargersymboleprimaire
+
+
+static bool
+mi_chargersymboleprimaire (Mit_Symbole *sy, void *rep)
+{
+  mi_charger_contenu_symbole (sy, (const char *) rep);
+  mi_iterer_symbole_nomme (mi_symbole_chaine (sy),
+                           mi_chargersymbolesecondaire, rep);
+  return false;
+}				// fin mi_chargersymboleprimaire
+
+
+void
+mi_charger_etat (const char *rep)
+{
+  if (!rep || !rep[0])
+    rep = ".";
+  if (access (rep, R_OK))
+    MI_FATALPRINTF ("mauvais répertoire à charger %s (%s)",
+                    rep, strerror (errno));
+  mi_compte_symbole_charge = 0;
+  mi_creer_symboles_charges (rep);
+  mi_iterer_symbole_primaire (mi_chargersymboleprimaire, (void *) rep);
+  printf ("%ld symboles ont été chargés de %s\n",
+          mi_compte_symbole_charge, rep);
+}				// fin mi_charger_etat

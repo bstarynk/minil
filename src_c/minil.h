@@ -368,7 +368,7 @@ void mi_enshash_ajouter_valeur (struct Mi_EnsHash_st *eh, const Mit_Val va);
 void mi_enshash_oter (struct Mi_EnsHash_st *eh, const Mit_Symbole *sy);
 bool mi_enshash_contient (struct Mi_EnsHash_st *eh, const Mit_Symbole *sy);
 /// la fonction d'iteration renvoie true pour arrêter l'itération
-typedef bool mi_itersymb_sigt (const Mit_Symbole *sy, void *client);
+typedef bool mi_itersymb_sigt (Mit_Symbole *sy, void *client);
 void mi_enshash_iterer (struct Mi_EnsHash_st *eh, mi_itersymb_sigt * f,
                         void *client);
 
@@ -538,7 +538,7 @@ json_t *mi_json_contenu_symbole (struct Mi_Sauvegarde_st *sv,
 // construire une valeur à partir d'un JSON
 Mit_Val mi_val_json (const json_t *j);
 // remplir un symbole à partir de son contenu
-void mi_remplir_symbole_json (const json_t *j);
+const Mit_Symbole* mi_remplir_symbole_json (const json_t *j);
 
 /// emettre la notice de copyright GPLv3
 void
