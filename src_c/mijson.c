@@ -579,7 +579,8 @@ mi_sauvegarde_finir (struct Mi_Sauvegarde_st *sv)
     }
   fs = fopen (nomfic, "w");
   mi_emettre_notice_gplv3 (fs, "# ", "", "symbolist");
-  for (unsigned ix = 0; ix < ensy->mi_taille; ix++)
+  unsigned nbsymb = ensy->mi_taille;
+  for (unsigned ix = 0; ix < nbsymb; ix++)
     {
       char tampsuf[16];
       const Mit_Symbole *syel = ensy->mi_elements[ix];
@@ -602,7 +603,7 @@ mi_sauvegarde_finir (struct Mi_Sauvegarde_st *sv)
   int nbpredef = 0;
   mi_emettre_notice_gplv3 (fs, "/// ", "", "_mi_predef.h");
   fprintf (fs, "\n#ifndef MI_TRAITER_PREDEFINI\n"
-           "#error " "MI_TRAITER_PREDEFINI indefini\n" "#endif \n");
+           "#error " "MI_TRAITER_PREDEFINI indefini\n" "#endif\n\n");
   for (unsigned ix = 0; ix < ensy->mi_taille; ix++)
     {
       char tampsuf[16];
@@ -623,7 +624,9 @@ mi_sauvegarde_finir (struct Mi_Sauvegarde_st *sv)
   fclose(fs), fs=NULL;
   mi_enshash_detruire(&sv->sv_syoubli);
   mi_enshash_detruire(&sv->sv_syconnu);
-  free (sv->sv_rep), sv->sv_rep = NULL;
+  printf("sauvegarde de %d symboles dont %d prédéfinis dans %s/\n",
+         nbsymb, nbpredef, sv->sv_rep);
+  free ((void*)sv->sv_rep), sv->sv_rep = NULL;
   assert (sv->sv_tet == NULL && sv->sv_que == NULL);
   memset (sv, 0, sizeof(*sv));
 }				/* fin mi_sauvegarde_finir */
@@ -652,20 +655,23 @@ static void mi_creer_symboles_charges (const char*rep)
       if (!isalpha(ligne[0]))
         MI_FATALPRINTF("ligne#%d de %s incorrecte: %s",
                        numlin, nomfic, ligne);
+      if (strlen(ligne)>=sizeof(ligne)-2)
+        MI_FATALPRINTF("ligne#%d de %s trop longue: %s",
+                       numlin, nomfic, ligne);
       int finom=0;
       unsigned ind=0;
-      for (finom=0; finom<sizeof(ligne) && isalnum(ligne[finom]); finom++);
+      for (finom=0; finom<(int)sizeof(ligne) && isalnum(ligne[finom]); finom++);
       if (isspace(ligne[finom]))
         ligne[finom] = '\0';
       else if (ligne[finom]=='_')
         {
-          ind = atoi(finom+1);
+          ind = atoi(ligne+finom+1);
           ligne[finom] = '\0';
         };
       if (!mi_nom_licite_chaine(ligne))
         MI_FATALPRINTF("ligne#%d de %s illicite: %s",
                        numlin, nomfic, ligne);
-      Mit_Symbole*sy = mi_creer_symbole_nom(ligne, ind);
+      Mit_Symbole*sy = mi_creer_symbole_chaine(ligne, ind);
       if (!sy)
         MI_FATALPRINTF("ligne#%d de %s avec mauvais symbole: %s",
                        numlin, nomfic, ligne);
@@ -673,7 +679,7 @@ static void mi_creer_symboles_charges (const char*rep)
     }
   while (!feof(fs));
   fclose(fs);
-  printf("%s symboles créés depuis %s\n", nbsymb, nomfic);
+  printf("%d symboles créés depuis %s\n", nbsymb, nomfic);
 } // fin mi_creer_symboles_charges
 
 
@@ -683,7 +689,7 @@ void mi_charger_etat(const char*rep)
   if (!rep || !rep[0]) rep = ".";
   if (access(rep, R_OK))
     MI_FATALPRINTF("mauvais répertoire à charger %s (%s)",
-                   rep, strerror(rep));
+                   rep, strerror(errno));
   mi_creer_symboles_charges(rep);
 #warning faut charger le contenu de chaque symbole
 } // fin mi_charger_etat

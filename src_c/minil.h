@@ -372,6 +372,7 @@ typedef bool mi_itersymb_sigt (const Mit_Symbole *sy, void *client);
 void mi_enshash_iterer (struct Mi_EnsHash_st *eh, mi_itersymb_sigt * f,
                         void *client);
 
+const Mit_Ensemble* mi_ensemble_vide(void);
 const Mit_Ensemble *mi_creer_ensemble_enshash (struct Mi_EnsHash_st *eh);
 const Mit_Ensemble *mi_creer_ensemble_symboles (unsigned nb,
     const Mit_Symbole **tab);
@@ -404,6 +405,10 @@ bool mi_nom_licite_chaine (const char *ch);
 // Trouver un symbole de nom et indice donnés
 Mit_Symbole *mi_trouver_symbole_nom (const Mit_Chaine *nom, unsigned ind);
 Mit_Symbole *mi_trouver_symbole_chaine (const char *ch, unsigned ind);
+// trouver un symbole à partir de la chaine le nommant, avec un
+// éventuel indice commençant par un blanc souligné
+// si pfin est non nul il est mis au caractère suivant le nom
+Mit_Symbole *mi_trouver_symbole(const char*ch, const char**pfin);
 // Creer (ou trouver, s'il existe déjà) un symbole de nom et indice donnés
 Mit_Symbole *mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind);
 Mit_Symbole *mi_creer_symbole_chaine (const char *ch, unsigned ind);

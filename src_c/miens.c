@@ -18,6 +18,14 @@
 
 #include "minil.h"
 
+static const Mit_Ensemble mi_ensvide =
+{
+  .mi_type= MiTy_Ensemble,
+  .mi_taille= 0,
+  .mi_marq= true,
+  .mi_hash= 11
+};
+
 #define MI_ENSHASH_NMAGIQ 0x30e595d7	/*820352471 */
 
 
@@ -49,14 +57,7 @@ mi_calculer_hash_ensemble (Mit_Ensemble * e)
 const Mit_Ensemble *
 mi_ensemble_vide ()
 {
-  static Mit_Ensemble *evide;
-  if (!evide)
-    {
-      evide = mi_allouer_valeur (MiTy_Ensemble, sizeof (Mit_Ensemble));
-      evide->mi_taille = 0;
-      mi_calculer_hash_ensemble (evide);
-    };
-  return evide;
+  return &mi_ensvide;
 }				/* fin mi_ensemble_vide */
 
 const Mit_Ensemble *
@@ -66,6 +67,7 @@ mi_creer_ensemble_enshash (struct Mi_EnsHash_st *eh)
     return NULL;
   unsigned c = eh->eh_compte;
   unsigned t = eh->eh_taille;
+  if (c==0) return mi_ensemble_vide();
   assert (c < t);
   unsigned n = 0;
   Mit_Ensemble *e =
@@ -92,6 +94,7 @@ mi_creer_ensemble_symboles (unsigned nb, const Mit_Symbole **tab)
 {
   if (nb && !tab)
     return NULL;
+  if (nb==0) return mi_ensemble_vide();
   struct Mi_EnsHash_st eh = { };
   mi_enshash_initialiser (&eh, 4 * nb / 3 + 5);
   for (unsigned ix = 0; ix < nb; ix++)
@@ -112,6 +115,7 @@ mi_creer_ensemble_valeurs (unsigned nb, const Mit_Val *tabval)
 {
   if (nb && !tabval)
     return NULL;
+  if (nb==0) return mi_ensemble_vide();
   struct Mi_EnsHash_st eh = { };
   mi_enshash_initialiser (&eh, 4 * nb / 3 + nb / 8 + 5);
   for (unsigned ix = 0; ix < nb; ix++)
@@ -128,6 +132,7 @@ mi_creer_ensemble_varsym (unsigned nb, ...)
 {
   va_list args;
   struct Mi_EnsHash_st eh = { };
+  if (nb==0) return mi_ensemble_vide();
   mi_enshash_initialiser (&eh, 4 * nb / 3 + 5);
   va_start (args, nb);
   for (unsigned ix = 0; ix < nb; ix++)
@@ -148,6 +153,7 @@ const Mit_Ensemble *
 mi_creer_ensemble_varval (unsigned nb, ...)
 {
   va_list args;
+  if (nb==0) return mi_ensemble_vide();
   struct Mi_EnsHash_st eh = { };
   mi_enshash_initialiser (&eh, 4 * nb / 3 + 5);
   va_start (args, nb);
@@ -195,7 +201,7 @@ mi_enshash_pos (struct Mi_EnsHash_st *eh, const Mit_Symbole *sy)
   unsigned h = sy->mi_hash;
   assert (h > 0);
   unsigned t = eh->eh_taille;
-  assert (t > 2 && t < eh->eh_compte);
+  assert (t > 2 && eh->eh_compte < t);
   unsigned ideb = h % t;
 
   for (unsigned ix = ideb; ix < t; ix++)

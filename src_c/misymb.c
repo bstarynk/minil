@@ -181,6 +181,34 @@ mi_trouver_symbole_chaine (const char *ch, unsigned ind)
 }				// fin mi_trouver_symbole_chaine
 
 
+Mit_Symbole*mi_trouver_symbole(const char*ch, const char**pfin)
+{
+  if (pfin) *pfin = NULL;
+  if (!ch || !isascii(ch[0])) return NULL;
+  const char*pe = strchr(ch, '_');
+  if (!pe)
+    {
+      Mit_Symbole*sy= mi_trouver_symbole_chaine(ch, 0);
+      if (pfin) *pfin = ch+strlen(ch);
+      return sy;
+    }
+  // si ça rentre utiliser un tampon sur la pile
+  char*fin = NULL;
+  unsigned ind = strtol(pe+1, &fin, 10);
+  if (fin == pe+1) return NULL;
+  char tamp[80];
+  char *chn = (pe-ch < (int) sizeof(tamp)-3)?tamp:malloc(2+pe-ch);
+  if (!chn)
+    MI_FATALPRINTF("pas de place pour tampon de %d octets (%s)",
+                   (int)(pe-ch), strerror(errno));
+  memset(chn, 0, 2+pe-ch);
+  strncpy(chn, ch, pe-ch);
+  Mit_Symbole*sy = mi_trouver_symbole_chaine(chn, ind);
+  if (chn != tamp) free (chn);
+  if (sy && pfin) *pfin = fin;
+  return sy;
+} /* fin mi_trouver_symbole */
+
 
 
 // Créer un symbole de nom et indice donnés
@@ -289,6 +317,7 @@ mi_inserer_baquet (const char *chnom)
     }
   assert (nouvbaq != NULL);
   nouvbaq->baq_nom = mi_creer_chaine (chnom);
+  mi_dicho_symb.dic_compte++;
   return nouvbaq;
 }				/* fin mi_inserer_baquet */
 
