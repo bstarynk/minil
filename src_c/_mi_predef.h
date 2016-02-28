@@ -21,11 +21,9 @@
 #endif
 
 MI_TRAITER_PREDEFINI(commentaire,616070187)
-MI_TRAITER_PREDEFINI(oublier,3854974091)
-MI_TRAITER_PREDEFINI(sauvegarder,3524233920)
 
 #undef MI_TRAITER_PREDEFINI
 
 #undef MI_NB_PREDEFINIS
-#define MI_NB_PREDEFINIS 3
+#define MI_NB_PREDEFINIS 1
 // fin fichier _mi_predef.h
