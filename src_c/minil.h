@@ -475,7 +475,7 @@ struct Mi_trouve_st mi_assoc_chercher (const struct Mi_Assoc_st *a,
 /// la fonction d'iteration renvoie true pour arrêter l'itération
 typedef bool mi_assoc_sigt (const Mit_Symbole *sy, const Mit_Val va,
                             void *client);
-unsigned mi_assoc_taille (const struct Mi_Assoc_st *a);
+unsigned mi_assoc_compte (const struct Mi_Assoc_st *a);
 void mi_assoc_iterer (const struct Mi_Assoc_st *a, mi_assoc_sigt * f,
                       void *client);
 

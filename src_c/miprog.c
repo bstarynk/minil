@@ -22,18 +22,20 @@ enum
 {
   xtraopt__debut=1000,
   xtraopt_predefini,
+  xtraopt_commentaire,
   xtraopt__fin
 };
 
 /// pour getopt_long, décrit les arguments de programme
 const struct option minil_options[] =
 {
-  {"--help", no_argument, NULL, 'h'},
-  {"--version", no_argument, NULL, 'V'},
-  {"--sauvegarde", required_argument, NULL, 'S'},
-  {"--charge", required_argument, NULL, 'c'},
-  {"--oublier", required_argument, NULL, 'O'},
-  {"--predefini", required_argument, NULL, xtraopt_predefini},
+  {"help", no_argument, NULL, 'h'},
+  {"version", no_argument, NULL, 'V'},
+  {"sauvegarde", required_argument, NULL, 'S'},
+  {"charge", required_argument, NULL, 'c'},
+  {"oublier", required_argument, NULL, 'O'},
+  {"commentaire", required_argument, NULL, xtraopt_commentaire},
+  {"predefini", required_argument, NULL, xtraopt_predefini},
   {NULL, 0, NULL, 0}
 };
 
@@ -47,18 +49,20 @@ static void
 mi_usage (const char *nomprog)
 {
   printf ("usage de %s, un mini interprète\n", nomprog);
-  printf (" --help | -h #message d'aide\n");
-  printf (" --version | -V #donne la version\n");
   printf (" --charge | -c <repertoire> #charger l'état\n");
-  printf (" --sauvegarde | -S <repertoire> #sauvegarder l'état\n");
+  printf (" --commentaire <chaine> #commentaire pour le prédéfini suivant\n");
+  printf (" --help | -h #message d'aide\n");
   printf (" --oublier | -O <symbole> #oublier un symbole\n");
   printf (" --predefini <symbole> #créer un symbole predefini\n");
+  printf (" --sauvegarde | -S <repertoire> #sauvegarder l'état\n");
+  printf (" --version | -V #donne la version\n");
 }
 
 static void
 mi_arguments_programme (int argc, char **argv)
 {
   int ch = 0;
+  char* comment=NULL;
   while ((ch = getopt_long (argc, argv, "hVc:S:O:",
                             minil_options, NULL)) > 0)
     {
@@ -102,9 +106,18 @@ mi_arguments_programme (int argc, char **argv)
               !mi_nom_licite_chaine(optarg) || !(sy=mi_creer_symbole_chaine(optarg, 0)))
             MI_FATALPRINTF("Mauvais nom %s de symbole predefini", optarg?optarg:"??");
           sy->mi_predef = true;
+          if (comment)
+            {
+              sy->mi_attrs = mi_assoc_mettre (sy->mi_attrs, MI_PREDEFINI(commentaire),
+                                              MI_CHAINEV(mi_creer_chaine(comment)));
+            }
+          comment = NULL;
           printf("symbole prédéfini %s créé\n", mi_symbole_chaine(sy));
         }
         break;
+        case xtraopt_commentaire: // --commentaire <chaine>
+          comment = optarg;
+          break;
         }
     }
 }				// fin de mi_arguments_programme

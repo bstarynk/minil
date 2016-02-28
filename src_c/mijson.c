@@ -216,11 +216,10 @@ mi_json_contenu_symbole (struct Mi_Sauvegarde_st *sv, const Mit_Symbole *sy)
   if (!mi_sauvegarde_symbole_connu (sv, sy))
     return json_null ();
   json_t *jsym = mi_json_val (sv, MI_SYMBOLEV ((Mit_Symbole *) sy));
-  unsigned nbat = mi_assoc_taille (sy->mi_attrs);
+  unsigned nbat = mi_assoc_compte (sy->mi_attrs);
   struct mi_vectatt_st *va =	//
   calloc (1,
-            sizeof (struct mi_vectatt_st) + (nbat +
-                1) * sizeof (Mit_Symbole *));
+            sizeof (struct mi_vectatt_st) + (nbat +  1) * sizeof (Mit_Symbole *));
   va->vat_taille = nbat + 1;
   if (!va)
     MI_FATALPRINTF ("impossible d'allouer vecteur de %d attributs (%s)",
@@ -617,8 +616,8 @@ mi_sauvegarde_finir (struct Mi_Sauvegarde_st *sv)
                mi_symbole_indice_ch (tampsuf, syel), syel->mi_hash);
       nbpredef++;
     }
-  fprintf (fs, "\n#undef MI_NB_PREDEFINIS\n"
-           "\n#define MI_NB_PREDEFINIS %d\n", nbpredef);
+  fprintf (fs, "\n#undef MI_TRAITER_PREDEFINI\n" "\n#undef MI_NB_PREDEFINIS\n"
+           "#define MI_NB_PREDEFINIS %d\n", nbpredef);
   fprintf (fs, "// fin fichier _mi_predef.h\n");
   fclose (fs), fs = NULL;
   mi_enshash_detruire (&sv->sv_syoubli);

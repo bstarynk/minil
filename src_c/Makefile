@@ -47,7 +47,7 @@ _timestamp.c:
 	@mv _timestamp.tmp _timestamp.c
 
 
-$(OBJFILES): minil.h
+$(OBJFILES): minil.h _mi_predef.h
 
 ## pour nettoyer
 clean:

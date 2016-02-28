@@ -187,7 +187,7 @@ mi_assoc_mettre (struct Mi_Assoc_st *a, const Mit_Symbole *sy,
   assert (sy != MI_TROU_SYMBOLE);
   assert (sy->mi_type == MiTy_Symbole);
   if (!a || 6 * a->a_tai + 2 < 5 * a->a_nbe)
-    a = mi_assoc_reserver (a, 3 + a->a_nbe / 4);
+    a = mi_assoc_reserver (a, a?(3 + a->a_nbe / 4):3);
   assert (a->a_mag == MI_ASSOC_NMAGIQ);
   int pos = mi_assoc_indice (a, sy);
   assert (pos >= 0 && pos < (int) a->a_tai);
@@ -248,13 +248,12 @@ mi_assoc_chercher (const struct Mi_Assoc_st *a, const Mit_Symbole *sy)
 }				// fin mi_assoc_chercher
 
 unsigned
-mi_assoc_taille (const struct Mi_Assoc_st *a)
+mi_assoc_compte (const struct Mi_Assoc_st *a)
 {
-  if (!a)
+  if (!a || a->a_mag != MI_ASSOC_NMAGIQ)
     return 0;
-  assert (a->a_mag == MI_ASSOC_NMAGIQ);
-  return a->a_tai;
-}				/* fin mi_assoc_taille */
+  return a->a_nbe;
+}				/* fin mi_assoc_compte */
 
 void
 mi_assoc_iterer (const struct Mi_Assoc_st *a, mi_assoc_sigt * f, void *client)

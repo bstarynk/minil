@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "commentaire"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "donne un commentaire dans un symbole"
+  }
+ ],
+ "comps": null
+}
