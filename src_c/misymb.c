@@ -287,7 +287,7 @@ mi_inserer_baquet (const char *chnom)
   struct mi_baquet_symbole_st *nouvbaq = NULL;
   if (mi_dicho_symb.dic_taille <= nbaq + 2)
     {
-      unsigned nouvtail = mi_nombre_premier_apres (5 * nbaq / 4 + 10);
+      unsigned nouvtail = mi_nombre_premier_apres (5 * nbaq / 4 + 20);
       if (!nouvtail)
         MI_FATALPRINTF ("trop (%d) de baquets de symboles", nbaq);
       struct mi_baquet_symbole_st *nouvtab =
@@ -309,9 +309,8 @@ mi_inserer_baquet (const char *chnom)
     }
   else				// la table est assez grande pour l'insertion
     {
-      for (int ix = (int)nbaq; ix > mil; ix--)
+      for (int ix = (int)nbaq; ix >= mil; ix--)
         mi_dicho_symb.dic_table[ix + 1] = mi_dicho_symb.dic_table[ix];
-      mi_dicho_symb.dic_taille = nbaq + 1;
       nouvbaq = mi_dicho_symb.dic_table + mil;
       memset (nouvbaq, 0, sizeof (struct mi_baquet_symbole_st));
     }
