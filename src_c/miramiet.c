@@ -63,4 +63,18 @@ mi_allouer_valeur (enum mi_typeval_en typv, size_t tail)
   return ptr;
 }
 
+struct Mi_RamMiett_st
+{
+  unsigned rm_nmagic;
+};
+
+void mi_marquer_valeur(struct Mi_RamMiett_st*rm, Mit_Val v)
+{
+}
+
+void
+mi_ramasse_miettes(struct mi_cadre_appel_st*cap)
+{
+}
+
 #warning le ramasse miettes ne doit pas libérer l ensemble vide

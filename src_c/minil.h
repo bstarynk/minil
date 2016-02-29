@@ -493,6 +493,18 @@ typedef bool mi_vect_sigt (const Mit_Val va, unsigned ix, void *client);
 void mi_vecteur_iterer (const struct Mi_Vecteur_st *v, mi_vect_sigt * f,
                         void *client);
 
+
+struct mi_cadre_appel_st
+{
+  unsigned mic_nmagic;
+  unsigned mic_taille;
+  const char*mic_func;
+  struct mi_cadre_appel_st*mic_prec;
+  struct Mi_Assoc_st*mic_avar;
+  Mit_Val mic_val[];
+};
+void mi_ramasse_miettes(struct mi_cadre_appel_st*cap);
+
 //// sérialisation en JSON
 //
 
@@ -524,6 +536,7 @@ bool mi_sauvegarde_symbole_connu (struct Mi_Sauvegarde_st *sv,
 void mi_sauvegarde_oublier (struct Mi_Sauvegarde_st *sv,
                             const Mit_Symbole *sy);
 void mi_sauvegarde_finir (struct Mi_Sauvegarde_st *sv);
+
 
 
 /// charger l'état depuis un répertoire

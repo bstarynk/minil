@@ -200,6 +200,8 @@ main (int argc, char **argv)
 {
   mi_initialiser_predefinis ();
   mi_arguments_programme (argc, argv);
+  if (!mi_repcharge && !access("symbolist", R_OK))
+    mi_charger_etat(".");
   if (mi_sauv)
     mi_sauvegarde_finir(mi_sauv);
 }				// fin de main

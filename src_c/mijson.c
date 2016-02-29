@@ -521,7 +521,7 @@ mi_ecrirecontenusymbole (Mit_Symbole *sy, void *client)
   snprintf (nomfich, sizeof (nomfich), "%s/data%02d/%s%s.json",
             sv->sv_rep, h % 100, mi_symbole_chaine (sy),
             mi_symbole_indice_ch (sufind, sy));
-  if (access (nomfich, F_OK))
+  if (!access (nomfich, F_OK))
     {
       char nomvieux[MI_NOMFICHMAX];
       snprintf (nomvieux, sizeof (nomvieux), "%s~", nomfich);

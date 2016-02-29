@@ -51,7 +51,10 @@ $(OBJFILES): minil.h _mi_predef.h
 
 ## pour nettoyer
 clean:
-	$(RM) $(OBJFILES) _timestamp.* *~ *% minil *.i
+	$(RM) $(OBJFILES) _timestamp.* *~ *% minil *.i *.orig data*/*~
+	for d in data* ; do \
+          if [ -z "$$(ls -A $$d)" ] ; then rmdir "$$d" ; fi ; \
+        done
 
 # le programme minil
 minil: $(OBJFILES)
