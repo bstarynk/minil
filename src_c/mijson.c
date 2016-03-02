@@ -109,6 +109,8 @@ mi_json_val (struct Mi_Sauvegarde_st *sv, const Mit_Val v)
                                    nd->mi_fils[ix]));
       return json_pack ("{soso}", "conn", jsymb, "fils", jfils);
     }
+    case MiTy__Dernier: // ne devrait jamais arriver
+      MI_FATALPRINTF("valeur impossible@%p", v.miva_ptr);
     }
   return NULL;
 }				// fin mi_json_val
@@ -455,6 +457,8 @@ mi_sauvegarde_balayer (struct Mi_Sauvegarde_st *sv, const Mit_Val v)
         }
     }
     return;
+    case MiTy__Dernier: // ne devrait jamais arriver
+      MI_FATALPRINTF("valeur impossible@%p", v.miva_ptr);
     }
 }				/* fin mi_sauvegarde_balayer */
 

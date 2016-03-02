@@ -62,6 +62,7 @@ enum mi_typeval_en
   MiTy_Ensemble,
   MiTy_Noeud,
   MiTy_Symbole,
+  MiTy__Dernier // doit toujours être en dernier
 };
 
 // Les structures correspondantes
@@ -79,6 +80,8 @@ struct MiStValeurMarquee_st
   enum mi_typeval_en miva_type;
   bool miva_marq;
 };
+
+// l'union des valeurs
 union MiSt_Val_un
 {
   void *miva_ptr;
@@ -165,9 +168,10 @@ struct Mi_Assoc_st;
 // Un vecteur n'est pas une valeur, mais une donnée interne.
 struct Mi_Vecteur_st;
 
-// Une valeur symbole a un type, une marque, une chaîne nom, un indice,
-// une association pour les attributs
-// et un vecteur de composants
+// Une valeur symbole a un type, une marque, une chaîne nom, un
+// indice, une association pour les attributs et un vecteur de
+// composants; elle a aussi un chargement qui n'est pas proprement une
+// valeur
 struct MiSt_Symbole_st
 {
   enum mi_typeval_en mi_type;
@@ -179,6 +183,7 @@ struct MiSt_Symbole_st
   struct Mi_Assoc_st *mi_attrs;
   struct Mi_Vecteur_st *mi_comps;
 };
+
 
 int mi_cmp_symbole (const Mit_Symbole *sy1, const Mit_Symbole *sy2);
 int mi_cmp_symboleptr (const void *, const void *);	// pour qsort
