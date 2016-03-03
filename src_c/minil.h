@@ -168,15 +168,19 @@ struct Mi_Assoc_st;
 // Un vecteur n'est pas une valeur, mais une donnée interne.
 struct Mi_Vecteur_st;
 
-enum mi_type_charge_en {
-	MiCh_Rien,
-	MiCh_Tampon = MiTy__Dernier,
-	Mich_Fichier,
-	Mich_Tampon,
-	Mich_Assoc
+enum mi_type_charge_en
+{
+  MiCh_Rien,
+  MiCh_Tampon = MiTy__Dernier,
+  Mich_Fichier,
+  Mich_Tampon,
+  Mich_Assoc,
+  Mich_Vecteur,
+  Mich_Environ
 };
 
 struct MiCh_Tampon_st;
+struct MiCh_Environ_st;
 
 // Une valeur symbole a un type, une marque, une chaîne nom, un
 // indice, une association pour les attributs et un vecteur de
@@ -193,11 +197,14 @@ struct MiSt_Symbole_st
   struct Mi_Assoc_st *mi_attrs;
   struct Mi_Vecteur_st *mi_comps;
   enum mi_type_charge_en mi_chatype;
-  union {
-	  void*mi_chaptr;
-	  struct MiCh_Tampon_st*mi_chatamp;
-	  FILE*mi_chafichier;
-	  struct Mi_Assoc_st* mi_chassoc;
+  union
+  {
+    void*mi_chaptr;
+    struct MiCh_Tampon_st*mi_chatamp;
+    FILE*mi_chafichier;
+    struct Mi_Assoc_st* mi_chassoc;
+    struct Mi_Vecteur_st* mi_chvect;
+    struct MiCh_Environ_st* mi_chenv;
   };
 };
 
@@ -522,7 +529,7 @@ struct mi_cadre_appel_st
   unsigned mic_taille;
   const char*mic_func;
   struct mi_cadre_appel_st*mic_prec;
-  struct Mi_Assoc_st*mic_avar;
+  Mit_Symbole*mic_symbenv;
   Mit_Val mic_val[];
 };
 void mi_ramasse_miettes(struct mi_cadre_appel_st*cap);
