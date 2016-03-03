@@ -168,10 +168,20 @@ struct Mi_Assoc_st;
 // Un vecteur n'est pas une valeur, mais une donnée interne.
 struct Mi_Vecteur_st;
 
+enum mi_type_charge_en {
+	MiCh_Rien,
+	MiCh_Tampon = MiTy__Dernier,
+	Mich_Fichier,
+	Mich_Tampon,
+	Mich_Assoc
+};
+
+struct MiCh_Tampon_st;
+
 // Une valeur symbole a un type, une marque, une chaîne nom, un
 // indice, une association pour les attributs et un vecteur de
 // composants; elle a aussi un chargement qui n'est pas proprement une
-// valeur
+// valeur, et qui est discriminée par mi_chatype
 struct MiSt_Symbole_st
 {
   enum mi_typeval_en mi_type;
@@ -182,6 +192,13 @@ struct MiSt_Symbole_st
   const Mit_Chaine *mi_nom;
   struct Mi_Assoc_st *mi_attrs;
   struct Mi_Vecteur_st *mi_comps;
+  enum mi_type_charge_en mi_chatype;
+  union {
+	  void*mi_chaptr;
+	  struct MiCh_Tampon_st*mi_chatamp;
+	  FILE*mi_chafichier;
+	  struct Mi_Assoc_st* mi_chassoc;
+  };
 };
 
 
