@@ -193,7 +193,7 @@ mi_enshash_initialiser (struct Mi_EnsHash_st *eh, unsigned nb)
 }
 
 static int
-mi_enshash_pos (struct Mi_EnsHash_st *eh, const Mit_Symbole *sy)
+mi_enshash_pos (const struct Mi_EnsHash_st *eh, const Mit_Symbole *sy)
 {
   int pos = -1;
   assert (eh && eh->eh_magiq == MI_ENSHASH_NMAGIQ);
@@ -357,7 +357,7 @@ mi_enshash_oter (struct Mi_EnsHash_st *eh, const Mit_Symbole *sy)
 
 
 bool
-mi_enshash_contient (struct Mi_EnsHash_st *eh, const Mit_Symbole *sy)
+mi_enshash_contient (const struct Mi_EnsHash_st *eh, const Mit_Symbole *sy)
 {
   if (!eh || eh->eh_magiq != MI_ENSHASH_NMAGIQ)
     return false;

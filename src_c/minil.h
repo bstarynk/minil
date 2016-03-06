@@ -60,7 +60,7 @@ enum mi_typeval_en
   MiTy_Double,
   MiTy_Chaine,
   MiTy_Ensemble,
-  MiTy_Noeud,
+  MiTy_Tuple,
   MiTy_Symbole,
   MiTy__Dernier // doit toujours être en dernier
 };
@@ -70,7 +70,7 @@ typedef struct MiSt_Entier_st Mit_Entier;
 typedef struct MiSt_Double_st Mit_Double;
 typedef struct MiSt_Chaine_st Mit_Chaine;
 typedef struct MiSt_Ensemble_st Mit_Ensemble;
-typedef struct MiSt_Noeud_st Mit_Noeud;
+typedef struct MiSt_Tuple_st Mit_Tuple;
 typedef struct MiSt_Symbole_st Mit_Symbole;
 
 // Une valeur est un pointeur, mais de plusieurs types possibles, donc une union.
@@ -91,7 +91,7 @@ union MiSt_Val_un
   const Mit_Double *miva_dbl;
   const Mit_Chaine *miva_chn;
   const Mit_Ensemble *miva_ens;
-  const Mit_Noeud *miva_noe;
+  const Mit_Tuple *miva_tup;
   Mit_Symbole *miva_sym;
 };
 typedef union MiSt_Val_un Mit_Val;
@@ -101,7 +101,7 @@ typedef union MiSt_Val_un Mit_Val;
 #define MI_DOUBLEV(D) ((Mit_Val){.miva_dbl=(D)})
 #define MI_CHAINEV(C) ((Mit_Val){.miva_chn=(C)})
 #define MI_ENSEMBLEV(E) ((Mit_Val){.miva_ens=(E)})
-#define MI_NOEUDV(N) ((Mit_Val){.miva_noe=(N)})
+#define MI_TUPLEV(T) ((Mit_Val){.miva_tup=(T)})
 #define MI_SYMBOLEV(S) ((Mit_Val){.miva_sym=(S)})
 
 static inline enum mi_typeval_en
@@ -152,15 +152,15 @@ struct MiSt_Ensemble_st
   unsigned mi_taille;
   Mit_Symbole *mi_elements[];
 };
-// Une valeur noeud a un type, une marque, une connective, une arité, des fils
-// C'est la seule valeur composite....
-struct MiSt_Noeud_st
+// Une valeur ensemble a un type, une marque, une taille, et les symboles
+
+struct MiSt_Tuple_st
 {
   enum mi_typeval_en mi_type;
   bool mi_marq;
-  Mit_Symbole *mi_conn;
-  unsigned mi_arite;
-  Mit_Val mi_fils[];
+  unsigned mi_hash;
+  unsigned mi_taille;
+  Mit_Symbole *mi_composants[];
 };
 // Une association par table de hashage entre symboles et valeurs.
 // Ce n'est pas une valeur, mais une donnée interne.
@@ -182,7 +182,9 @@ enum mi_type_charge_en
 struct MiCh_Tampon_st;
 struct MiCh_Environ_st;
 
-// Une valeur symbole a un type, une marque, une chaîne nom, un
+struct MiSt_Radical_st;
+
+// Une valeur symbole a un type, une marque, un radical, un
 // indice, une association pour les attributs et un vecteur de
 // composants; elle a aussi un chargement qui n'est pas proprement une
 // valeur, et qui est discriminée par mi_chatype
@@ -193,7 +195,7 @@ struct MiSt_Symbole_st
   unsigned mi_hash;
   unsigned mi_indice;
   bool mi_predef;
-  const Mit_Chaine *mi_nom;
+  struct MiSt_Radical_st*mi_radical;
   struct Mi_Assoc_st *mi_attrs;
   struct Mi_Vecteur_st *mi_comps;
   enum mi_type_charge_en mi_chatype;
@@ -249,13 +251,13 @@ mi_en_symbole (const Mit_Val v)
   return v.miva_sym;
 }				// fin mi_en_symbole
 
-static inline const Mit_Noeud *
-mi_en_noeud (const Mit_Val v)
+static inline const Mit_Tuple *
+mi_en_tuple (const Mit_Val v)
 {
-  if (!v.miva_ptr || *v.miva_type != MiTy_Noeud)
+  if (!v.miva_ptr || *v.miva_type != MiTy_Tuple)
     return NULL;
-  return v.miva_noe;
-}				// fin mi_en_noeud
+  return v.miva_tup;
+}				// fin mi_en_tuple
 
 static inline const Mit_Ensemble *
 mi_en_ensemble (const Mit_Val v)
@@ -318,37 +320,16 @@ mi_vald_double (const Mit_Val v, double def)
 }
 
 
-/// connective d'un noeud
-static inline const Mit_Symbole *
-mi_connective_noeud (const Mit_Noeud *nd)
-{
-  if (!nd || nd->mi_type != MiTy_Noeud)
-    return NULL;
-  return nd->mi_conn;
-}
 
-/// arité d'un noeud
+/// arité d'un tuple
 static inline unsigned
-mi_arite_noeud (const Mit_Noeud *nd)
+mi_arite_noeud (const Mit_Tuple*tu)
 {
-  if (!nd || nd->mi_type != MiTy_Noeud)
+  if (!tu || tu->mi_type != MiTy_Tuple)
     return 0;
-  return nd->mi_arite;
+  return tu->mi_taille;
 }
 
-// obtenir le fils de rang rg ou bien une valeur par défaut
-static inline Mit_Val
-mi_fils_noeud (const Mit_Noeud *nd, int rg, const Mit_Val def)
-{
-  if (!nd || nd->mi_type != MiTy_Noeud)
-    return def;
-  unsigned ar = nd->mi_arite;
-  if (rg < 0)
-    rg += (int) ar;
-  if (rg >= 0 && rg < (int) ar)
-    return nd->mi_fils[rg];
-  return def;
-}
 
 static inline unsigned
 mi_cardinal_ensemble (const Mit_Ensemble * en)
@@ -368,6 +349,19 @@ mi_ensemble_nieme (const Mit_Ensemble * en, int n)
     n += (int) ca;
   if (n >= 0 && n < (int) ca)
     return en->mi_elements[n];
+  return NULL;
+}
+
+static inline Mit_Symbole *
+mi_tuple_nieme (const Mit_Tuple * tu, int n)
+{
+  if (!tu || tu->mi_type != MiTy_Tuple)
+    return NULL;
+  unsigned ta = tu->mi_taille;
+  if (n < (int) ta)
+    n += (int) ta;
+  if (n >= 0 && n < (int) ta)
+    return tu->mi_composants[n];
   return NULL;
 }
 
@@ -395,7 +389,8 @@ void mi_enshash_detruire (struct Mi_EnsHash_st *eh);
 void mi_enshash_ajouter (struct Mi_EnsHash_st *eh, const Mit_Symbole *sy);
 void mi_enshash_ajouter_valeur (struct Mi_EnsHash_st *eh, const Mit_Val va);
 void mi_enshash_oter (struct Mi_EnsHash_st *eh, const Mit_Symbole *sy);
-bool mi_enshash_contient (struct Mi_EnsHash_st *eh, const Mit_Symbole *sy);
+bool mi_enshash_contient (const struct Mi_EnsHash_st *eh, const Mit_Symbole *sy);
+
 /// la fonction d'iteration renvoie true pour arrêter l'itération
 typedef bool mi_itersymb_sigt (Mit_Symbole *sy, void *client);
 void mi_enshash_iterer (struct Mi_EnsHash_st *eh, mi_itersymb_sigt * f,
@@ -414,11 +409,6 @@ void mi_ensemble_iterer (const Mit_Ensemble * en, mi_itersymb_sigt * f,
 
 
 
-/// création d'un noeud d'arité donnée
-const Mit_Noeud *mi_creer_noeud (const Mit_Symbole *consymb, unsigned arite,
-                                 const Mit_Val fils[]);
-const Mit_Noeud *mi_creer_noeud_va (const Mit_Symbole *consymb,
-                                    unsigned arite, ...);
 
 const Mit_Ensemble *mi_ensemble_union (const Mit_Ensemble * en1,
                                        const Mit_Ensemble * en2);
@@ -428,7 +418,7 @@ const Mit_Ensemble *mi_ensemble_intersection (const Mit_Ensemble * en1,
 // hash code d'une chaine
 unsigned mi_hashage_chaine (const char *ch);
 // tester si une valeur chaine est licite pour un nom
-bool mi_nom_licite (Mit_Chaine *nom);
+bool mi_nom_licite (const Mit_Chaine *nom);
 // tester si une chaine C est licite
 bool mi_nom_licite_chaine (const char *ch);
 // Trouver un symbole de nom et indice donnés
@@ -448,13 +438,9 @@ void mi_iterer_symbole_primaire (mi_itersymb_sigt * f, void *client);
 void mi_iterer_symbole_nomme (const char *ch, mi_itersymb_sigt * f,
                               void *client);
 
-static inline const char *
-mi_symbole_chaine (const Mit_Symbole *sy)
-{
-  if (sy && sy->mi_type == MiTy_Symbole)
-    return mi_vald_chaine (MI_CHAINEV (sy->mi_nom), NULL);
-  return NULL;
-}
+const char *mi_symbole_chaine (const Mit_Symbole *sy);
+
+const Mit_Chaine*mi_symbole_nom(const Mit_Symbole*sy);
 
 static inline unsigned
 mi_symbole_indice (const Mit_Symbole *sy)

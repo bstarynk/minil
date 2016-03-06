@@ -91,24 +91,6 @@ mi_json_val (struct Mi_Sauvegarde_st *sv, const Mit_Val v)
       return json_pack ("{so}", "elem", jel);
     }
     break;
-    case MiTy_Noeud:
-    {
-      const Mit_Noeud *nd = mi_en_noeud (v);
-      const Mit_Symbole *sycon = mi_connective_noeud (nd);
-      if (mi_sauvegarde_symbole_oublie (sv, sycon))
-        return json_null ();
-      if (!mi_sauvegarde_symbole_connu (sv, sycon))
-        return json_null ();
-      unsigned ar = mi_arite_noeud (nd);
-      const json_t *jsymb =
-        mi_json_val (sv, MI_SYMBOLEV ((Mit_Symbole *) sycon));
-      json_t *jfils = json_array ();
-      for (unsigned ix = 0; ix < ar; ix++)
-        json_array_append_new (jfils,
-                               (json_t *) mi_json_val (sv,
-                                   nd->mi_fils[ix]));
-      return json_pack ("{soso}", "conn", jsymb, "fils", jfils);
-    }
     case MiTy__Dernier: // ne devrait jamais arriver
       MI_FATALPRINTF("valeur impossible@%p", v.miva_ptr);
     }
@@ -156,30 +138,7 @@ mi_val_json (const json_t *j)
           mi_enshash_detruire (&eh);
           return MI_ENSEMBLEV (e);
         }
-      json_t *jc = json_object_get (j, "conn");
-      json_t *jf = json_object_get (j, "fils");
-      if (jc && json_is_array (jf))
-        {
-          Mit_Val petitab[8] = { };
-          Mit_Symbole *sycon = mi_en_symbole (mi_val_json (jc));
-          unsigned ar = json_array_size (jc);
-          if (!sycon)
-            return MI_NILV;
-          Mit_Val *tab =
-            (ar <
-             sizeof (petitab) / sizeof (petitab[0])) ? petitab : calloc (ar +
-                 1,
-                 sizeof
-                 (Mit_Val));
-          if (!tab)
-            MI_FATALPRINTF ("impossible d'allouer tampon pour %d fils", ar);
-          for (unsigned ix = 0; ix < ar; ix++)
-            tab[ix] = mi_val_json (json_array_get (jc, ix));
-          Mit_Val res = MI_NOEUDV (mi_creer_noeud (sycon, ar, tab));
-          if (tab != petitab)
-            free (tab);
-          return res;
-        }
+#warning manque traitement des tuples dans mi_val_json
     }
   fprintf (stderr, "JSON incorrect:\n");
   json_dumpf (j, stderr, JSON_INDENT (1) | JSON_SORT_KEYS);
@@ -424,18 +383,6 @@ mi_sauvegarde_balayer (struct Mi_Sauvegarde_st *sv, const Mit_Val v)
     case MiTy_Entier:
     case MiTy_Double:
       return;
-    case MiTy_Noeud:
-    {
-      const Mit_Noeud *nd = v.miva_noe;
-      const Mit_Symbole *sycon = nd->mi_conn;
-      if (mi_sauvegarde_symbole_oublie (sv, sycon))
-        return;
-      mi_sauvegarde_symbole (sv, sycon);
-      unsigned t = nd->mi_arite;
-      for (unsigned ix = 0; ix < t; ix++)
-        mi_sauvegarde_balayer (sv, nd->mi_fils[ix]);
-    }
-    return;
     case MiTy_Symbole:
     {
       const Mit_Symbole *sy = v.miva_sym;
@@ -451,6 +398,19 @@ mi_sauvegarde_balayer (struct Mi_Sauvegarde_st *sv, const Mit_Val v)
       for (unsigned ix = 0; ix < t; ix++)
         {
           const Mit_Symbole *sy = en->mi_elements[ix];
+          if (mi_sauvegarde_symbole_oublie (sv, sy))
+            continue;
+          mi_sauvegarde_balayer (sv, MI_SYMBOLEV ((Mit_Symbole *) sy));
+        }
+    }
+    return;
+    case MiTy_Tuple:
+    {
+      const Mit_Tuple *tu = v.miva_tup;
+      unsigned t = tu->mi_taille;
+      for (unsigned ix = 0; ix < t; ix++)
+        {
+          const Mit_Symbole *sy = tu->mi_composants[ix];
           if (mi_sauvegarde_symbole_oublie (sv, sy))
             continue;
           mi_sauvegarde_balayer (sv, MI_SYMBOLEV ((Mit_Symbole *) sy));
