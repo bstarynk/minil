@@ -34,6 +34,9 @@ struct MiSt_Radical_st
   struct MiSt_Radical_st *urad_gauche;
   struct MiSt_Radical_st *urad_droit;
   Mit_Symbole *urad_symbprim;
+  unsigned urad_tailsec;
+  unsigned urad_nbsec; /* nombre de symboles secondaires, en hash table */
+  Mit_Symbole**urad_tabsecsym;	/* de taille urad_tailsec */
 };
 
 static struct MiSt_Radical_st *mi_radical_racine;
@@ -87,7 +90,7 @@ const char*mi_symbole_chaine(const Mit_Symbole*sy)
 {
   if (!sy || sy->mi_type != MiTy_Symbole)return NULL;
   const struct MiSt_Radical_st *rad = sy->mi_radical;
-  assert (rad && rad->urad_nmagiq);
+  assert (rad && rad->urad_nmagiq == MI_RAD_NMAGIQ);
   const Mit_Chaine*nm = rad->urad_nom;
   assert (nm && nm->mi_type == MiTy_Chaine);
   return nm->mi_car;
@@ -382,13 +385,52 @@ mi_cmp_symboleptr (const void *p1, const void *p2)
 
 
 
+typedef bool mi_iterradical_sigt(struct MiSt_Radical_st*rad, void*client);
+static struct MiSt_Radical_st*
+mi_parcourir_radical(struct MiSt_Radical_st*rad, mi_iterradical_sigt*f, void*client)
+{
+  if (!rad) return NULL;
+  assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
+  struct MiSt_Radical_st*r = NULL;
+  r = rad->urad_gauche;
+  if (r)
+    {
+      assert (r->urad_nmagiq == MI_RAD_NMAGIQ);
+      r = mi_parcourir_radical(r,f,client);
+      if (r) return r;
+    }
+  if ((*f)(rad,client)) return rad;
+  r = rad->urad_droit;
+  if (r)
+    {
+      assert (r->urad_nmagiq == MI_RAD_NMAGIQ);
+      r = mi_parcourir_radical(r,f,client);
+      if (r) return r;
+    }
+  return NULL;
+}
+
+struct Mi_parcours_radical_primaire_st
+{
+  mi_itersymb_sigt * prp_f;
+  void* prp_client;
+};
+
+static bool
+mi_parcourir_radical_primaire(struct MiSt_Radical_st*rad, void*client)
+{
+  struct Mi_parcours_radical_primaire_st*prp = client;
+  return (*prp->prp_f)(rad->urad_symbprim,prp->prp_client);
+}
+
 /// itérer sur chaque symbole primaire
 void
 mi_iterer_symbole_primaire (mi_itersymb_sigt * f, void *client)
 {
   if (!f)
     return;
-#warning mi_iterer_symbole_primaire à coder
+  struct Mi_parcours_radical_primaire_st prp= {f,client};
+  mi_parcourir_radical(mi_radical_racine, mi_parcourir_radical_primaire, &prp);
 }				/* fin mi_iterer_symbole_primaire */
 
 
@@ -402,6 +444,110 @@ mi_iterer_symbole_nomme (const char *ch, mi_itersymb_sigt * f, void *client)
     return;
 #warning mi_iterer_symbole_nomme à coder
 }				// fin mi_iterer_symbole_nomme
+
+
+static int
+mi_indice_radical_symbole_secondaire(struct MiSt_Radical_st*rad, unsigned ind)
+{
+  assert (rad && rad->urad_nmagiq == MI_RAD_NMAGIQ);
+  const Mit_Chaine*nomr = rad->urad_nom;
+  assert (nomr && nomr->mi_type == MiTy_Chaine);
+  unsigned h = mi_hashage_symbole_indice(nomr,ind);
+  if (!rad->urad_tabsecsym)
+    {
+      assert (!rad->urad_tailsec);
+      unsigned ta = 7;
+      rad->urad_tabsecsym = calloc(ta, sizeof(Mit_Symbole*));
+      if (!rad->urad_tabsecsym)
+        MI_FATALPRINTF("impossible d'allouer table de symboles secondaire de %d nom %s (%s)",
+                       ta, nomr->mi_car, strerror(errno));
+      rad->urad_tailsec = ta;
+      rad->urad_nbsec = 0;
+    }
+  unsigned ta = rad->urad_tailsec;
+  assert (ta > 2);
+  unsigned debix = h % rad->urad_tailsec;
+  int pos = -1;
+  for (unsigned ix=debix; ix<ta; ix++)
+    {
+      const Mit_Symbole*sy = rad->urad_tabsecsym[ix];
+      if (!sy)
+        {
+          if (!pos) pos=(int)ix;
+          return pos;
+        }
+      else if (sy==MI_TROU_SYMBOLE)
+        {
+          if (!pos) pos=(int)ix;
+          continue;
+        }
+      assert (sy->mi_radical == rad);
+      if (sy->mi_indice == ind) return (int)ix;
+    }
+  for (unsigned ix=0; ix<debix; ix++)
+    {
+      const Mit_Symbole*sy = rad->urad_tabsecsym[ix];
+      if (!sy)
+        {
+          if (!pos) pos=(int)ix;
+          return pos;
+        }
+      else if (sy==MI_TROU_SYMBOLE)
+        {
+          if (!pos) pos=(int)ix;
+          continue;
+        }
+      assert (sy->mi_radical == rad);
+      if (sy->mi_indice == ind) return (int)ix;
+    }
+  return -1;
+} /* fin mi_indice_radical_symbole_secondaire */
+
+
+void
+mi_agrandir_radical_table_secondaire(struct MiSt_Radical_st*rad, unsigned xtra)
+{
+  assert (rad && rad->urad_nmagiq == MI_RAD_NMAGIQ);
+  if (!rad->urad_tabsecsym)
+    {
+      unsigned ta = mi_nombre_premier_apres(9*xtra/8+5);
+      rad->urad_tabsecsym = calloc(ta, sizeof(Mit_Symbole*));
+      if (!rad->urad_tabsecsym)
+        MI_FATALPRINTF("impossible d'allouer table de symboles secondaire de %d nom %s (%s)",
+                       ta, rad->urad_nom->mi_car, strerror(errno));
+      rad->urad_tailsec = ta;
+      rad->urad_nbsec = 0;
+    }
+  else if (5*rad->urad_nbsec + 4*xtra > rad->urad_tailsec)
+    {
+      unsigned ancnb = rad->urad_nbsec;
+      unsigned ta = mi_nombre_premier_apres(4*(rad->urad_nbsec + xtra)/3 + rad->urad_nbsec/32 + 5);
+      if (ta > rad->urad_tailsec)
+        {
+          Mit_Symbole**anctab = rad->urad_tabsecsym;
+          unsigned anctail = rad->urad_tailsec;
+          rad->urad_tabsecsym = calloc(ta, sizeof(Mit_Symbole*));
+          if (!rad->urad_tabsecsym)
+            MI_FATALPRINTF("impossible d'allouer table de symboles secondaire de %d nom %s (%s)",
+                           ta, rad->urad_nom->mi_car, strerror(errno));
+          rad->urad_tailsec = ta;
+          rad->urad_nbsec = 0;
+          for (unsigned ix=0; ix<anctail; ix++)
+            {
+              Mit_Symbole*ancsy = anctab[ix];
+              if (!ancsy || ancsy == MI_TROU_SYMBOLE) continue;
+              assert (ancsy->mi_type == MiTy_Symbole && ancsy->mi_radical == rad);
+              assert (ancsy->mi_indice > 0);
+              int pos = mi_indice_radical_symbole_secondaire(rad,ancsy->mi_indice);
+              assert (pos >= 0 && pos<(int)ta && rad->urad_tabsecsym[pos]==NULL);
+              rad->urad_tabsecsym[pos] = ancsy;
+              rad->urad_nbsec++;
+            }
+          assert (rad->urad_nbsec == ancnb);
+        }
+    }
+} /* fin mi_agrandir_radical_table_secondaire */
+
 
 // Creer (ou trouver, s'il existe déjà) un symbole de nom et indice donnés
 Mit_Symbole *mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind)
@@ -418,7 +564,26 @@ Mit_Symbole *mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind)
   assert (rad && rad->urad_nmagiq == MI_RAD_NMAGIQ);
   if (ind)
     {
-#warning mi_creer_symbole_nom incomplet
+      if (5*rad->urad_nbsec + 2 >= 4*rad->urad_tailsec)
+        mi_agrandir_radical_table_secondaire(rad, 2+rad->urad_nbsec/32);
+      int pos = mi_indice_radical_symbole_secondaire(rad,ind);
+      assert (pos >= 0 && pos< (int)rad->urad_tailsec);
+      Mit_Symbole*ancsy = rad->urad_tabsecsym[pos];
+      if (!ancsy || ancsy == MI_TROU_SYMBOLE)
+        {
+          Mit_Symbole*sy =  mi_allouer_valeur(MiTy_Symbole, sizeof(Mit_Symbole));
+          sy->mi_radical = rad;
+          sy->mi_indice = ind;
+          sy->mi_hash = mi_hashage_symbole_indice(rad->urad_nom, ind);
+          rad->urad_tabsecsym[pos] = sy;
+          rad->urad_nbsec++;
+          return sy;
+        }
+      else
+        {
+          assert (ancsy->mi_indice == ind);
+          return ancsy;
+        }
     }
   else
     {
@@ -428,7 +593,8 @@ Mit_Symbole *mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind)
           sy = mi_allouer_valeur(MiTy_Symbole, sizeof(Mit_Symbole));
           rad->urad_symbprim = sy;
           sy->mi_radical = rad;
-          sy->mi_hash = rad->urad_nom->mi_hash;
+          sy->mi_indice = 0;
+          sy->mi_hash = mi_hashage_symbole_indice(rad->urad_nom, 0);
         }
       return sy;
     }
