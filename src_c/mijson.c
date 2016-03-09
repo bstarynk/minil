@@ -301,10 +301,12 @@ mi_remplir_symbole_json (const json_t *j)
 
 
 
-// la longueur maximale d'un nom de fichier
+// la longueur maximale d'un nom de fichier (surtout d'un repertoire)
 // ce n'est pas une bonne idée,
 // .... voir http://programmers.stackexchange.com/a/289441/40065
 #define MI_NOMFICHMAX 384
+
+static void mi_renommer_precedente_sauvegarde(const char*rep);
 
 void
 mi_sauvegarde_init (struct Mi_Sauvegarde_st *sv, const char *rep)
@@ -322,6 +324,10 @@ mi_sauvegarde_init (struct Mi_Sauvegarde_st *sv, const char *rep)
         MI_FATALPRINTF ("impossible de créer le répertoire %s (%s)",
                         rep, strerror (errno));
     }
+  char nomfic[MI_NOMFICHMAX];
+  snprintf(nomfic, sizeof(nomfic), "%s/symbolist", rep);
+  if (!access(nomfic,R_OK))
+    mi_renommer_precedente_sauvegarde(rep);
   memset (sv, 0, sizeof (*sv));
   sv->sv_magiq = MI_SAUVEGARDE_NMAGIQ;
   mi_enshash_initialiser (&sv->sv_syoubli, 5);
@@ -330,7 +336,7 @@ mi_sauvegarde_init (struct Mi_Sauvegarde_st *sv, const char *rep)
   if (!sv->sv_rep)
     MI_FATALPRINTF ("mémoire pleine, impossible de dupliquer %s (%s)",
                     rep, strerror (errno));
-}
+} /* fin mi_sauvegarde_init */
 
 void
 mi_sauvegarde_symbole (struct Mi_Sauvegarde_st *sv, const Mit_Symbole *sy)
@@ -507,6 +513,7 @@ mi_ecrirecontenusymbole (Mit_Symbole *sy, void *client)
   unsigned h = sy->mi_hash;
   char nomfich[MI_NOMFICHMAX];
   char sufind[16];
+  char*nf = NULL;
   snprintf (nomfich, sizeof (nomfich), "%s/data%02d", sv->sv_rep, h % 100);
   if (access (nomfich, F_OK))
     {
@@ -514,19 +521,32 @@ mi_ecrirecontenusymbole (Mit_Symbole *sy, void *client)
         MI_FATALPRINTF ("impossible de créer sous-répertoire %s (%s)",
                         nomfich, strerror (errno));
     }
-  snprintf (nomfich, sizeof (nomfich), "%s/data%02d/%s%s.json",
-            sv->sv_rep, h % 100, mi_symbole_chaine (sy),
-            mi_symbole_indice_ch (sufind, sy));
-  if (!access (nomfich, F_OK))
+  if (snprintf (nomfich, sizeof (nomfich), "%s/data%02d/%s%s.json",
+                sv->sv_rep, h % 100, mi_symbole_chaine (sy),
+                mi_symbole_indice_ch (sufind, sy))
+      < (int)sizeof(nomfich))
+    nf = nomfich;
+  else
+    asprintf(&nf, "%s/data%02d/%s%s.json",
+             sv->sv_rep, h % 100, mi_symbole_chaine (sy),
+             mi_symbole_indice_ch (sufind, sy));
+  if (!access (nf, F_OK))
     {
       char nomvieux[MI_NOMFICHMAX];
-      snprintf (nomvieux, sizeof (nomvieux), "%s~", nomfich);
-      rename (nomfich, nomvieux);
+      if (snprintf (nomvieux, sizeof (nomvieux), "%s~", nf) < (int) sizeof(nomvieux))
+        rename (nf, nomvieux);
+      else
+        {
+          char*vnf = NULL;
+          asprintf(&vnf, "%s~", nf);
+          rename (nf, vnf);
+          free (vnf);
+        }
     }
-  FILE *fich = fopen (nomfich, "w");
+  FILE *fich = fopen (nf, "w");
   if (!fich)
     MI_FATALPRINTF ("impossible d'écrire le fichier %s (%s)",
-                    nomfich, strerror (errno));
+                    nf, strerror (errno));
   json_t *j = mi_json_contenu_symbole (sv, sy);
   assert (json_is_object (j));
   if (json_dumpf
@@ -534,6 +554,8 @@ mi_ecrirecontenusymbole (Mit_Symbole *sy, void *client)
     MI_FATALPRINTF ("échec d'écriture de JSON dans %s", nomfich);
   fputc ('\n', fich);
   fclose (fich);
+  if (nf != nomfich) free (nf);
+  json_decref(j);
   return false;
 }				// fin mi_ecrirecontenusymbole
 
@@ -569,9 +591,10 @@ mi_sauvegarde_finir (struct Mi_Sauvegarde_st *sv)
   snprintf (nomfic, sizeof (nomfic), "%s/symbolist", sv->sv_rep);
   if (!access (nomfic, R_OK))
     {
-      char nomanc[MI_NOMFICHMAX];
-      snprintf (nomanc, sizeof (nomanc), "%s~", nomfic);
-      rename (nomfic, nomanc);
+      char nomvieux[MI_NOMFICHMAX];
+      memset (nomvieux, 0, sizeof(nomvieux));
+      if (snprintf (nomvieux, sizeof (nomvieux), "%s~", nomfic) < (int) sizeof(nomvieux))
+        rename (nomfic, nomvieux);
     }
   fs = fopen (nomfic, "w");
   mi_emettre_notice_gplv3 (fs, "# ", "", "symbolist");
@@ -631,7 +654,6 @@ mi_creer_symboles_charges (const char *rep)
 {
   assert (rep != NULL);
   char nomfic[MI_NOMFICHMAX];
-  char ligne[MI_NOMFICHMAX];
   FILE *fs = NULL;
   snprintf (nomfic, sizeof (nomfic), "%s/symbolist", rep);
   fs = fopen (nomfic, "r");
@@ -640,40 +662,40 @@ mi_creer_symboles_charges (const char *rep)
                     nomfic, strerror (errno));
   int numlin = 0;
   int nbsymb = 0;
+  char *tampligne = NULL;
+  size_t tailleligne = 0;
+  ssize_t longligne = 0;
   do
     {
-      memset (ligne, 0, sizeof (ligne));
-      if (!fgets (ligne, sizeof (ligne) - 1, fs))
-        break;
+      longligne = getline(&tampligne, &tailleligne, fs);
+      if (longligne<0) break;
       numlin++;
-      if (ligne[0] == '#')
+      if (tampligne[0] == '#')
         continue;
-      if (!isalpha (ligne[0]))
+      if (!isalpha (tampligne[0]))
         MI_FATALPRINTF ("ligne#%d de %s incorrecte: %s",
-                        numlin, nomfic, ligne);
-      if (strlen (ligne) >= sizeof (ligne) - 2)
-        MI_FATALPRINTF ("ligne#%d de %s trop longue: %s",
-                        numlin, nomfic, ligne);
+                        numlin, nomfic, tampligne);
       int finom = 0;
       unsigned ind = 0;
-      for (finom = 0; finom < (int) sizeof (ligne) && isalnum (ligne[finom]);
+      for (finom = 0; finom < (int) tailleligne && isalnum (tampligne[finom]);
            finom++);
-      if (isspace (ligne[finom]))
-        ligne[finom] = '\0';
-      else if (ligne[finom] == '_')
+      if (isspace (tampligne[finom]))
+        tampligne[finom] = '\0';
+      else if (tampligne[finom] == '_')
         {
-          ind = atoi (ligne + finom + 1);
-          ligne[finom] = '\0';
+          ind = atoi (tampligne + finom + 1);
+          tampligne[finom] = '\0';
         };
-      if (!mi_nom_licite_chaine (ligne))
-        MI_FATALPRINTF ("ligne#%d de %s illicite: %s", numlin, nomfic, ligne);
-      Mit_Symbole *sy = mi_creer_symbole_chaine (ligne, ind);
+      if (!mi_nom_licite_chaine (tampligne))
+        MI_FATALPRINTF ("ligne#%d de %s illicite: %s", numlin, nomfic, tampligne);
+      Mit_Symbole *sy = mi_creer_symbole_chaine (tampligne, ind);
       if (!sy)
         MI_FATALPRINTF ("ligne#%d de %s avec mauvais symbole: %s",
-                        numlin, nomfic, ligne);
+                        numlin, nomfic, tampligne);
       nbsymb++;
     }
   while (!feof (fs));
+  free (tampligne);
   fclose (fs);
   printf ("%d symboles créés depuis %s\n", nbsymb, nomfic);
 }				// fin mi_creer_symboles_charges
@@ -686,30 +708,28 @@ mi_charger_contenu_symbole (Mit_Symbole *sy, const char *rep)
 {
   assert (sy && sy->mi_type == MiTy_Symbole);
   assert (rep != NULL && rep[0] != '\0');
-  char nomfich[MI_NOMFICHMAX];
   char sufind[16];
   unsigned h = sy->mi_hash;
-  if (snprintf
-      (nomfich, sizeof (nomfich), "%s/data%02d/%s%s.json", rep, h % 100,
-       mi_symbole_chaine (sy), mi_symbole_indice_ch (sufind,
-           sy)) >=
-      (int) sizeof (nomfich) - 1)
+  char*nomfi = NULL;
+  asprintf(&nomfi,  "%s/data%02d/%s%s.json", rep, h % 100,
+           mi_symbole_chaine (sy), mi_symbole_indice_ch (sufind,
+               sy));
+  if (!nomfi)
+    MI_FATALPRINTF("impossible de creer le nom de fichier pour %s%s (%s)",
+                   mi_symbole_chaine (sy),
+                   mi_symbole_indice_ch (sufind, sy), strerror(errno));
+
+  if (access (nomfi, R_OK))
     {
-      fprintf (stderr, "nom de fichier trop long %s/data%02d/%s%s.json\n",
-               rep, h % 100, mi_symbole_chaine (sy),
-               mi_symbole_indice_ch (sufind, sy));
-      return;
-    }
-  if (access (nomfich, R_OK))
-    {
-      fprintf (stderr, "impossible de lire %s: %s\n", nomfich,
+      fprintf (stderr, "impossible de lire %s au chargement: %s\n", nomfi,
                strerror (errno));
+      free (nomfi);
       return;
     }
   json_error_t jerr = { };
   memset (&jerr, 0, sizeof (jerr));
   json_t *j =
-    json_load_file (nomfich, JSON_DISABLE_EOF_CHECK | JSON_REJECT_DUPLICATES,
+    json_load_file (nomfi, JSON_DISABLE_EOF_CHECK | JSON_REJECT_DUPLICATES,
                     &jerr);
   if (!j)
     {
@@ -717,14 +737,16 @@ mi_charger_contenu_symbole (Mit_Symbole *sy, const char *rep)
                "Décodage de JSON echoue dans %s, ligne %d, colonne %d, position %ld: %s\n",
                jerr.source, jerr.line, jerr.column, (long) jerr.position,
                jerr.text);
+      free (nomfi);
       return;
     }
   if (sy != mi_remplir_symbole_json (j))
     fprintf (stderr, "Remplissage du symbole %s%s échoue (fichier %s)\n",
              mi_symbole_chaine (sy), mi_symbole_indice_ch (sufind, sy),
-             nomfich);
+             nomfi);
   json_decref (j);
   mi_compte_symbole_charge++;
+  free (nomfi);
 }				/* fin mi_charger_contenu_symbole */
 
 
@@ -757,9 +779,76 @@ mi_charger_etat (const char *rep)
   if (access (rep, R_OK))
     MI_FATALPRINTF ("mauvais répertoire à charger %s (%s)",
                     rep, strerror (errno));
+  printf("Début du chargement de %s/\n", rep);
   mi_compte_symbole_charge = 0;
   mi_creer_symboles_charges (rep);
   mi_iterer_symbole_primaire (mi_chargersymboleprimaire, (void *) rep);
   printf ("%ld symboles ont été chargés de %s\n",
           mi_compte_symbole_charge, rep);
 }				// fin mi_charger_etat
+
+// renommer tous les fichiers de données d'une précédente sauvegarde
+static void
+mi_renommer_precedente_sauvegarde(const char*rep)
+{
+  assert (rep && rep[0] != (char)0);
+  int nbrenom = 0;
+  char nomfich[MI_NOMFICHMAX];
+  memset(nomfich, 0, sizeof(nomfich));
+  if (snprintf(nomfich, sizeof(nomfich), "%s/symbolist", rep)
+      >= MI_NOMFICHMAX-2)
+    MI_FATALPRINTF("nom de répertoire '%s' trop long", rep);
+  FILE*pf = fopen(nomfich, "r");
+  if (!pf) return;
+  char *tampligne = NULL;
+  size_t tailleligne = 0;
+  ssize_t longligne = 0;
+  int numlin = 0;
+  do
+    {
+      longligne = getline(&tampligne, &tailleligne, pf);
+      if (longligne<0) break;
+      numlin++;
+      if (tampligne[0] == '#')
+        continue;
+      if (!isalpha (tampligne[0]))
+        continue;
+      int finom = 0;
+      unsigned ind = 0;
+      char* blancsoul = NULL;
+      for (finom = 0; finom < (int) tailleligne && isalnum (tampligne[finom]);
+           finom++);
+      if (isspace (tampligne[finom]))
+        tampligne[finom] = '\0';
+      else if (tampligne[finom] == '_')
+        {
+          blancsoul = tampligne + finom;
+          ind = atoi (tampligne + finom + 1);
+          *blancsoul = '\0';
+        };
+      if (!mi_nom_licite_chaine (tampligne))
+        continue;
+      unsigned h = mi_hashage_nom_indice(tampligne, ind);
+      if (h>0)
+        {
+          char*nf = NULL;
+          if (blancsoul)
+	    *blancsoul = '_';
+          asprintf(&nf, "%s/data%02d/%s.json", rep, h % 100, tampligne);
+          if (nf != NULL && !access(nf, F_OK))
+            {
+              char*vf = NULL;
+              asprintf(&vf, "%s~", nf);
+              if (vf)
+                if (!rename (nf,vf))
+                  nbrenom++;
+              free (vf);
+            }
+          free (nf);
+        };
+    }
+  while (!feof (pf));
+  fclose(pf);
+  printf("%d fichiers de données de la précédente sauvegarde en %s/ ont été renommés.\n",
+         nbrenom, rep);
+} // fin mi_renommer_precedente_sauvegarde

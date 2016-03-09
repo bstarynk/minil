@@ -18,6 +18,8 @@
 //   You should have received a copy of the GNU General Public License
 //   along with Minil.  If not, see <http://www.gnu.org/licenses/>.
 
+#define _GNU_SOURCE
+/* on a besoin de asprintf */
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -218,6 +220,11 @@ int mi_cmp_symboleptr (const void *, const void *);	// pour qsort
 // on a besoin d'un trou qui ne soit pas nil. Aucune fonction publique
 // ne doit renvoyer ce trou...
 #define MI_TROU_SYMBOLE (Mit_Symbole*)(-1)
+
+
+//// renvoie le hashage qu'aurait un symbole de nom et indice donnés
+unsigned mi_hashage_nom_indice(const char*nom, unsigned ind);
+
 ////////////////////// conversions sûres, car verifiantes
 static inline const Mit_Entier *
 mi_en_entier (const Mit_Val v)

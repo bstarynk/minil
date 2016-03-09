@@ -338,7 +338,16 @@ mi_hashage_symbole_indice (const Mit_Chaine *nom, unsigned ind)
   return h;
 } /* fin mi_hashage_symbole_indice */
 
-
+unsigned
+mi_hashage_nom_indice(const char*nom, unsigned ind)
+{
+  if (!mi_nom_licite_chaine (nom))
+    return 0;
+  unsigned h = mi_hashage_chaine(nom) ^ ind;
+  if (!h) h = mi_hashage_chaine(nom)  % 1200697 + (ind % 1500827) + 3;
+  assert (h != 0);
+  return h;
+}
 
 int
 mi_cmp_symbole (const Mit_Symbole *sy1, const Mit_Symbole *sy2)
