@@ -158,10 +158,19 @@ mi_val_json (const json_t *j)
       json_t*jc = json_object_get(j,"comp");
       if (jc && json_is_array(jc))
         {
-          unsigned ln = json_array_size (je);
-
+          unsigned ln = json_array_size (jc);
+          const Mit_Symbole*petitab[16] = {NULL};
+          const Mit_Symbole**tab = (ln<sizeof(petitab)/sizeof(petitab[0])) ? petitab : calloc(ln+1,sizeof(Mit_Symbole*));
+          if (!tab)
+            MI_FATALPRINTF("impossible de créer tableau de %d symboles (%s)",
+                           ln+1, strerror(errno));
+          for (unsigned ix=0; ix<ln; ix++)
+            tab[ix] =
+              mi_en_symbole (mi_val_json (json_array_get (jc, ix)));
+          const Mit_Tuple*tup = mi_creer_tuple_symboles(ln,tab);
+          if (tab != petitab) free(tab);
+          return MI_TUPLEV(tup);
         }
-#warning manque traitement des tuples dans mi_val_json
     }
   fprintf (stderr, "JSON incorrect:\n");
   json_dumpf (j, stderr, JSON_INDENT (1) | JSON_SORT_KEYS);
