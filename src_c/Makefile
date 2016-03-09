@@ -63,5 +63,5 @@ minil: $(OBJFILES)
 	$(RM) _timestamp.*
 
 ## pour indenter
-indent: .indent.pro
+indent: 
 	for f in minil.h $(SRCFILES) ; do $(ASTYLE) $(ASTYLEFLAGS) $$f ; done
