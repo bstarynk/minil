@@ -83,10 +83,10 @@ mi_arguments_programme (int argc, char **argv)
           break;
         case 'S': // --sauvegarde <rep>
           mi_repsauve = optarg;
-	  // si rien n'a été chargé, il faut le charger avant
-	  // l'initialisation de la sauvegarde...
-	  if (!mi_repcharge && !access("symbolist", R_OK))
-	    mi_charger_etat(".");
+          // si rien n'a été chargé, il faut le charger avant
+          // l'initialisation de la sauvegarde...
+          if (!mi_repcharge && !access("symbolist", R_OK))
+            mi_charger_etat(".");
           mi_sauv = calloc(1, sizeof(struct Mi_Sauvegarde_st));
           if (!mi_sauv)
             MI_FATALPRINTF("impossible de créer la sauvegarde (%s)",
@@ -199,10 +199,13 @@ mi_nombre_premier_avant (unsigned i)
 
 static void mi_initialiser_predefinis (void);
 
+static void mi_initialiser_alea(void);
+
 int
 main (int argc, char **argv)
 {
   mi_initialiser_predefinis ();
+  mi_initialiser_alea();
   mi_arguments_programme (argc, argv);
   if (mi_sauv)
     mi_sauvegarde_finir(mi_sauv);
@@ -229,6 +232,25 @@ mi_initialiser_predefinis (void)
 #include "_mi_predef.h"
 }
 
+void
+mi_initialiser_alea(void)
+{
+  unsigned s = (unsigned)time(NULL) ^ (unsigned)getpid();
+#if __APPLE__
+  srandomdev();
+  if (random() != 0)
+    return;
+#endif
+#if __linux__
+  FILE*f = fopen("/dev/urandom","r");
+  if (f)
+    {
+      fread(&s, sizeof(s),1, f);
+      fclose(f);
+    }
+#endif
+  srandom(s);
+} /* fin mi_initialiser_alea */
 
 void
 mi_emettre_notice_gplv3 (FILE * fichier, const char *prefixe,
