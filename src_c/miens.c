@@ -334,10 +334,18 @@ mi_enshash_ajouter_valeur (struct Mi_EnsHash_st *eh, const Mit_Val va)
         mi_enshash_ajouter (eh, e->mi_elements[ix]);
     }
     break;
-    default:
-      return;
+    case MiTy_Tuple:
+    {
+      const Mit_Tuple*tu = va.miva_tup;
+      unsigned t=tu->mi_taille;
+      mi_enshash_reserver (eh, 5 * t / 4 + 2);
+      for (unsigned ix = 0; ix < t; ix++)
+        mi_enshash_ajouter (eh, tu->mi_composants[ix]);
+      default:
+        return;
+      }
     }
-}				// fin mi_enshash_ajouter_valeur
+}// fin mi_enshash_ajouter_valeur
 
 void
 mi_enshash_oter (struct Mi_EnsHash_st *eh, const Mit_Symbole *sy)

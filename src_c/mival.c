@@ -122,16 +122,86 @@ mi_calculer_hash_tuple (Mit_Tuple*tu)
   tu->mi_hash = h;
 } // fin mi_calculer_hash_tuple
 
-#warning il manque des fonctions de tuple
 const Mit_Tuple*mi_creer_tuple_symboles(unsigned nb,
                                         const Mit_Symbole**tabsym)
 {
-
+  unsigned cnt=0;
+  if (nb==0 || !tabsym) return &mi_tupvide;
+  for (unsigned ix=0; ix<nb; ix++)
+    {
+      const Mit_Symbole*sy = tabsym[ix];
+      if (sy && sy != MI_TROU_SYMBOLE && sy->mi_type == MiTy_Symbole) cnt++;
+    };
+  const Mit_Symbole* petitab[16] = {};
+  const Mit_Symbole**tab = (cnt<sizeof(petitab)/sizeof(petitab[0]))?petitab
+                           :calloc(cnt+1,sizeof(Mit_Symbole*));
+  if (!tab)
+    MI_FATALPRINTF("impossible d'allouer tableau de %d symboles (%s)",
+                   cnt+1, strerror(errno));
+  cnt=0;
+  for (unsigned ix=0; ix<nb; ix++)
+    {
+      const Mit_Symbole*sy = tabsym[ix];
+      if (sy && sy != MI_TROU_SYMBOLE && sy->mi_type == MiTy_Symbole)
+        tab[cnt++] = sy;
+    };
+  Mit_Tuple*tu = mi_allouer_valeur(MiTy_Tuple, sizeof(Mit_Tuple)+cnt*sizeof(Mit_Symbole*));
+  for (unsigned ix=0; ix<cnt; ix++)
+    tu->mi_composants[ix] = (Mit_Symbole*)tab[ix];
+  if (tab != petitab) free(tab);
+  mi_calculer_hash_tuple(tu);
+  return tu;
 } // fin mi_creer_tuple_symboles
 
+
+static struct Mi_Vecteur_st*
+mi_vectcomp_ajouter(struct Mi_Vecteur_st*vecarg, const Mit_Val v)
+{
+  struct Mi_Vecteur_st*vec = vecarg;
+  switch(mi_vtype(v))
+    {
+    case MiTy_Symbole:
+      vec = mi_vecteur_ajouter(vec,v);
+      break;
+    case MiTy_Tuple:
+    {
+      const Mit_Tuple*tu=mi_en_tuple(v);
+      unsigned t = tu->mi_taille;
+      vec = mi_vecteur_reserver(vec, t+1);
+      for (unsigned ix=0; ix<t; ix++)
+        vec = mi_vectcomp_ajouter(vec,MI_SYMBOLEV(tu->mi_composants[ix]));
+    }
+    break;
+    case MiTy_Ensemble:
+    {
+      const Mit_Ensemble*en=mi_en_ensemble(v);
+      unsigned t = en->mi_taille;
+      vec = mi_vecteur_reserver(vec, t+1);
+      for (unsigned ix=0; ix<t; ix++)
+        vec = mi_vectcomp_ajouter(vec,MI_SYMBOLEV(en->mi_elements[ix]));
+    }
+    break;
+    default:
+      break;
+    }
+  return vec;
+} /* end mi_vectcomp_ajouter */
 
 const Mit_Tuple*mi_creer_tuple_valeurs(unsigned nb,
                                        const Mit_Val*tabval)
 {
-
+  struct Mi_Vecteur_st *vec = mi_vecteur_reserver(NULL,5*nb/4+1);
+  for (unsigned ix=0; ix<nb; ix++)
+    vec = mi_vectcomp_ajouter(vec,tabval[ix]);
+  unsigned t = mi_vecteur_taille(vec);
+  if (t > 0)
+    {
+      Mit_Tuple*tu = mi_allouer_valeur(MiTy_Tuple, t*sizeof(Mit_Symbole*));
+      for (unsigned ix=0; ix<t; ix++)
+        tu->mi_composants[ix] = mi_en_symbole(mi_vecteur_comp(vec,ix).t_val);
+      mi_calculer_hash_tuple(tu);
+      free(vec);
+      return tu;
+    }
+  else return &mi_tupvide;
 } // fin mi_creer_tuple_valeurs
