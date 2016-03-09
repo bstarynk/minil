@@ -83,3 +83,55 @@ mi_creer_double (double d)
   valdb->mi_dbl = d;
   return valdb;
 }				// fin mi_creer_double
+
+static const Mit_Tuple mi_tupvide =
+{
+  .mi_type= MiTy_Tuple,
+  .mi_taille= 0,
+  .mi_marq= true,
+  .mi_hash= 89,
+  .mi_composants={NULL}
+};
+
+const Mit_Tuple*mi_tuple_vide(void)
+{
+  return &mi_tupvide;
+} // fin mi_tuple_vide
+
+
+void
+mi_calculer_hash_tuple (Mit_Tuple*tu)
+{
+  assert (tu != NULL && tu->mi_type == MiTy_Tuple);
+  unsigned t = tu->mi_taille;
+  assert (tu->mi_hash == 0);
+  unsigned h1 = 0, h2 = t+1;
+  for (unsigned ix = 0; ix < t; ix++)
+    {
+      const Mit_Symbole *sy = tu->mi_composants[ix];
+      assert (sy != NULL && sy != MI_TROU_SYMBOLE);
+      assert (sy->mi_type == MiTy_Symbole);
+      if (ix % 2)
+        h1 = (22367 * sy->mi_hash + ix) ^ (293 * h1);
+      else
+        h2 = (42391 * sy->mi_hash) ^ (191 * h2 + ix * 17);
+    }
+  unsigned h = (17 * h1) ^ (89 * h2);
+  if (!h)
+    h = (h1 & 0xffff) + (h2 & 0xfffff) + (t % 35677) + 19;
+  tu->mi_hash = h;
+} // fin mi_calculer_hash_tuple
+
+#warning il manque des fonctions de tuple
+const Mit_Tuple*mi_creer_tuple_symboles(unsigned nb,
+                                        const Mit_Symbole**tabsym)
+{
+
+} // fin mi_creer_tuple_symboles
+
+
+const Mit_Tuple*mi_creer_tuple_valeurs(unsigned nb,
+                                       const Mit_Val*tabval)
+{
+
+} // fin mi_creer_tuple_valeurs

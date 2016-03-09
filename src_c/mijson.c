@@ -91,6 +91,23 @@ mi_json_val (struct Mi_Sauvegarde_st *sv, const Mit_Val v)
       return json_pack ("{so}", "elem", jel);
     }
     break;
+    case MiTy_Tuple:
+    {
+      const Mit_Tuple*tu = mi_en_tuple(v);
+      unsigned t = tu->mi_taille;
+      json_t*jcp = json_array();
+      for (unsigned ix=0; ix<t; ix++)
+        {
+          const Mit_Symbole*sy = tu->mi_composants[ix];
+          assert (sy && sy != MI_TROU_SYMBOLE && sy->mi_type == MiTy_Symbole);
+          if (mi_sauvegarde_symbole_connu (sv, sy))
+            json_array_append_new (jcp,
+                                   mi_json_val (sv,
+                                                MI_SYMBOLEV ((Mit_Symbole *)
+                                                    sy)));
+        }
+      return json_pack ("{so}", "comp", jcp);
+    }
     case MiTy__Dernier: // ne devrait jamais arriver
       MI_FATALPRINTF("valeur impossible@%p", v.miva_ptr);
     }
@@ -137,6 +154,12 @@ mi_val_json (const json_t *j)
           const Mit_Ensemble *e = mi_creer_ensemble_enshash (&eh);
           mi_enshash_detruire (&eh);
           return MI_ENSEMBLEV (e);
+        }
+      json_t*jc = json_object_get(j,"comp");
+      if (jc && json_is_array(jc))
+        {
+          unsigned ln = json_array_size (je);
+
         }
 #warning manque traitement des tuples dans mi_val_json
     }

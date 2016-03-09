@@ -415,6 +415,12 @@ const Mit_Ensemble *mi_ensemble_union (const Mit_Ensemble * en1,
 const Mit_Ensemble *mi_ensemble_intersection (const Mit_Ensemble * en1,
     const Mit_Ensemble * en2);
 
+// un tuple contient des symboles non nuls
+const Mit_Tuple*mi_tuple_vide(void);
+const Mit_Tuple*mi_creer_tuple_symboles(unsigned nb,
+                                        const Mit_Symbole**tabsym);
+const Mit_Tuple*mi_creer_tuple_valeurs(unsigned nb,
+                                       const Mit_Val*tabval);
 // hash code d'une chaine
 unsigned mi_hashage_chaine (const char *ch);
 // tester si une valeur chaine est licite pour un nom

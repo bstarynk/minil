@@ -23,7 +23,8 @@ static const Mit_Ensemble mi_ensvide =
   .mi_type= MiTy_Ensemble,
   .mi_taille= 0,
   .mi_marq= true,
-  .mi_hash= 11
+  .mi_hash= 11,
+  .mi_elements={NULL}
 };
 
 #define MI_ENSHASH_NMAGIQ 0x30e595d7	/*820352471 */
