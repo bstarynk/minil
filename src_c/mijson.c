@@ -514,21 +514,21 @@ mi_ecrirecontenusymbole (Mit_Symbole *sy, void *client)
   char nomfich[MI_NOMFICHMAX];
   char sufind[16];
   char*nf = NULL;
-  snprintf (nomfich, sizeof (nomfich), "%s/data%02d", sv->sv_rep, h % 100);
+  snprintf (nomfich, sizeof (nomfich), "%s/data%01d", sv->sv_rep, h % 10);
   if (access (nomfich, F_OK))
     {
       if (mkdir (nomfich, 0750))
         MI_FATALPRINTF ("impossible de créer sous-répertoire %s (%s)",
                         nomfich, strerror (errno));
     }
-  if (snprintf (nomfich, sizeof (nomfich), "%s/data%02d/%s%s.json",
-                sv->sv_rep, h % 100, mi_symbole_chaine (sy),
+  if (snprintf (nomfich, sizeof (nomfich), "%s/data%01d/%s%s.json",
+                sv->sv_rep, h % 10, mi_symbole_chaine (sy),
                 mi_symbole_indice_ch (sufind, sy))
       < (int)sizeof(nomfich))
     nf = nomfich;
   else
-    asprintf(&nf, "%s/data%02d/%s%s.json",
-             sv->sv_rep, h % 100, mi_symbole_chaine (sy),
+    asprintf(&nf, "%s/data%01d/%s%s.json",
+             sv->sv_rep, h % 10, mi_symbole_chaine (sy),
              mi_symbole_indice_ch (sufind, sy));
   if (!access (nf, F_OK))
     {
@@ -711,7 +711,7 @@ mi_charger_contenu_symbole (Mit_Symbole *sy, const char *rep)
   char sufind[16];
   unsigned h = sy->mi_hash;
   char*nomfi = NULL;
-  asprintf(&nomfi,  "%s/data%02d/%s%s.json", rep, h % 100,
+  asprintf(&nomfi,  "%s/data%01d/%s%s.json", rep, h % 10,
            mi_symbole_chaine (sy), mi_symbole_indice_ch (sufind,
                sy));
   if (!nomfi)
@@ -834,7 +834,7 @@ mi_renommer_precedente_sauvegarde(const char*rep)
           char*nf = NULL;
           if (blancsoul)
             *blancsoul = '_';
-          asprintf(&nf, "%s/data%02d/%s.json", rep, h % 100, tampligne);
+          asprintf(&nf, "%s/data%01d/%s.json", rep, h % 10, tampligne);
           if (nf != NULL && !access(nf, F_OK))
             {
               char*vf = NULL;
