@@ -19,7 +19,8 @@
 #include "minil.h"
 
 #define MI_LECTEUR_NMAGIQ 345961075 /*0x149ef273*/
-struct Mi_Lecteur_st {
+struct Mi_Lecteur_st
+{
   unsigned lec_nmagiq;
 };
 

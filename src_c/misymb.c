@@ -767,3 +767,45 @@ mi_cloner_symbole(const Mit_Symbole*origsy)
       return sy;
     }
 } /* fin mi_cloner_symbole */
+
+
+// obtenir la valeur d'un attribut dans un symbole
+Mit_Val mi_symbole_attribut(Mit_Symbole*symb, Mit_Symbole*symbat)
+{
+  if (!symb || symb == MI_TROU_SYMBOLE || symb->mi_type != MiTy_Symbole
+      || !symbat || symbat == MI_TROU_SYMBOLE || symbat->mi_type != MiTy_Symbole) return MI_NILV;
+  if (symb->mi_attrs == NULL) return MI_NILV;
+  struct Mi_trouve_st t = mi_assoc_chercher(symb->mi_attrs, symbat);
+  if (t.t_pres) return t.t_val;
+  return MI_NILV;
+} // fin mi_symbole_attribut
+
+// ... et avec le drapeau présent si trouvé
+struct Mi_trouve_st mi_symbole_attribut_present(Mit_Symbole*symb, Mit_Symbole*symbat)
+{
+  if (!symb || symb == MI_TROU_SYMBOLE || symb->mi_type != MiTy_Symbole
+      || !symbat || symbat == MI_TROU_SYMBOLE || symbat->mi_type != MiTy_Symbole) return (struct Mi_trouve_st)
+    {
+      .t_val = MI_NILV, .t_pres=false
+    };
+  if (symb->mi_attrs == NULL) return (struct Mi_trouve_st)
+    {
+      .t_val = MI_NILV, .t_pres=false
+    };
+  return mi_assoc_chercher(symb->mi_attrs, symbat);
+} // fin mi_symbole_attribut_present
+
+// mettre dans un symbole un attribut lié à une valeur
+void mi_symbole_mettre_attribut(Mit_Symbole*symb, Mit_Symbole*symbat, Mit_Val val)
+{
+  if (!symb || symb == MI_TROU_SYMBOLE || symb->mi_type != MiTy_Symbole) return;
+  if (!symbat || symbat == MI_TROU_SYMBOLE || symbat->mi_type != MiTy_Symbole) return;
+  if (val.miva_ptr == NULL) return;
+  symb->mi_attrs = mi_assoc_mettre(symb->mi_attrs,symbat,val);
+} // fin mi_symbole_mettre_attribut
+
+void mi_symbole_enlever_attribut(Mit_Symbole*symb, Mit_Symbole*symbat)
+{
+#warning mi_symbole_enlever_attribut incomplet
+} // fin mi_symbole_enlever_attribut
+

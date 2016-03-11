@@ -106,6 +106,14 @@ typedef union MiSt_Val_un Mit_Val;
 #define MI_TUPLEV(T) ((Mit_Val){.miva_tup=(T)})
 #define MI_SYMBOLEV(S) ((Mit_Val){.miva_sym=(S)})
 
+/// une structure pour retourner (rapidement) une valeur et un drapeau
+/// de présence.
+struct Mi_trouve_st
+{
+  Mit_Val t_val;
+  bool t_pres;
+};
+
 static inline enum mi_typeval_en
 mi_vtype (const Mit_Val v)
 {
@@ -225,7 +233,7 @@ int mi_cmp_symboleptr (const void *, const void *);	// pour qsort
 //// renvoie le hashage qu'aurait un symbole de nom et indice donnés
 unsigned mi_hashage_nom_indice(const char*nom, unsigned ind);
 
-////////////////////// conversions sûres, car verifiantes
+////////////////////// conversions sûres, car vérifiantes
 static inline const Mit_Entier *
 mi_en_entier (const Mit_Val v)
 {
@@ -480,7 +488,14 @@ mi_hashage_symbole (const Mit_Symbole *sy)
   if (!sy || sy->mi_type != MiTy_Symbole)
     return 0;
 }
-
+//////////////// operations sur les symboles
+// obtenir la valeur d'un attribut dans un symbole
+Mit_Val mi_symbole_attribut(Mit_Symbole*symb, Mit_Symbole*symbat);
+// ... et avec le drapeau présent si trouvé
+struct Mi_trouve_st mi_symbole_attribut_present(Mit_Symbole*symb, Mit_Symbole*symbat);
+// mettre dans un symbole un attribut lié à une valeur
+void mi_symbole_mettre_attribut(Mit_Symbole*symb, Mit_Symbole*symbat, Mit_Val val);
+void mi_symbole_enlever_attribut(Mit_Symbole*symb, Mit_Symbole*symbat);
 
 //// le type abstrait des associations entre symbole et valeur -quelconque-
 //// On distingue la valeur nulle de l'absence de valeur
@@ -493,11 +508,6 @@ struct Mi_Assoc_st *mi_assoc_mettre (struct Mi_Assoc_st *a,
 struct Mi_Assoc_st *mi_assoc_enlever (struct Mi_Assoc_st *a,
                                       const Mit_Symbole *sy);
 // chercher une valeur, donc renvoyer la valeur et un drapeau de présence
-struct Mi_trouve_st
-{
-  Mit_Val t_val;
-  bool t_pres;
-};
 struct Mi_trouve_st mi_assoc_chercher (const struct Mi_Assoc_st *a,
                                        const Mit_Symbole *sy);
 /// la fonction d'iteration renvoie true pour arrêter l'itération
