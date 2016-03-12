@@ -157,6 +157,16 @@ mi_radical_rouge (const struct MiSt_Radical_st *rad)
   return rad->urad_couleur == crad_rouge;
 }				/* fin mi_radical_rouge */
 
+static inline bool
+mi_radical_noir (const struct MiSt_Radical_st *rad)
+{
+  if (!rad)
+    return false;
+  assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
+  assert (rad->urad_couleur != crad__rien);
+  return rad->urad_couleur == crad_noir;
+}				/* fin mi_radical_noir */
+
 static inline enum Mi_CouleurRadical_en
 mi_couleur_opposee (enum Mi_CouleurRadical_en c)
 {
@@ -245,10 +255,10 @@ mi_inserer_ce_radical_nom (struct MiSt_Radical_st *rad, const Mit_Chaine *ch)
   else
     rad->urad_droit = mi_inserer_ce_radical_nom (rad->urad_droit, ch);
   if (mi_radical_rouge (rad->urad_droit)
-      && !mi_radical_rouge (rad->urad_gauche))
+      && mi_radical_noir (rad->urad_gauche))
     rad = mi_radical_tourner_gauche (rad);
   if (mi_radical_rouge (rad->urad_gauche)
-      && !mi_radical_rouge (rad->urad_gauche->urad_gauche))
+      && mi_radical_noir (rad->urad_gauche->urad_gauche))
     rad = mi_radical_tourner_droit (rad);
   if (mi_radical_rouge (rad->urad_droit)
       && mi_radical_rouge (rad->urad_gauche))
@@ -275,7 +285,7 @@ mi_inserer_ce_radical_chaine (struct MiSt_Radical_st *rad, const char*ch)
   else
     rad->urad_droit = mi_inserer_ce_radical_chaine (rad->urad_droit, ch);
   if (mi_radical_rouge (rad->urad_droit)
-      && !mi_radical_rouge (rad->urad_gauche))
+      && mi_radical_noir (rad->urad_gauche))
     rad = mi_radical_tourner_gauche (rad);
   if (mi_radical_rouge (rad->urad_gauche)
       && !mi_radical_rouge (rad->urad_gauche->urad_gauche))
@@ -294,7 +304,8 @@ Mit_Symbole *mi_trouver_symbole_nom (const Mit_Chaine *nom, unsigned ind)
 {
   struct MiSt_Radical_st *rad =   mi_trouver_radical (nom);
   if (!rad) return NULL;
-  if (ind == 0) return rad->urad_symbprim;
+  if (ind == 0)
+    return rad->urad_symbprim;
   if (rad->urad_nbsec == 0)
     return NULL;
   int pos = mi_indice_radical_symbole_secondaire(rad,ind);
@@ -664,6 +675,7 @@ Mit_Symbole *mi_creer_symbole_chaine (const char *ch, unsigned ind)
         {
           const Mit_Chaine*nom = mi_creer_chaine(ch);
           mi_radical_racine = rad = mi_creer_radical(nom);
+          rad->urad_couleur = crad_noir;
         }
       else
         rad = mi_inserer_ce_radical_chaine(mi_radical_racine, ch);
@@ -706,6 +718,8 @@ Mit_Symbole *mi_creer_symbole_chaine (const char *ch, unsigned ind)
       return sy;
     }
 } /* fin mi_creer_symbole_chaine */
+
+
 
 Mit_Symbole *mi_trouver_symbole_chaine (const char *ch, unsigned ind)
 {

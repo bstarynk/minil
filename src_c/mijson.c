@@ -753,7 +753,8 @@ mi_charger_contenu_symbole (Mit_Symbole *sy, const char *rep)
 static bool
 mi_chargersymbolesecondaire (Mit_Symbole *sy, void *rep)
 {
-  assert (sy && sy->mi_type == MiTy_Symbole);
+  if (!sy) return false;
+  assert (sy->mi_type == MiTy_Symbole);
   if (sy->mi_indice == 0)
     return false;
   mi_charger_contenu_symbole (sy, (const char *) rep);
@@ -764,6 +765,9 @@ mi_chargersymbolesecondaire (Mit_Symbole *sy, void *rep)
 static bool
 mi_chargersymboleprimaire (Mit_Symbole *sy, void *rep)
 {
+  if (!sy) return false;
+  assert (sy->mi_type == MiTy_Symbole);
+  assert (sy->mi_indice == 0);
   mi_charger_contenu_symbole (sy, (const char *) rep);
   mi_iterer_symbole_nomme (mi_symbole_chaine (sy),
                            mi_chargersymbolesecondaire, rep);
