@@ -769,16 +769,6 @@ mi_cloner_symbole(const Mit_Symbole*origsy)
 } /* fin mi_cloner_symbole */
 
 
-// obtenir la valeur d'un attribut dans un symbole
-Mit_Val mi_symbole_attribut(Mit_Symbole*symb, Mit_Symbole*symbat)
-{
-  if (!symb || symb == MI_TROU_SYMBOLE || symb->mi_type != MiTy_Symbole
-      || !symbat || symbat == MI_TROU_SYMBOLE || symbat->mi_type != MiTy_Symbole) return MI_NILV;
-  if (symb->mi_attrs == NULL) return MI_NILV;
-  struct Mi_trouve_st t = mi_assoc_chercher(symb->mi_attrs, symbat);
-  if (t.t_pres) return t.t_val;
-  return MI_NILV;
-} // fin mi_symbole_attribut
 
 // ... et avec le drapeau présent si trouvé
 struct Mi_trouve_st mi_symbole_attribut_present(Mit_Symbole*symb, Mit_Symbole*symbat)

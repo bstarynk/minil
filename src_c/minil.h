@@ -33,6 +33,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <setjmp.h>
 #include <time.h>
 #include <unistr.h>		// GNU libunistring
 #include <readline/readline.h>	// GNU readline
@@ -489,10 +490,14 @@ mi_hashage_symbole (const Mit_Symbole *sy)
     return 0;
 }
 //////////////// operations sur les symboles
-// obtenir la valeur d'un attribut dans un symbole
-Mit_Val mi_symbole_attribut(Mit_Symbole*symb, Mit_Symbole*symbat);
 // ... et avec le drapeau présent si trouvé
 struct Mi_trouve_st mi_symbole_attribut_present(Mit_Symbole*symb, Mit_Symbole*symbat);
+// obtenir la valeur d'un attribut dans un symbole
+static inline Mit_Val mi_symbole_attribut(Mit_Symbole*symb, Mit_Symbole*symbat)
+{
+  return mi_symbole_attribut_present(symb,symbat).t_val;
+}
+
 // mettre dans un symbole un attribut lié à une valeur
 void mi_symbole_mettre_attribut(Mit_Symbole*symb, Mit_Symbole*symbat, Mit_Val val);
 void mi_symbole_enlever_attribut(Mit_Symbole*symb, Mit_Symbole*symbat);
