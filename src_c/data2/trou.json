@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "trou"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "pour remplir initialement les trous"
+  }
+ ],
+ "comps": null
+}

@@ -270,6 +270,7 @@ mi_inserer_ce_radical_nom (struct MiSt_Radical_st *rad, const Mit_Chaine *ch)
 static struct MiSt_Radical_st *
 mi_inserer_ce_radical_chaine (struct MiSt_Radical_st *rad, const char*ch)
 {
+  struct MiSt_Radical_st *nouvrad = NULL;
   assert (ch != NULL);
   if (!rad)
     {
@@ -281,9 +282,9 @@ mi_inserer_ce_radical_chaine (struct MiSt_Radical_st *rad, const char*ch)
   if (cmp == 0)
     return rad;
   if (cmp < 0)
-    rad->urad_gauche = mi_inserer_ce_radical_chaine (rad->urad_gauche, ch);
+    nouvrad = rad->urad_gauche = mi_inserer_ce_radical_chaine (rad->urad_gauche, ch);
   else
-    rad->urad_droit = mi_inserer_ce_radical_chaine (rad->urad_droit, ch);
+    nouvrad = rad->urad_droit = mi_inserer_ce_radical_chaine (rad->urad_droit, ch);
   if (mi_radical_rouge (rad->urad_droit)
       && mi_radical_noir (rad->urad_gauche))
     rad = mi_radical_tourner_gauche (rad);
@@ -293,7 +294,10 @@ mi_inserer_ce_radical_chaine (struct MiSt_Radical_st *rad, const char*ch)
   if (mi_radical_rouge (rad->urad_droit)
       && mi_radical_rouge (rad->urad_gauche))
     mi_radical_changer_couleur (rad);
-  return rad;
+  assert (nouvrad && nouvrad->urad_nmagiq == MI_RAD_NMAGIQ);
+  assert (nouvrad->urad_nom != NULL);
+  assert (!strcmp(nouvrad->urad_nom->mi_car, ch));
+  return nouvrad;
 }				/* end of mi_inserer_ce_radical_chaine */
 
 
