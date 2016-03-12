@@ -40,6 +40,8 @@ struct Mi_Lecteur_st
     _lec->lec_errmsg = (Msg);				\
     longjmp(_lec->lec_jb, __LINE__); } while(0)
 
+
+
 // la chaine lue est temporairement modifiée
 static Mit_Val
 mi_lire_primaire(struct Mi_Lecteur_st*lec, char*ps, const char**pfin)
@@ -120,10 +122,22 @@ mi_lire_primaire(struct Mi_Lecteur_st*lec, char*ps, const char**pfin)
             {
               if (!mi_assoc_chercher(lec->lec_assoctrou,sy).t_pres)
                 {
+                  lec->lec_assoctrou = //
+                    mi_assoc_mettre(lec->lec_assoctrou,
+                                    sy, MI_SYMBOLEV(MI_PREDEFINI(trou)));
                 };
               return MI_NILV;
             }
-          return MI_SYMBOLEV(sy);
+          else
+            {
+              struct Mi_trouve_st tr = //
+              mi_assoc_chercher(lec->lec_assoctrou,sy);
+              // La première passe aurait dû trouver le trou...
+              if (!tr.t_pres)
+                MI_FATALPRINTF("le trou $%s est manquant",
+                               pdebtrou+1);
+              return tr.t_val;
+            }
         }
       else MI_ERREUR_LECTURE(lec, pdebtrou+1,pfintrou,
                                mi_lecture_symbole_absent);
