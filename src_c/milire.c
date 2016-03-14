@@ -57,10 +57,11 @@ mi_lire_chaine(struct Mi_Lecteur_st*lec, char*ps, const char**pfin)
   ps++;
   while (*ps && *ps != '"')
     {
+#define MI_UTF_PLACE 10
       // on veut au moins 10 octets, au cas où....
-      if (lg+10 >= taille)
+      if (lg+MI_UTF_PLACE+1 >= taille)
         {
-          unsigned nouvtaille = mi_nombre_premier_apres(4*lg/3+12);
+          unsigned nouvtaille = mi_nombre_premier_apres(4*lg/3+MI_UTF_PLACE+2);
           char*nouvtamp = (nouvtaille>0)?calloc(nouvtaille, 1):NULL;
           if (!nouvtamp)
             MI_FATALPRINTF("impossible d'agrandir tampon pour chaine de %d octets (%s)",
@@ -117,8 +118,11 @@ mi_lire_chaine(struct Mi_Lecteur_st*lec, char*ps, const char**pfin)
               int p= -1;
               int c= 0;
               if (sscanf(ps+2, "%02x%n", &c, &p)>0 && p>0)
-                tamp[lg++] = (char)c;
-              ps+= p+2;
+                {
+                  int l = u8_uctomb((uint8_t*)tamp,  (ucs4_t)c,  MI_UTF_PLACE);
+                  if (l>0) lg += l;
+                  ps += p+2;
+                }
             }
             break;
             case 'u':
@@ -127,6 +131,9 @@ mi_lire_chaine(struct Mi_Lecteur_st*lec, char*ps, const char**pfin)
               int c= 0;
               if (sscanf(ps+2, "%04x%n", &c, &p)>0 && p>0)
                 {
+                  int l = u8_uctomb((uint8_t*)tamp,  (ucs4_t)c,  MI_UTF_PLACE);
+                  if (l>0) lg += l;
+                  ps += p+2;
                 }
             }
             break;
@@ -136,6 +143,9 @@ mi_lire_chaine(struct Mi_Lecteur_st*lec, char*ps, const char**pfin)
               int c= 0;
               if (sscanf(ps+2, "%08x%n", &c, &p)>0 && p>0)
                 {
+                  int l = u8_uctomb((uint8_t*)tamp,  (ucs4_t)c,  MI_UTF_PLACE);
+                  if (l>0) lg += l;
+                  ps += p+2;
                 }
             }
             break;
@@ -150,7 +160,7 @@ mi_lire_chaine(struct Mi_Lecteur_st*lec, char*ps, const char**pfin)
           ucs4_t uc = 0;
           int lc = u8_mbtouc(&uc, (const uint8_t*)ps, psinit+lginit-ps);
           if (lc<=0)
-            MI_FATALPRINTF("erreur de decodage UTF8 %.50s", ps);
+            MI_ERREUR_LECTURE(lec,ps,NULL,"mauvaise chaine UTF8");
           memcpy(tamp+lg, ps, lc);
           lg+=lc;
           ps+=lc;
@@ -164,6 +174,8 @@ mi_lire_chaine(struct Mi_Lecteur_st*lec, char*ps, const char**pfin)
   free (tamp), tamp = NULL;
   return ch;
 } /* fin mi_lire_chaine */
+
+
 
 // la chaine lue est temporairement modifiée
 static Mit_Val
@@ -228,8 +240,22 @@ mi_lire_primaire(struct Mi_Lecteur_st*lec, char*ps, const char**pfin)
       else MI_ERREUR_LECTURE(lec, pdebsymb,pfinrad,
                                mi_lecture_symbole_absent);
     }
+  // une chaîne de caractères
   else if (ps[0] == '"')
     return MI_CHAINEV(mi_lire_chaine(lec,ps,pfin));
+  // une chaîne de caractères verbatim, ... jusqu'à la fin
+  else if (ps[0] == '\'')
+    {
+      char* debch = ps;
+      unsigned l = strlen(ps);
+      if (ps[l-1]=='\n')
+        ps[--l] = (char)0;
+      if (u8_check((const uint8_t*)ps, l))
+        MI_ERREUR_LECTURE(lec, debch, ps+l, "mauvaise chaine verbatim UTF8");
+      const Mit_Chaine*ch = mi_creer_chaine(ps+1);
+      if (pfin) *pfin = ps+l;
+      return MI_CHAINEV(ch);
+    }
   /// lire un trou
   else if (ps[0] == '$' && isalpha(ps[1]))
     {
