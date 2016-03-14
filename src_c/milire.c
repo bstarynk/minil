@@ -41,6 +41,129 @@ struct Mi_Lecteur_st
     longjmp(_lec->lec_jb, __LINE__); } while(0)
 
 
+static const Mit_Chaine*
+mi_lire_chaine(struct Mi_Lecteur_st*lec, char*ps, const char**pfin)
+{
+  assert (lec && lec->lec_nmagiq == MI_LECTEUR_NMAGIQ);
+  assert (ps != NULL && *ps =='"');
+  const char*psinit = ps;
+  size_t lginit = strlen(psinit);
+  unsigned taille = mi_nombre_premier_apres(2+(9*lginit)/8);
+  unsigned lg = 0;
+  char* tamp = calloc(taille,1);
+  if (!tamp)
+    MI_FATALPRINTF("impossible d'allouer tampon pour chaine de %d octets (%s)",
+                   taille, strerror(errno));
+  ps++;
+  while (*ps && *ps != '"')
+    {
+      // on veut au moins 10 octets, au cas où....
+      if (lg+10 >= taille)
+        {
+          unsigned nouvtaille = mi_nombre_premier_apres(4*lg/3+12);
+          char*nouvtamp = (nouvtaille>0)?calloc(nouvtaille, 1):NULL;
+          if (!nouvtamp)
+            MI_FATALPRINTF("impossible d'agrandir tampon pour chaine de %d octets (%s)",
+                           nouvtaille?nouvtaille:lg, strerror(errno));
+          memcpy(nouvtamp, tamp, lg);
+          free (tamp);
+          tamp = nouvtamp;
+        }
+      if (ps[0] == '\\')
+        {
+          switch (ps[1])
+            {
+            case '\'':
+            case '\"':
+            case '\\':
+              tamp[lg++] = ps[1];
+              ps+= 2;
+              break;
+            case 'a':
+              tamp[lg++] = '\a';
+              ps+= 2;
+              break;
+            case 'b':
+              tamp[lg++] = '\b';
+              ps+= 2;
+              break;
+            case 'f':
+              tamp[lg++] = '\f';
+              ps+= 2;
+              break;
+            case 'n':
+              tamp[lg++] = '\n';
+              ps+= 2;
+              break;
+            case 'r':
+              tamp[lg++] = '\r';
+              ps+= 2;
+              break;
+            case 't':
+              tamp[lg++] = '\t';
+              ps+= 2;
+              break;
+            case 'v':
+              tamp[lg++] = '\v';
+              ps+= 2;
+              break;
+            case 'e':
+              tamp[lg++] = '\033' /*ESCAPE*/;
+              ps+= 2;
+              break;
+#warning les conversions de caractères doivent calculer une longeur UTF8
+            case 'x':
+            {
+              int p= -1;
+              int c= 0;
+              if (sscanf(ps+2, "%02x%n", &c, &p)>0 && p>0)
+                tamp[lg++] = (char)c;
+              ps+= p+2;
+            }
+            break;
+            case 'u':
+            {
+              int p= -1;
+              int c= 0;
+              if (sscanf(ps+2, "%04x%n", &c, &p)>0 && p>0)
+                {
+                }
+            }
+            break;
+            case 'U':
+            {
+              int p= -1;
+              int c= 0;
+              if (sscanf(ps+2, "%08x%n", &c, &p)>0 && p>0)
+                {
+                }
+            }
+            break;
+            default:
+              tamp[lg++] = ps[1];
+              ps+= 2;
+              break;
+            }
+        }
+      else
+        {
+          ucs4_t uc = 0;
+          int lc = u8_mbtouc(&uc, (const uint8_t*)ps, psinit+lginit-ps);
+          if (lc<=0)
+            MI_FATALPRINTF("erreur de decodage UTF8 %.50s", ps);
+          memcpy(tamp+lg, ps, lc);
+          lg+=lc;
+          ps+=lc;
+        }
+    }
+  if (*ps == '"')
+    {
+      if (pfin) *pfin = ps+1;
+    };
+  const Mit_Chaine*ch = mi_creer_chaine (tamp);
+  free (tamp), tamp = NULL;
+  return ch;
+} /* fin mi_lire_chaine */
 
 // la chaine lue est temporairement modifiée
 static Mit_Val
@@ -50,6 +173,7 @@ mi_lire_primaire(struct Mi_Lecteur_st*lec, char*ps, const char**pfin)
   assert (ps != NULL);
   const char*psinit = ps;
   while (isspace(ps[0])) ps++;
+  // lire un nombre
   if (isdigit(ps[0])
       || ((ps[0]=='-' || ps[1]=='+')
           && (isdigit(ps[1])
@@ -75,6 +199,7 @@ mi_lire_primaire(struct Mi_Lecteur_st*lec, char*ps, const char**pfin)
         }
       else MI_ERREUR_LECTURE(lec, ps, NULL, "mauvais nombre");
     }
+  // lire un symbole
   else if (isalpha(ps[0]))
     {
       // un symbole existant
@@ -103,9 +228,11 @@ mi_lire_primaire(struct Mi_Lecteur_st*lec, char*ps, const char**pfin)
       else MI_ERREUR_LECTURE(lec, pdebsymb,pfinrad,
                                mi_lecture_symbole_absent);
     }
+  else if (ps[0] == '"')
+    return MI_CHAINEV(mi_lire_chaine(lec,ps,pfin));
+  /// lire un trou
   else if (ps[0] == '$' && isalpha(ps[1]))
     {
-      // un trou
       char*pdebtrou = ps;
       ps++;
       while (isalnum(*ps)) ps++;
@@ -144,6 +271,8 @@ mi_lire_primaire(struct Mi_Lecteur_st*lec, char*ps, const char**pfin)
 
     }
 } /* fin mi_lire_primaire */
+
+
 
 Mit_Val mi_lire_valeur(struct Mi_Lecteur_st*lec, char*ps, const char**pfin)
 {
