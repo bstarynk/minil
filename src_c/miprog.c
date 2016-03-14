@@ -106,8 +106,10 @@ mi_arguments_programme (int argc, char **argv)
         case xtraopt_predefini: // --predefini <nom>
         {
           Mit_Symbole*sy = NULL;
-          if (!optarg || !isalpha(optarg[0]) || strchr(optarg, '_') ||
-              !mi_nom_licite_chaine(optarg) || !(sy=mi_creer_symbole_chaine(optarg, 0)))
+          if (optarg && mi_trouver_symbole_chaine(optarg,0))
+            printf("symbole prédéfini %s déjà existant...\n", optarg);
+          else if (!optarg || !isalpha(optarg[0]) || strchr(optarg, '_') ||
+                   !mi_nom_licite_chaine(optarg) || !(sy=mi_creer_symbole_chaine(optarg, 0)))
             MI_FATALPRINTF("Mauvais nom %s de symbole predefini", optarg?optarg:"??");
           sy->mi_predef = true;
           if (comment)
