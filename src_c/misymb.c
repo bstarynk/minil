@@ -18,6 +18,7 @@
 
 #include "minil.h"
 
+// voir aussi https://www.cs.auckland.ac.nz/software/AlgAnim/red_black.html
 enum Mi_CouleurRadical_en
 {
   crad__rien,
