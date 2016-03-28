@@ -25,7 +25,7 @@ enum
   xtraopt_commentaire,
   xtraopt_symbole,
   xtraopt_message,
-  xtraopt_deboguersymboles,
+  xtraopt_radicaux,
   xtraopt_sansterminal,
   xtraopt__fin
 };
@@ -36,7 +36,7 @@ const struct option minil_options[] =
   {"afficher", required_argument, NULL, 'A'},
   {"charge", required_argument, NULL, 'c'},
   {"commentaire", required_argument, NULL, xtraopt_commentaire},
-  {"deboguer-symboles", no_argument, NULL, xtraopt_deboguersymboles},
+  {"radicaux", no_argument, NULL, xtraopt_radicaux},
   {"help", no_argument, NULL, 'h'},
   {"message", required_argument, NULL, xtraopt_message},
   {"oublier", required_argument, NULL, 'O'},
@@ -62,7 +62,7 @@ mi_usage (const char *nomprog)
   printf (" --afficher | -A <symbole> #afficher le contenu d'un symbole\n");
   printf (" --charge | -c <repertoire> #charger l'état\n");
   printf (" --commentaire <chaine> #commentaire pour le symbole suivant\n");
-  printf (" --deboguer-symboles #deboguer la table des symboles\n");
+  printf (" --radicaux #deboguer l'arbre des radicaux\n");
   printf (" --help | -h #message d'aide\n");
   printf (" --oublier | -O <symbole> #oublier un symbole\n");
   printf (" --predefini <symbole> #créer un symbole predefini\n");
@@ -170,8 +170,8 @@ mi_arguments_programme (int argc, char **argv)
         case xtraopt_message: // --message <message>
           printf("#%d: %smessage%s %s\n", optind, MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL, optarg);
           break;
-        case xtraopt_deboguersymboles: // --deboguer-symboles
-          mi_deboguer_symboles();
+        case xtraopt_radicaux: // --radicaux
+          mi_afficher_radicaux();
           break;
         case xtraopt_sansterminal: // --sans-terminal
           mi_sur_terminal = false;

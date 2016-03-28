@@ -853,11 +853,11 @@ static void mi_impr_radical(const struct MiSt_Radical_st*rad, int prof)
   putchar('\n');
 } // fin mi_impr_radical
 
-void mi_deboguer_symboles(void)
+void mi_afficher_radicaux (void)
 {
   static int count;
   count++;
-  printf("%sdeboguage des symboles #%d%s; mi_radical_racine@%p\n",
+  printf("%saffichage des radicaux #%d%s; mi_radical_racine@%p\n",
          MI_TERMINAL_GRAS,
          count,
          MI_TERMINAL_NORMAL,
