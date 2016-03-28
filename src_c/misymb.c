@@ -115,7 +115,7 @@ mi_trouver_radical (const Mit_Chaine *chn)
       assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
       assert (rad->urad_nom && rad->urad_nom->mi_type == MiTy_Chaine);
       int cmp = (rad->urad_nom == chn) ? 0
-                : strcmp (rad->urad_nom->mi_car, chn->mi_car);
+	: strcmp (chn->mi_car, rad->urad_nom->mi_car);
       if (!cmp)
         return rad;
       if (cmp < 0)
@@ -137,7 +137,7 @@ mi_trouver_radical_chaine (const char *ch)
     {
       assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
       assert (rad->urad_nom && rad->urad_nom->mi_type == MiTy_Chaine);
-      int cmp = strcmp (rad->urad_nom->mi_car, ch);
+      int cmp = strcmp (ch, rad->urad_nom->mi_car);
       if (!cmp)
         return rad;
       if (cmp < 0)
@@ -828,6 +828,7 @@ void mi_deboguer_symboles(void)
          MI_TERMINAL_NORMAL,
          (void*)mi_radical_racine);
   mi_impr_radical(mi_radical_racine, 0);
+  fputc('\n', stdout);
 } // fin mi_deboguer_symboles
 
 void mi_impr_radical(const struct MiSt_Radical_st*rad, int prof)

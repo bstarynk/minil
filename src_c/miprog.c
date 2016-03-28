@@ -97,7 +97,10 @@ mi_arguments_programme (int argc, char **argv)
           if (optarg)
             {
               Mit_Symbole*sy = mi_trouver_symbole(optarg, NULL);
-              if (!sy) printf("**aucun symbole nommé '%s'\n", optarg);
+              if (!sy) printf("%s!! %saucun symbole nommé%s '%s'\n",
+			      MI_TERMINAL_GRAS, 
+			      MI_TERMINAL_ITALIQUE, MI_TERMINAL_NORMAL,
+			      optarg);
               else mi_afficher_contenu_symbole(stdout, sy);
             };
           break;
