@@ -176,6 +176,65 @@ mi_lire_chaine(struct Mi_Lecteur_st*lec, char*ps, const char**pfin)
 } /* fin mi_lire_chaine */
 
 
+void mi_afficher_chaine_encodee(FILE*fi, const char*ch)
+{
+  if (!fi || !ch) return;
+  size_t ln = strlen(ch);
+  if (u8_check((const uint8_t*)ch, ln))
+    MI_FATALPRINTF("chaine %.50s... incorrecte", ch);
+  size_t off=0;
+  while (off<ln)
+    {
+      ucs4_t uc = 0;
+      int lc = u8_mbtouc_unsafe(&uc, (const uint8_t*)(ch+off), ln-off);
+      if (lc<=0) break;
+      if (uc<128)
+        {
+          switch((char)uc)
+            {
+            case '\'':
+            case '\"':
+            case '\\':
+              fprintf(fi, "\\%c", (char)uc);
+              break;
+            case '\a':
+              fputs("\\a", fi);
+              break;
+            case '\b':
+              fputs("\\b", fi);
+              break;
+            case '\f':
+              fputs("\\f", fi);
+              break;
+            case '\n':
+              fputs("\\n", fi);
+              break;
+            case '\r':
+              fputs("\\r", fi);
+              break;
+            case '\t':
+              fputs("\\t", fi);
+              break;
+            case '\v':
+              fputs("\\v", fi);
+              break;
+            case '\033' /* ESCAPE */:
+              fputs("\\e", fi);
+              break;
+            default:
+              if (isprint((char)uc)) fputc((char)uc, fi);
+              else fprintf(fi, "\\x%02x", uc);
+              break;
+            }
+        }
+      else 	if (uc<0xffff)
+        fprintf(fi, "\\u%04x", (unsigned) uc);
+      else
+        fprintf(fi, "\\U%08x", (unsigned) uc);
+      off+=lc;
+    }
+} /* fin mi_afficher_chaine_encodee */
+
 
 // la chaine lue est temporairement modifiée
 static Mit_Val

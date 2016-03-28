@@ -25,6 +25,7 @@ enum
   xtraopt_commentaire,
   xtraopt_symbole,
   xtraopt_deboguersymboles,
+  xtraopt_sansterminal,
   xtraopt__fin
 };
 
@@ -34,12 +35,14 @@ const struct option minil_options[] =
   {"help", no_argument, NULL, 'h'},
   {"version", no_argument, NULL, 'V'},
   {"sauvegarde", required_argument, NULL, 'S'},
+  {"afficher", required_argument, NULL, 'A'},
   {"charge", required_argument, NULL, 'c'},
   {"oublier", required_argument, NULL, 'O'},
   {"commentaire", required_argument, NULL, xtraopt_commentaire},
   {"predefini", required_argument, NULL, xtraopt_predefini},
   {"symbole", required_argument, NULL, xtraopt_symbole},
   {"deboguer-symboles", no_argument, NULL, xtraopt_deboguersymboles},
+  {"sans-terminal", no_argument, NULL, xtraopt_sansterminal},
   {NULL, 0, NULL, 0}
 };
 
@@ -47,12 +50,14 @@ const struct option minil_options[] =
 static const char*mi_repcharge;
 static const char*mi_repsauve;
 struct Mi_Sauvegarde_st *mi_sauv;
+bool mi_sur_terminal;
 
 /// affiche l'usage, doit correspondre à minil_options
 static void
 mi_usage (const char *nomprog)
 {
   printf ("usage de %s, un mini interprète\n", nomprog);
+  printf (" --afficher | -A <symbole> #afficher le contenu d'un symbole\n");
   printf (" --charge | -c <repertoire> #charger l'état\n");
   printf (" --commentaire <chaine> #commentaire pour le symbole suivant\n");
   printf (" --deboguer-symboles #deboguer la table des symboles\n");
@@ -61,6 +66,7 @@ mi_usage (const char *nomprog)
   printf (" --predefini <symbole> #créer un symbole predefini\n");
   printf (" --symbole <symbole> #créer un symbole normal\n");
   printf (" --sauvegarde | -S <repertoire> #sauvegarder l'état\n");
+  printf (" --sans-terminal #la sortie n'est pas un terminal\n");
   printf (" --version | -V #donne la version\n");
 }
 
@@ -69,7 +75,7 @@ mi_arguments_programme (int argc, char **argv)
 {
   int ch = 0;
   char* comment=NULL;
-  while ((ch = getopt_long (argc, argv, "hVc:S:O:",
+  while ((ch = getopt_long (argc, argv, "hVc:S:O:A:",
                             minil_options, NULL)) > 0)
     {
       switch (ch)
@@ -86,6 +92,14 @@ mi_arguments_programme (int argc, char **argv)
         case 'c': // --charge <rep>
           mi_repcharge = optarg;
           mi_charger_etat(optarg);
+          break;
+        case 'A': // --afficher <symbole>
+          if (optarg)
+            {
+              Mit_Symbole*sy = mi_trouver_symbole(optarg, NULL);
+              if (!sy) printf("**aucun symbole nommé '%s'\n", optarg);
+              else mi_afficher_contenu_symbole(stdout, sy);
+            };
           break;
         case 'S': // --sauvegarde <rep>
           mi_repsauve = optarg;
@@ -150,6 +164,9 @@ mi_arguments_programme (int argc, char **argv)
           break;
         case xtraopt_deboguersymboles: // --deboguer-symboles
           mi_deboguer_symboles();
+          break;
+        case xtraopt_sansterminal: // --sans-terminal
+          mi_sur_terminal = false;
           break;
         }
     }
@@ -233,6 +250,7 @@ static void mi_initialiser_alea(void);
 int
 main (int argc, char **argv)
 {
+  mi_sur_terminal = isatty(STDOUT_FILENO);
   mi_initialiser_predefinis ();
   mi_initialiser_alea();
   mi_arguments_programme (argc, argv);

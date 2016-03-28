@@ -35,6 +35,7 @@
 #include <sys/types.h>
 #include <setjmp.h>
 #include <time.h>
+#include <math.h>
 #include <unistr.h>		// GNU libunistring
 #include <readline/readline.h>	// GNU readline
 #include <jansson.h>		// JSON parsing library
@@ -312,6 +313,8 @@ mi_vald_chaine (const Mit_Val v, const char *def)
   const char *ch = mi_val_chaine (v);
   return ch ? ch : def;
 }
+// afficher de manière encodée à la C (avec \t pour tabulation, etc...) une chaîne UTF8
+void mi_afficher_chaine_encodee (FILE*fi, const char*ch);
 
 /// création d'entier
 const Mit_Entier *mi_creer_entier (long l);
@@ -335,11 +338,12 @@ mi_vald_double (const Mit_Val v, double def)
   return def;
 }
 
-
+void
+mi_afficher_valeur(FILE*fi, const Mit_Val v);
 
 /// arité d'un tuple
 static inline unsigned
-mi_arite_noeud (const Mit_Tuple*tu)
+mi_arite_tuple (const Mit_Tuple*tu)
 {
   if (!tu || tu->mi_type != MiTy_Tuple)
     return 0;
@@ -454,7 +458,7 @@ Mit_Symbole *mi_trouver_symbole(const char*ch, const char**pfin);
 Mit_Symbole *mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind);
 Mit_Symbole *mi_creer_symbole_chaine (const char *ch, unsigned ind);
 Mit_Symbole *mi_cloner_symbole(const Mit_Symbole*sy);
-
+void mi_afficher_contenu_symbole(FILE*fil, const Mit_Symbole*sy);
 void mi_deboguer_symboles (void);
 /// itérer sur chaque symbole primaire
 void mi_iterer_symbole_primaire (mi_itersymb_sigt * f, void *client);
@@ -602,6 +606,15 @@ const Mit_Symbole* mi_remplir_symbole_json (const json_t *j);
 void
 mi_emettre_notice_gplv3 (FILE * fichier, const char *prefixe,
                          const char *suffixe, const char *nomfich);
+
+extern bool mi_sur_terminal;
+// voir https://en.wikipedia.org/wiki/ANSI_escape_code
+#define MI_TERMINAL_GRAS (mi_sur_terminal?"\033[1m":"")
+#define MI_TERMINAL_PALE (mi_sur_terminal?"\033[2m":"")
+#define MI_TERMINAL_ITALIQUE (mi_sur_terminal?"\033[3m":"")
+#define MI_TERMINAL_SOUSLIGNE (mi_sur_terminal?"\033[4m":"")
+#define MI_TERMINAL_INVERSE (mi_sur_terminal?"\033[7m":"")
+#define MI_TERMINAL_NORMAL (mi_sur_terminal?"\033[0m":"")
 
 #define MI_PREDEFINI(Nom) mipred_##Nom
 #define MI_TRAITER_PREDEFINI(Nom,Hash) extern Mit_Symbole*MI_PREDEFINI(Nom);

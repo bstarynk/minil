@@ -815,13 +815,18 @@ void mi_symbole_mettre_attribut(Mit_Symbole*symb, Mit_Symbole*symbat, Mit_Val va
 
 void mi_symbole_enlever_attribut(Mit_Symbole*symb, Mit_Symbole*symbat)
 {
+  if (!symb || symb == MI_TROU_SYMBOLE || symb->mi_type != MiTy_Symbole) return;
+  if (!symbat || symbat == MI_TROU_SYMBOLE || symbat->mi_type != MiTy_Symbole) return;
 #warning mi_symbole_enlever_attribut incomplet
 } // fin mi_symbole_enlever_attribut
 
 static void mi_impr_radical(const struct MiSt_Radical_st*rad, int prof);
 void mi_deboguer_symboles(void)
 {
-  printf("deboguage des symboles; mi_radical_racine@%p\n", (void*)mi_radical_racine);
+  printf("%sdeboguage des symboles%s; mi_radical_racine@%p\n",
+         MI_TERMINAL_GRAS,
+         MI_TERMINAL_NORMAL,
+         (void*)mi_radical_racine);
   mi_impr_radical(mi_radical_racine, 0);
 } // fin mi_deboguer_symboles
 
@@ -831,14 +836,15 @@ void mi_impr_radical(const struct MiSt_Radical_st*rad, int prof)
   assert(rad->urad_nmagiq == MI_RAD_NMAGIQ);
   assert(rad->urad_nom != NULL && rad->urad_nom->mi_type == MiTy_Chaine);
   for (int ix=0; ix<prof; ix++) putchar(' ');
-  printf("+rad@%p '%s'", rad, rad->urad_nom->mi_car);
+  printf("%s+%srad@%p '%s'", MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL,
+         rad, rad->urad_nom->mi_car);
   switch (rad->urad_couleur)
     {
     case crad_noir:
-      printf(" *NOIR*");
+      printf(" %s*NOIR*%s",  MI_TERMINAL_ITALIQUE, MI_TERMINAL_NORMAL);
       break;
     case crad_rouge:
-      printf(" *ROUGE*");
+      printf(" %s*ROUGE*%s", MI_TERMINAL_ITALIQUE, MI_TERMINAL_NORMAL);
       break;
     default:
       printf (" *?%d?*", (int)rad->urad_couleur);
@@ -848,10 +854,90 @@ void mi_impr_radical(const struct MiSt_Radical_st*rad, int prof)
   putchar('\n');
   mi_impr_radical(rad->urad_gauche, prof+1);
   for (int ix=0; ix<prof; ix++) putchar(' ');
-  printf("/rad@%p '%s'", rad, rad->urad_nom->mi_car);
+  printf("%s/%srad@%p '%s'", MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL, rad, rad->urad_nom->mi_car);
   putchar('\n');
   mi_impr_radical(rad->urad_droit, prof+1);
   for (int ix=0; ix<prof; ix++) putchar(' ');
-  printf("-rad@%p '%s'", rad, rad->urad_nom->mi_car);
+  printf("%s-%srad@%p '%s'", MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL, rad, rad->urad_nom->mi_car);
   putchar('\n');
 } // fin mi_impr_radical
+
+#define MI_TABLATTR_NMAGIC 0x39f99e27 /* 972660263 */
+struct MiSt_TableAttributs_st
+{
+  unsigned tat_nmagiq; // toujours MI_TABLATTR_NMAGIC
+  unsigned tat_taille; // taille alloué
+  unsigned tat_compteur; // compteur de symboles utilisés
+  const Mit_Symbole*tat_symboles[]; // de tat_taille
+};
+
+static bool mi_ajouter_attribut_dans_table(const Mit_Symbole*sy, const Mit_Val va __attribute__((unused)), void*client)
+{
+  struct MiSt_TableAttributs_st*tabat = (struct MiSt_TableAttributs_st*)client;
+  assert (tabat && tabat->tat_nmagiq == MI_TABLATTR_NMAGIC);
+  assert (tabat->tat_compteur < tabat->tat_taille);
+  tabat->tat_symboles[tabat->tat_compteur++] = sy;
+  return false;
+}// fin mi_ajouter_attribut_dans_table
+
+void mi_afficher_contenu_symbole(FILE*fi, const Mit_Symbole*sy)
+{
+  if (!fi) return;
+  if (!sy || sy==MI_TROU_SYMBOLE) return;
+  assert (sy->mi_type == MiTy_Symbole);
+  fputc('\n', fi);
+  char tampind[16];
+  fprintf(fi, "%s**%s", (fi==stdout)?MI_TERMINAL_GRAS:"",
+          (fi==stdout)?MI_TERMINAL_NORMAL:"");
+  fprintf(fi, " %s%s%s%s %s@%p%s %s",
+          (fi==stdout)?MI_TERMINAL_GRAS:"",
+          mi_symbole_chaine(sy), mi_symbole_indice_ch(tampind, sy),
+          (fi==stdout)?MI_TERMINAL_NORMAL:"",
+          (fi==stdout)?MI_TERMINAL_ITALIQUE:"",
+          (void*)sy,
+          (fi==stdout)?MI_TERMINAL_NORMAL:"",
+          sy->mi_predef?"prédefini":"normal");
+  fprintf(fi, " %s**%s\n",
+          (fi==stdout)?MI_TERMINAL_GRAS:"",
+          (fi==stdout)?MI_TERMINAL_NORMAL:"");
+  unsigned nbat = mi_assoc_compte(sy->mi_attrs);
+  if (nbat>0)
+    {
+      struct MiSt_TableAttributs_st*tabat = //
+      calloc(1, sizeof(struct MiSt_TableAttributs_st)+(nbat+1)*sizeof(Mit_Symbole*));
+      if (!tabat)
+        MI_FATALPRINTF("impossible d'allouer table pour %d attributs (%s)",
+                       nbat, strerror(errno));
+      tabat->tat_nmagiq = MI_TABLATTR_NMAGIC;
+      tabat->tat_taille = nbat+1;
+      tabat->tat_compteur = 0;
+      mi_assoc_iterer(sy->mi_attrs, mi_ajouter_attribut_dans_table, tabat);
+      assert (tabat->tat_compteur == nbat);
+      qsort (tabat->tat_symboles, nbat, sizeof(Mit_Symbole*), mi_cmp_symboleptr);
+      fprintf (fi, "-- %d attributs --\n", nbat);
+      for (unsigned ix=0; ix<nbat; ix++)
+        {
+          const Mit_Symbole*syat = tabat->tat_symboles[ix];
+          assert (syat != NULL && syat != MI_TROU_SYMBOLE
+                  && syat->mi_type == MiTy_Symbole);
+          fprintf(fi, "* %s%s: ",
+                  mi_symbole_chaine(syat), mi_symbole_indice_ch(tampind, syat));
+          mi_afficher_valeur(fi, mi_assoc_chercher(sy->mi_attrs, syat).t_val);
+        }
+      free (tabat), tabat = NULL;
+    }
+  else
+    fprintf(fi, "-- aucun attribut --\n");
+  unsigned nbcomp = mi_vecteur_taille(sy->mi_comps);
+  if (nbcomp > 0)
+    {
+      fprintf(fi, "-- %d composants --\n", nbcomp);
+      for (unsigned ix=0; ix<nbcomp; ix++)
+        {
+          fprintf(fi, "[%d]: ", ix);
+          mi_afficher_valeur(fi, mi_vecteur_comp(sy->mi_comps, ix).t_val);
+        }
+    }
+  else
+    fprintf(fi, "-- aucun composant --\n");
+}

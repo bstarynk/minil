@@ -30,7 +30,7 @@ mi_creer_chaine (const char *ch)
   if (ln >= MI_MAXLONGCHAINE)
     MI_FATALPRINTF ("chaine %.50s trop longue (%ld)", ch, (long) ln);
   if (u8_check ((const uint8_t *) ch, ln))
-    MI_FATALPRINTF ("chaine %.50s invcorrecte", ch);
+    MI_FATALPRINTF ("chaine %.50s incorrecte", ch);
   Mit_Chaine *valch = mi_allouer_valeur (MiTy_Chaine,
                                          (unsigned) (ln +
                                              sizeof (Mit_Chaine) +
@@ -205,3 +205,115 @@ const Mit_Tuple*mi_creer_tuple_valeurs(unsigned nb,
     }
   else return &mi_tupvide;
 } // fin mi_creer_tuple_valeurs
+
+void
+mi_afficher_valeur(FILE*fi, const Mit_Val v)
+{
+  if (!fi) return;
+  enum mi_typeval_en ty = mi_vtype(v);
+  switch(ty)
+    {
+    case MiTy_Nil:
+      fputs("~", fi);
+      break;
+    case MiTy_Entier:
+      fprintf(fi, "%ld", mi_vald_entier(v,0));
+      break;
+    case MiTy_Double:
+    {
+      double d = mi_vald_double(v, NAN);
+      if (isnan(d)) fputs("+NAN", fi);
+      else if (isinf(d)) fprintf(fi, "%cINF", (d>0.0)?'+':'-');
+      else
+        {
+          // il faut absolument le point décimal
+          char tamp[64];
+          snprintf(tamp, sizeof(tamp), "%g", d);
+          if (strchr(tamp, '.'))
+            {
+              fputs(tamp, fi);
+              break;
+            };
+          snprintf(tamp, sizeof(tamp), "%.3f", d);
+          if (strchr(tamp, '.') && atof(tamp) == d && strlen(tamp)<10)
+            {
+              fputs(tamp, fi);
+              break;
+            };
+          snprintf(tamp, sizeof(tamp), "%.6f", d);
+          if (strchr(tamp, '.') && atof(tamp) == d && strlen(tamp)<20)
+            {
+              fputs(tamp, fi);
+              break;
+            };
+          snprintf(tamp, sizeof(tamp), "%.9e", d);
+          if (strchr(tamp, '.') && atof(tamp) == d)
+            {
+              fputs(tamp, fi);
+              break;
+            };
+          snprintf(tamp, sizeof(tamp), "%.18e", d);
+          assert (strchr(tamp, '.'));
+          fputs(tamp, fi);
+        }
+    }
+    break;
+    case MiTy_Chaine:
+    {
+      fputc('"', fi);
+      mi_afficher_chaine_encodee(fi, mi_vald_chaine(v,NULL));
+      fputc('"', fi);
+    }
+    break;
+    case MiTy_Symbole:
+    {
+      char tampind[16];
+      const Mit_Symbole*sy = mi_en_symbole(v);
+      fprintf(fi, "%s%s", mi_symbole_chaine(sy), mi_symbole_indice_ch(tampind,sy));
+    }
+    break;
+    case MiTy_Tuple:
+    {
+      const Mit_Tuple*tup = mi_en_tuple(v);
+      unsigned ar = mi_arite_tuple(tup);
+      fputc('[', fi);
+      for (unsigned ix=0; ix<ar; ix++)
+        {
+          if (ix>0)
+            {
+              if (ix % 5 == 0) fputs(", ", fi);
+              else fputc(',', fi);
+            }
+          const Mit_Symbole*sy = mi_tuple_nieme(tup, (int)ix);
+          assert (sy && sy->mi_type == MiTy_Symbole);
+          char tampind[16];
+          fprintf(fi, "%s%s", mi_symbole_chaine(sy), mi_symbole_indice_ch(tampind,sy));
+        };
+      fputc(']', fi);
+    }
+    break;
+    case MiTy_Ensemble:
+    {
+      const Mit_Ensemble*ens = mi_en_ensemble(v);
+      unsigned car = mi_cardinal_ensemble(ens);
+      fputc('{', fi);
+      for (unsigned ix=0; ix<car; ix++)
+        {
+          if (ix>0)
+            {
+              if (ix % 5 == 0) fputs(", ", fi);
+              else fputc(',', fi);
+            }
+          const Mit_Symbole*sy = mi_ensemble_nieme(ens, (int)ix);
+          assert (sy && sy->mi_type == MiTy_Symbole);
+          char tampind[16];
+          fprintf(fi, "%s%s", mi_symbole_chaine(sy), mi_symbole_indice_ch(tampind,sy));
+        };
+      fputc('}', fi);
+    }
+    break;
+    case MiTy__Dernier:
+      MI_FATALPRINTF("valeur impossible @%p", v.miva_ptr);
+    }
+  fputc('\n', fi);
+} // fin mi_afficher_valeur
