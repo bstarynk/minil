@@ -826,8 +826,9 @@ static void mi_impr_radical(const struct MiSt_Radical_st*rad, int prof)
   if (!rad) return;
   assert(rad->urad_nmagiq == MI_RAD_NMAGIQ);
   assert(rad->urad_nom != NULL && rad->urad_nom->mi_type == MiTy_Chaine);
+  bool feuille = rad->urad_gauche == NULL && rad->urad_droit == NULL;
   for (int ix=0; ix<prof; ix++) putchar(' ');
-  printf("%s+%srad@%p '%s'", MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL,
+  printf("%s%c%srad@%p '%s'", MI_TERMINAL_GRAS, feuille?'*':'+', MI_TERMINAL_NORMAL,
          rad, rad->urad_nom->mi_car);
   switch (rad->urad_couleur)
     {
@@ -841,8 +842,11 @@ static void mi_impr_radical(const struct MiSt_Radical_st*rad, int prof)
       printf (" *?%d?*", (int)rad->urad_couleur);
       break;
     }
-  printf(" gch@%p drt@%p", (void*)rad->urad_gauche, (void*)rad->urad_droit);
+  if (!feuille)
+    printf(" gch@%p drt@%p", (void*)rad->urad_gauche, (void*)rad->urad_droit);
   putchar('\n');
+  if (feuille)
+    return;
   mi_impr_radical(rad->urad_gauche, prof+1);
   for (int ix=0; ix<prof; ix++) putchar(' ');
   printf("%s/%srad@%p '%s'", MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL, rad, rad->urad_nom->mi_car);
@@ -852,6 +856,7 @@ static void mi_impr_radical(const struct MiSt_Radical_st*rad, int prof)
   printf("%s-%srad@%p '%s'", MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL, rad, rad->urad_nom->mi_car);
   putchar('\n');
 } // fin mi_impr_radical
+
 
 void mi_afficher_radicaux (void)
 {
