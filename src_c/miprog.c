@@ -24,6 +24,7 @@ enum
   xtraopt_predefini,
   xtraopt_commentaire,
   xtraopt_symbole,
+  xtraopt_message,
   xtraopt_deboguersymboles,
   xtraopt_sansterminal,
   xtraopt__fin
@@ -32,17 +33,18 @@ enum
 /// pour getopt_long, décrit les arguments de programme
 const struct option minil_options[] =
 {
-  {"help", no_argument, NULL, 'h'},
-  {"version", no_argument, NULL, 'V'},
-  {"sauvegarde", required_argument, NULL, 'S'},
   {"afficher", required_argument, NULL, 'A'},
   {"charge", required_argument, NULL, 'c'},
-  {"oublier", required_argument, NULL, 'O'},
   {"commentaire", required_argument, NULL, xtraopt_commentaire},
-  {"predefini", required_argument, NULL, xtraopt_predefini},
-  {"symbole", required_argument, NULL, xtraopt_symbole},
   {"deboguer-symboles", no_argument, NULL, xtraopt_deboguersymboles},
+  {"help", no_argument, NULL, 'h'},
+  {"message", required_argument, NULL, xtraopt_message},
+  {"oublier", required_argument, NULL, 'O'},
+  {"predefini", required_argument, NULL, xtraopt_predefini},
   {"sans-terminal", no_argument, NULL, xtraopt_sansterminal},
+  {"sauvegarde", required_argument, NULL, 'S'},
+  {"symbole", required_argument, NULL, xtraopt_symbole},
+  {"version", no_argument, NULL, 'V'},
   {NULL, 0, NULL, 0}
 };
 
@@ -98,9 +100,9 @@ mi_arguments_programme (int argc, char **argv)
             {
               Mit_Symbole*sy = mi_trouver_symbole(optarg, NULL);
               if (!sy) printf("%s!! %saucun symbole nommé%s '%s'\n",
-			      MI_TERMINAL_GRAS, 
-			      MI_TERMINAL_ITALIQUE, MI_TERMINAL_NORMAL,
-			      optarg);
+                                MI_TERMINAL_GRAS,
+                                MI_TERMINAL_ITALIQUE, MI_TERMINAL_NORMAL,
+                                optarg);
               else mi_afficher_contenu_symbole(stdout, sy);
             };
           break;
@@ -164,6 +166,9 @@ mi_arguments_programme (int argc, char **argv)
         break;
         case xtraopt_commentaire: // --commentaire <chaine>
           comment = optarg;
+          break;
+        case xtraopt_message: // --message <message>
+          printf("#%d: %smessage%s %s\n", optind, MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL, optarg);
           break;
         case xtraopt_deboguersymboles: // --deboguer-symboles
           mi_deboguer_symboles();

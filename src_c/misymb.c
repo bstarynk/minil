@@ -115,7 +115,7 @@ mi_trouver_radical (const Mit_Chaine *chn)
       assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
       assert (rad->urad_nom && rad->urad_nom->mi_type == MiTy_Chaine);
       int cmp = (rad->urad_nom == chn) ? 0
-	: strcmp (chn->mi_car, rad->urad_nom->mi_car);
+                : strcmp (chn->mi_car, rad->urad_nom->mi_car);
       if (!cmp)
         return rad;
       if (cmp < 0)
@@ -820,18 +820,8 @@ void mi_symbole_enlever_attribut(Mit_Symbole*symb, Mit_Symbole*symbat)
 #warning mi_symbole_enlever_attribut incomplet
 } // fin mi_symbole_enlever_attribut
 
-static void mi_impr_radical(const struct MiSt_Radical_st*rad, int prof);
-void mi_deboguer_symboles(void)
-{
-  printf("%sdeboguage des symboles%s; mi_radical_racine@%p\n",
-         MI_TERMINAL_GRAS,
-         MI_TERMINAL_NORMAL,
-         (void*)mi_radical_racine);
-  mi_impr_radical(mi_radical_racine, 0);
-  fputc('\n', stdout);
-} // fin mi_deboguer_symboles
 
-void mi_impr_radical(const struct MiSt_Radical_st*rad, int prof)
+static void mi_impr_radical(const struct MiSt_Radical_st*rad, int prof)
 {
   if (!rad) return;
   assert(rad->urad_nmagiq == MI_RAD_NMAGIQ);
@@ -862,6 +852,23 @@ void mi_impr_radical(const struct MiSt_Radical_st*rad, int prof)
   printf("%s-%srad@%p '%s'", MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL, rad, rad->urad_nom->mi_car);
   putchar('\n');
 } // fin mi_impr_radical
+
+void mi_deboguer_symboles(void)
+{
+  static int count;
+  count++;
+  printf("%sdeboguage des symboles #%d%s; mi_radical_racine@%p\n",
+         MI_TERMINAL_GRAS,
+         count,
+         MI_TERMINAL_NORMAL,
+         (void*)mi_radical_racine);
+  mi_impr_radical(mi_radical_racine, 0);
+  fputc('\n', stdout);
+} // fin mi_deboguer_symboles
+
+
+
+
 
 #define MI_TABLATTR_NMAGIC 0x39f99e27 /* 972660263 */
 struct MiSt_TableAttributs_st
