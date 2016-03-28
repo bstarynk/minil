@@ -454,6 +454,8 @@ Mit_Symbole *mi_trouver_symbole(const char*ch, const char**pfin);
 Mit_Symbole *mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind);
 Mit_Symbole *mi_creer_symbole_chaine (const char *ch, unsigned ind);
 Mit_Symbole *mi_cloner_symbole(const Mit_Symbole*sy);
+
+void mi_deboguer_symboles (void);
 /// itérer sur chaque symbole primaire
 void mi_iterer_symbole_primaire (mi_itersymb_sigt * f, void *client);
 /// itérer sur chaque symbole primaire ou secondaire de nom donné

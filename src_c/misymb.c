@@ -818,3 +818,40 @@ void mi_symbole_enlever_attribut(Mit_Symbole*symb, Mit_Symbole*symbat)
 #warning mi_symbole_enlever_attribut incomplet
 } // fin mi_symbole_enlever_attribut
 
+static void mi_impr_radical(const struct MiSt_Radical_st*rad, int prof);
+void mi_deboguer_symboles(void)
+{
+  printf("deboguage des symboles; mi_radical_racine@%p\n", (void*)mi_radical_racine);
+  mi_impr_radical(mi_radical_racine, 0);
+} // fin mi_deboguer_symboles
+
+void mi_impr_radical(const struct MiSt_Radical_st*rad, int prof)
+{
+  if (!rad) return;
+  assert(rad->urad_nmagiq == MI_RAD_NMAGIQ);
+  assert(rad->urad_nom != NULL && rad->urad_nom->mi_type == MiTy_Chaine);
+  for (int ix=0; ix<prof; ix++) putchar(' ');
+  printf("+rad@%p '%s'", rad, rad->urad_nom->mi_car);
+  switch (rad->urad_couleur)
+    {
+    case crad_noir:
+      printf(" *NOIR*");
+      break;
+    case crad_rouge:
+      printf(" *ROUGE*");
+      break;
+    default:
+      printf (" *?%d?*", (int)rad->urad_couleur);
+      break;
+    }
+  printf(" gch@%p drt@%p", (void*)rad->urad_gauche, (void*)rad->urad_droit);
+  putchar('\n');
+  mi_impr_radical(rad->urad_gauche, prof+1);
+  for (int ix=0; ix<prof; ix++) putchar(' ');
+  printf("/rad@%p '%s'", rad, rad->urad_nom->mi_car);
+  putchar('\n');
+  mi_impr_radical(rad->urad_droit, prof+1);
+  for (int ix=0; ix<prof; ix++) putchar(' ');
+  printf("-rad@%p '%s'", rad, rad->urad_nom->mi_car);
+  putchar('\n');
+} // fin mi_impr_radical

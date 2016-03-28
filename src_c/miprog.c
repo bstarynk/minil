@@ -23,6 +23,8 @@ enum
   xtraopt__debut=1000,
   xtraopt_predefini,
   xtraopt_commentaire,
+  xtraopt_symbole,
+  xtraopt_deboguersymboles,
   xtraopt__fin
 };
 
@@ -36,6 +38,8 @@ const struct option minil_options[] =
   {"oublier", required_argument, NULL, 'O'},
   {"commentaire", required_argument, NULL, xtraopt_commentaire},
   {"predefini", required_argument, NULL, xtraopt_predefini},
+  {"symbole", required_argument, NULL, xtraopt_symbole},
+  {"deboguer-symboles", no_argument, NULL, xtraopt_deboguersymboles},
   {NULL, 0, NULL, 0}
 };
 
@@ -50,10 +54,12 @@ mi_usage (const char *nomprog)
 {
   printf ("usage de %s, un mini interprète\n", nomprog);
   printf (" --charge | -c <repertoire> #charger l'état\n");
-  printf (" --commentaire <chaine> #commentaire pour le prédéfini suivant\n");
+  printf (" --commentaire <chaine> #commentaire pour le symbole suivant\n");
+  printf (" --deboguer-symboles #deboguer la table des symboles\n");
   printf (" --help | -h #message d'aide\n");
   printf (" --oublier | -O <symbole> #oublier un symbole\n");
   printf (" --predefini <symbole> #créer un symbole predefini\n");
+  printf (" --symbole <symbole> #créer un symbole normal\n");
   printf (" --sauvegarde | -S <repertoire> #sauvegarder l'état\n");
   printf (" --version | -V #donne la version\n");
 }
@@ -121,8 +127,29 @@ mi_arguments_programme (int argc, char **argv)
           printf("symbole prédéfini %s créé\n", mi_symbole_chaine(sy));
         }
         break;
+        case xtraopt_symbole: // --symbole <nom>
+        {
+          Mit_Symbole*sy = NULL;
+          if (optarg && mi_trouver_symbole_chaine(optarg,0))
+            printf("symbole %s déjà existant...\n", optarg);
+          else if (!optarg || !isalpha(optarg[0]) || strchr(optarg, '_') ||
+                   !mi_nom_licite_chaine(optarg) || !(sy=mi_creer_symbole_chaine(optarg, 0)))
+            MI_FATALPRINTF("Mauvais nom %s de symbole", optarg?optarg:"??");
+          sy->mi_predef = false;
+          if (comment)
+            {
+              sy->mi_attrs = mi_assoc_mettre (sy->mi_attrs, MI_PREDEFINI(commentaire),
+                                              MI_CHAINEV(mi_creer_chaine(comment)));
+            }
+          comment = NULL;
+          printf("symbole %s créé\n", mi_symbole_chaine(sy));
+        }
+        break;
         case xtraopt_commentaire: // --commentaire <chaine>
           comment = optarg;
+          break;
+        case xtraopt_deboguersymboles: // --deboguer-symboles
+          mi_deboguer_symboles();
           break;
         }
     }
