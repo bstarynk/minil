@@ -50,6 +50,18 @@ extern const char minil_checksum[];
         __func__, ##__VA_ARGS__); fflush(NULL); \
 	abort(); } while(0)
 
+#ifndef NDEBUG
+extern bool mi_deboguage;
+#define MI_DEBOPRINTF(Fmt,...) do { if (mi_deboguage) {			\
+      fprintf(stderr, "%s:%d (%s)?? " Fmt "\n", __FILE__, __LINE__,	\
+	      __func__, ##__VA_ARGS__); fflush(NULL); }; }while(0)
+#else
+// ça ne sera jamais executé, mais le compilateur vérifie le printf...
+#define MI_DEBOPRINTF(Fmt,...) do { if (false) {			\
+      fprintf(stderr, "%s:%d (%s)?? " Fmt "\n", __FILE__, __LINE__,	\
+	      __func__, ##__VA_ARGS__); fflush(NULL); }; }while(0)
+#endif /*MI_DEBOPRINTF*/
+
 //////////////////////////////////////
 // Les nombres premiers sont utiles, notamment pour les tables de hash
 // Donne un nombre premier après ou bien avant l'argument, ou 0 en échec.

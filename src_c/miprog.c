@@ -18,6 +18,8 @@
 
 #include "minil.h"
 
+bool mi_deboguage;
+
 enum
 {
   xtraopt__debut=1000,
@@ -37,6 +39,7 @@ const struct option minil_options[] =
   {"charge", required_argument, NULL, 'c'},
   {"commentaire", required_argument, NULL, xtraopt_commentaire},
   {"radicaux", no_argument, NULL, xtraopt_radicaux},
+  {"deboguage", no_argument, NULL, 'D'},
   {"help", no_argument, NULL, 'h'},
   {"message", required_argument, NULL, xtraopt_message},
   {"oublier", required_argument, NULL, 'O'},
@@ -62,6 +65,7 @@ mi_usage (const char *nomprog)
   printf (" --afficher | -A <symbole> #afficher le contenu d'un symbole\n");
   printf (" --charge | -c <repertoire> #charger l'état\n");
   printf (" --commentaire <chaine> #commentaire pour le symbole suivant\n");
+  printf (" --deboguage #pour avoir plein de message de debugging\n");
   printf (" --radicaux #deboguer l'arbre des radicaux\n");
   printf (" --help | -h #message d'aide\n");
   printf (" --oublier | -O <symbole> #oublier un symbole\n");
@@ -77,13 +81,17 @@ mi_arguments_programme (int argc, char **argv)
 {
   int ch = 0;
   char* comment=NULL;
-  while ((ch = getopt_long (argc, argv, "hVc:S:O:A:",
+  while ((ch = getopt_long (argc, argv, "hVc:S:O:A:D",
                             minil_options, NULL)) > 0)
     {
       switch (ch)
         {
         case 'h':		// --help
           mi_usage (argv[0]);
+          break;
+        case 'D':
+          mi_deboguage = true;
+          MI_DEBOPRINTF("debut du déboguage pid %d", (int)getpid());
           break;
         case 'V':		// --version
           printf ("%s daté du %s, modif. %s, somme de contrôle %s\n",
@@ -259,6 +267,9 @@ int
 main (int argc, char **argv)
 {
   mi_sur_terminal = isatty(STDOUT_FILENO);
+  if (argc>1 && (!strcmp(argv[1], "-D") || !strcmp(argv[1], "--deboguer")))
+    mi_deboguage = true;
+  MI_DEBOPRINTF("début minil pid %d argc %d", (int)getpid(), argc);
   mi_initialiser_predefinis ();
   mi_initialiser_alea();
   mi_arguments_programme (argc, argv);

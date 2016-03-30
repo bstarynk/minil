@@ -242,6 +242,7 @@ mi_creer_radical (const Mit_Chaine *ch)
   rad->urad_parent = NULL;
   rad->urad_gauche = NULL;
   rad->urad_droit = NULL;
+  MI_DEBOPRINTF("rad@%p ch@%p'%s'", rad, ch, ch->mi_car);
   return rad;
 }				/* fin mi_creer_radical */
 
@@ -287,21 +288,29 @@ mi_radical_insere_nom(const Mit_Chaine*nomz)
 static struct MiSt_Radical_st*
 mi_radical_insere_chaine(const char*ch)
 {
+  MI_DEBOPRINTF("debut ch='%s' mi_racine_radical@%p",
+                ch, mi_racine_radical);
   assert (mi_nom_licite_chaine(ch));
   struct MiSt_Radical_st*rady = NULL;
   struct MiSt_Radical_st*radx = mi_racine_radical;
   int cmp=0;
   while (radx != NULL)
     {
+      MI_DEBOPRINTF("radx@%p", radx);
       assert (radx->urad_nmagiq == MI_RAD_NMAGIQ);
       assert (radx->urad_nom && radx->urad_nom->mi_type == MiTy_Chaine);
       rady = radx;
       cmp = strcmp(ch, radx->urad_nom->mi_car);
-      if (!cmp) return radx;
+      if (!cmp)
+        {
+          MI_DEBOPRINTF("resultat radx@%p ch=%s", radx, ch);
+          return radx;
+        }
       else if (cmp<0) radx = radx->urad_gauche;
       else radx = radx->urad_droit;
     }
   struct MiSt_Radical_st*radz = mi_creer_radical(mi_creer_chaine(ch));
+  MI_DEBOPRINTF("rady@%p radz@%p ch=%s", rady, radz, ch);
   assert (radz && radz->urad_nmagiq == MI_RAD_NMAGIQ);
   radz->urad_parent = rady;
   if (rady == NULL)
@@ -325,8 +334,9 @@ mi_correction_apres_insertion (struct MiSt_Radical_st*radz)
 {
   assert (radz && radz->urad_nmagiq == MI_RAD_NMAGIQ);
   struct MiSt_Radical_st*radparz = NULL;
-  while ((radparz = radz->urad_parent) != NULL && mi_radical_rouge(radparz))
+  while ((radparz = radz->urad_parent), mi_radical_rouge(radparz))
     {
+      MI_DEBOPRINTF("radz@%p radparz@%p", radz, radparz);
       assert (radparz->urad_nmagiq == MI_RAD_NMAGIQ);
       assert (radparz->urad_parent != NULL);
       if (radparz == radparz->urad_parent->urad_gauche)
