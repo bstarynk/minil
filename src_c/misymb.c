@@ -27,20 +27,26 @@ enum Mi_CouleurRadical_en
 };
 
 #define MI_RAD_NMAGIQ ((uint16_t)0x5fe7)	/*24551 */
+struct MiSt_ValeurRadical_st
+{
+  Mit_Symbole*vrad_symbprim;
+  unsigned vrad_tailsec;
+  unsigned vrad_nbsec;
+  Mit_Symbole**vrad_tabsecsym;
+};
+
 struct MiSt_Radical_st
 {
   uint16_t urad_nmagiq;		/* toujours MI_RAD_NMAGIQ */
   enum Mi_CouleurRadical_en urad_couleur;
-  const Mit_Chaine *urad_nom;
+  struct MiSt_Radical_st *urad_parent;
   struct MiSt_Radical_st *urad_gauche;
   struct MiSt_Radical_st *urad_droit;
-  Mit_Symbole *urad_symbprim;
-  unsigned urad_tailsec;
-  unsigned urad_nbsec; /* nombre de symboles secondaires, en hash table */
-  Mit_Symbole**urad_tabsecsym;	/* de taille urad_tailsec */
+  const Mit_Chaine *urad_nom; // la clef
+  struct MiSt_ValeurRadical_st urad_val;
 };
 
-static struct MiSt_Radical_st *mi_radical_racine;
+static struct MiSt_Radical_st *mi_racine_radical;
 
 // tester si une valeur chaine est licite pour un nom
 bool
@@ -87,6 +93,7 @@ mi_hashage_chaine (const char *ch)
   return h;
 }				// fin mi_hashage_chaine
 
+
 const char*mi_symbole_chaine(const Mit_Symbole*sy)
 {
   if (!sy || sy->mi_type != MiTy_Symbole)return NULL;
@@ -109,7 +116,7 @@ mi_trouver_radical (const Mit_Chaine *chn)
     return NULL;
   if (!mi_nom_licite (chn))
     return NULL;
-  struct MiSt_Radical_st *rad = mi_radical_racine;
+  struct MiSt_Radical_st *rad = mi_racine_radical;
   while (rad)
     {
       assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
@@ -132,7 +139,7 @@ mi_trouver_radical_chaine (const char *ch)
   if (!ch || !mi_nom_licite_chaine (ch))
     return NULL;
 
-  struct MiSt_Radical_st *rad = mi_radical_racine;
+  struct MiSt_Radical_st *rad = mi_racine_radical;
   while (rad)
     {
       assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
@@ -162,7 +169,7 @@ static inline bool
 mi_radical_noir (const struct MiSt_Radical_st *rad)
 {
   if (!rad)
-    return false;
+    return true;
   assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
   assert (rad->urad_couleur != crad__rien);
   return rad->urad_couleur == crad_noir;
@@ -175,51 +182,47 @@ mi_couleur_opposee (enum Mi_CouleurRadical_en c)
   return (c == crad_rouge) ? crad_noir : crad_rouge;
 }				/* fin mi_couleur_opposee */
 
+
+// suivant le livre de Cormen, Leiserson, Rivest, Stein
+// Algorithmique (3e edition)
 static void
-mi_radical_changer_couleur (struct MiSt_Radical_st *rad)
+mi_radical_rotation_gauche (struct MiSt_Radical_st *radx)
 {
-  assert (rad && rad->urad_nmagiq == MI_RAD_NMAGIQ);
-  assert (rad->urad_gauche && rad->urad_gauche->urad_nmagiq == MI_RAD_NMAGIQ);
-  assert (rad->urad_droit && rad->urad_droit->urad_nmagiq == MI_RAD_NMAGIQ);
-  rad->urad_gauche->urad_couleur =
-    mi_couleur_opposee (rad->urad_gauche->urad_couleur);
-  rad->urad_droit->urad_couleur =
-    mi_couleur_opposee (rad->urad_droit->urad_couleur);
-}				/* fin mi_radical_changer_couleur */
+  assert (radx && radx->urad_nmagiq == MI_RAD_NMAGIQ);
+  struct MiSt_Radical_st *rady = radx->urad_droit;
+  assert (rady && rady->urad_nmagiq == MI_RAD_NMAGIQ);
+  radx->urad_droit = rady->urad_gauche;
+  if (rady->urad_gauche != NULL)
+    rady->urad_gauche->urad_parent = radx;
+  rady->urad_parent = radx->urad_parent;
+  if (radx->urad_parent == NULL)
+    mi_racine_radical = rady;
+  else if (radx == radx->urad_parent->urad_gauche)
+    radx->urad_parent->urad_gauche = rady;
+  else radx->urad_parent->urad_droit = rady;
+  rady->urad_gauche = radx;
+  radx->urad_parent = rady;
+}				/* fin mi_radical_rotation_gauche */
 
-
-static struct MiSt_Radical_st *
-mi_radical_tourner_gauche (struct MiSt_Radical_st *radg)
+static void
+mi_radical_rotation_droite (struct MiSt_Radical_st *radx)
 {
-  struct MiSt_Radical_st *radroit;
-  if (!radg)
-    return NULL;
-  assert (radg && radg->urad_nmagiq == MI_RAD_NMAGIQ);
-  radroit = radg->urad_gauche;
-  assert (radroit && radroit->urad_nmagiq == MI_RAD_NMAGIQ);
-  radg->urad_droit = radroit->urad_gauche;
-  radroit->urad_gauche = radg;
-  radroit->urad_couleur = radg->urad_couleur;
-  radg->urad_couleur = crad_rouge;
-  return radroit;
-}				/* fin mi_radical_tourner_gauche */
+  assert (radx && radx->urad_nmagiq == MI_RAD_NMAGIQ);
+  struct MiSt_Radical_st *rady = radx->urad_gauche;
+  assert (rady && rady->urad_nmagiq == MI_RAD_NMAGIQ);
+  radx->urad_gauche = rady->urad_droit;
+  if (rady->urad_droit != NULL)
+    rady->urad_droit->urad_parent = radx;
+  rady->urad_parent = radx->urad_parent;
+  if (radx->urad_parent == NULL)
+    mi_racine_radical = rady;
+  else if (radx == radx->urad_parent->urad_droit)
+    radx->urad_parent->urad_droit = rady;
+  else radx->urad_parent->urad_gauche = rady;
+  rady->urad_droit = radx;
+  radx->urad_parent = rady;
+}				/* fin mi_radical_rotation_droite */
 
-
-static struct MiSt_Radical_st *
-mi_radical_tourner_droit (struct MiSt_Radical_st *radr)
-{
-  struct MiSt_Radical_st *radgau = NULL;
-  if (!radr)
-    return NULL;
-  assert (radr && radr->urad_nmagiq == MI_RAD_NMAGIQ);
-  radgau = radr->urad_gauche;
-  assert (radgau && radgau->urad_nmagiq == MI_RAD_NMAGIQ);
-  radr->urad_gauche = radgau->urad_droit;
-  radgau->urad_droit = radr;
-  radgau->urad_couleur = radr->urad_couleur;
-  radr->urad_couleur = crad_rouge;
-  return radgau;
-}				/* fin mi_radical_tourner_droit */
 
 
 static struct MiSt_Radical_st *
@@ -236,71 +239,154 @@ mi_creer_radical (const Mit_Chaine *ch)
   rad->urad_nmagiq = MI_RAD_NMAGIQ;
   rad->urad_couleur = crad_rouge;
   rad->urad_nom = ch;
+  rad->urad_parent = NULL;
   rad->urad_gauche = NULL;
   rad->urad_droit = NULL;
   return rad;
 }				/* fin mi_creer_radical */
 
-static struct MiSt_Radical_st *
-mi_inserer_ce_radical_nom (struct MiSt_Radical_st *rad, const Mit_Chaine *ch)
-{
-  if (!rad)
-    return mi_creer_radical (ch);
-  assert (mi_nom_licite (ch));
-  assert (rad && rad->urad_nmagiq == MI_RAD_NMAGIQ);
-  int cmp = strcmp (ch->mi_car, rad->urad_nom->mi_car);
-  if (cmp == 0)
-    return rad;
-  if (cmp < 0)
-    rad->urad_gauche = mi_inserer_ce_radical_nom (rad->urad_gauche, ch);
-  else
-    rad->urad_droit = mi_inserer_ce_radical_nom (rad->urad_droit, ch);
-  if (mi_radical_rouge (rad->urad_droit)
-      && mi_radical_noir (rad->urad_gauche))
-    rad = mi_radical_tourner_gauche (rad);
-  if (mi_radical_rouge (rad->urad_gauche)
-      && mi_radical_noir (rad->urad_gauche->urad_gauche))
-    rad = mi_radical_tourner_droit (rad);
-  if (mi_radical_rouge (rad->urad_droit)
-      && mi_radical_rouge (rad->urad_gauche))
-    mi_radical_changer_couleur (rad);
-  return rad;
-}				/* end of mi_inserer_ce_radical_nom */
 
+static void mi_correction_apres_insertion (struct MiSt_Radical_st*);
 
-static struct MiSt_Radical_st *
-mi_inserer_ce_radical_chaine (struct MiSt_Radical_st *rad, const char*ch)
+static struct MiSt_Radical_st*
+mi_radical_insere_nom(const Mit_Chaine*nomz)
 {
-  struct MiSt_Radical_st *nouvrad = NULL;
-  assert (ch != NULL);
-  if (!rad)
+  assert (mi_nom_licite(nomz));
+  struct MiSt_Radical_st*rady = NULL;
+  struct MiSt_Radical_st*radx = mi_racine_radical;
+  int cmp=0;
+  while (radx != NULL)
     {
-      assert (mi_nom_licite_chaine (ch));
-      return mi_creer_radical (mi_creer_chaine(ch));
+      assert (radx->urad_nmagiq == MI_RAD_NMAGIQ);
+      assert (radx->urad_nom && radx->urad_nom->mi_type == MiTy_Chaine);
+      rady = radx;
+      cmp = strcmp(nomz->mi_car, radx->urad_nom->mi_car);
+      if (!cmp) return radx;
+      else if (cmp<0) radx = radx->urad_gauche;
+      else radx = radx->urad_droit;
     }
-  assert (rad && rad->urad_nmagiq == MI_RAD_NMAGIQ);
-  int cmp = strcmp (ch, rad->urad_nom->mi_car);
-  if (cmp == 0)
-    return rad;
-  if (cmp < 0)
-    nouvrad = rad->urad_gauche = mi_inserer_ce_radical_chaine (rad->urad_gauche, ch);
-  else
-    nouvrad = rad->urad_droit = mi_inserer_ce_radical_chaine (rad->urad_droit, ch);
-  if (mi_radical_rouge (rad->urad_droit)
-      && mi_radical_noir (rad->urad_gauche))
-    rad = mi_radical_tourner_gauche (rad);
-  if (mi_radical_rouge (rad->urad_gauche)
-      && !mi_radical_rouge (rad->urad_gauche->urad_gauche))
-    rad = mi_radical_tourner_droit (rad);
-  if (mi_radical_rouge (rad->urad_droit)
-      && mi_radical_rouge (rad->urad_gauche))
-    mi_radical_changer_couleur (rad);
-  assert (nouvrad && nouvrad->urad_nmagiq == MI_RAD_NMAGIQ);
-  assert (nouvrad->urad_nom != NULL);
-  assert (!strcmp(nouvrad->urad_nom->mi_car, ch));
-  return nouvrad;
-}				/* end of mi_inserer_ce_radical_chaine */
+  struct MiSt_Radical_st*radz = mi_creer_radical(nomz);
+  assert (radz && radz->urad_nmagiq == MI_RAD_NMAGIQ);
+  radz->urad_parent = rady;
+  if (rady == NULL)
+    mi_racine_radical = radz;
+  else if ((cmp=strcmp(nomz->mi_car, rady->urad_nom->mi_car)) < 0)
+    rady->urad_gauche = radz;
+  else if (cmp > 0)
+    rady->urad_droit = radz;
+  else   // cas impossible
+    {
+      assert("cas impossible mauvais rady");
+      MI_FATALPRINTF("corruption de radical rady@%p", (void*)rady);
+    }
+  mi_correction_apres_insertion (radz);
+  return radz;
+} /* fin mi_radical_insere_nom */
 
+
+static struct MiSt_Radical_st*
+mi_radical_insere_chaine(const char*ch)
+{
+  assert (mi_nom_licite_chaine(ch));
+  struct MiSt_Radical_st*rady = NULL;
+  struct MiSt_Radical_st*radx = mi_racine_radical;
+  int cmp=0;
+  while (radx != NULL)
+    {
+      assert (radx->urad_nmagiq == MI_RAD_NMAGIQ);
+      assert (radx->urad_nom && radx->urad_nom->mi_type == MiTy_Chaine);
+      rady = radx;
+      cmp = strcmp(ch, radx->urad_nom->mi_car);
+      if (!cmp) return radx;
+      else if (cmp<0) radx = radx->urad_gauche;
+      else radx = radx->urad_droit;
+    }
+  struct MiSt_Radical_st*radz = mi_creer_radical(mi_creer_chaine(ch));
+  assert (radz && radz->urad_nmagiq == MI_RAD_NMAGIQ);
+  radz->urad_parent = rady;
+  if (rady == NULL)
+    mi_racine_radical = radz;
+  else if ((cmp=strcmp(ch, rady->urad_nom->mi_car)) < 0)
+    rady->urad_gauche = radz;
+  else if (cmp > 0)
+    rady->urad_droit = radz;
+  else   // cas impossible
+    {
+      assert("cas impossible mauvais rady");
+      MI_FATALPRINTF("corruption de radical rady@%p", (void*)rady);
+    }
+  mi_correction_apres_insertion (radz);
+  return radz;
+} /* fin mi_radical_insere_chaine */
+
+
+static void
+mi_correction_apres_insertion (struct MiSt_Radical_st*radz)
+{
+  assert (radz && radz->urad_nmagiq == MI_RAD_NMAGIQ);
+  struct MiSt_Radical_st*radparz = NULL;
+  while ((radparz = radz->urad_parent) != NULL && mi_radical_rouge(radparz))
+    {
+      assert (radparz->urad_nmagiq == MI_RAD_NMAGIQ);
+      assert (radparz->urad_parent != NULL);
+      if (radparz == radparz->urad_parent->urad_gauche)
+        {
+          struct MiSt_Radical_st*rady = radparz->urad_parent->urad_droit;
+          assert (!rady || rady->urad_nmagiq == MI_RAD_NMAGIQ);
+          if (mi_radical_rouge(rady))
+            {
+              radparz->urad_couleur = crad_noir;
+              rady->urad_couleur = crad_noir;
+              radparz->urad_parent->urad_couleur = crad_rouge;
+              radz = radparz->urad_parent;
+            }
+          else
+            {
+              if (radz == radparz->urad_droit)
+                {
+                  radz = radparz;
+                  mi_radical_rotation_gauche(radz);
+                  radparz = radz->urad_parent;
+                };
+              radparz->urad_couleur = crad_noir;
+              assert (radparz->urad_parent);
+              radparz->urad_parent->urad_couleur = crad_rouge;
+              mi_radical_rotation_droite(radparz->urad_parent);
+            }
+        }
+      else if (radparz == radparz->urad_parent->urad_droit)
+        {
+          struct MiSt_Radical_st*rady = radparz->urad_parent->urad_gauche;
+          assert (!rady || rady->urad_nmagiq == MI_RAD_NMAGIQ);
+          if (mi_radical_rouge(rady))
+            {
+              radparz->urad_couleur = crad_noir;
+              rady->urad_couleur = crad_noir;
+              radparz->urad_parent->urad_couleur = crad_rouge;
+              radz = radparz->urad_parent;
+            }
+          else
+            {
+              if (radz == radparz->urad_gauche)
+                {
+                  radz = radparz;
+                  mi_radical_rotation_droite(radz);
+                  radparz = radz->urad_parent;
+                };
+              radparz->urad_couleur = crad_noir;
+              assert (radparz->urad_parent);
+              radparz->urad_parent->urad_couleur = crad_rouge;
+              mi_radical_rotation_gauche(radparz->urad_parent);
+            }
+        }
+      else   // cas impossible
+        {
+          assert ("corruption dans insertion");
+          MI_FATALPRINTF("corruption radz@%p radparz@%p",
+                         (void*)radz, (void*)radparz);
+        }
+    }
+} /* fin mi_correction_apres_insertion */
 
 static int
 mi_indice_radical_symbole_secondaire(struct MiSt_Radical_st*rad, unsigned ind);
@@ -310,12 +396,12 @@ Mit_Symbole *mi_trouver_symbole_nom (const Mit_Chaine *nom, unsigned ind)
   struct MiSt_Radical_st *rad =   mi_trouver_radical (nom);
   if (!rad) return NULL;
   if (ind == 0)
-    return rad->urad_symbprim;
-  if (rad->urad_nbsec == 0)
+    return rad->urad_val.vrad_symbprim;
+  if (rad->urad_val.vrad_nbsec == 0)
     return NULL;
   int pos = mi_indice_radical_symbole_secondaire(rad,ind);
-  assert (pos >= 0 && pos< (int)rad->urad_tailsec);
-  Mit_Symbole*sy = rad->urad_tabsecsym[pos];
+  assert (pos >= 0 && pos< (int)rad->urad_val.vrad_tailsec);
+  Mit_Symbole*sy = rad->urad_val.vrad_tabsecsym[pos];
   if (sy && sy != MI_TROU_SYMBOLE)
     {
       assert(sy->mi_type == MiTy_Symbole);
@@ -465,7 +551,7 @@ static bool
 mi_parcourir_radical_primaire(struct MiSt_Radical_st*rad, void*client)
 {
   struct Mi_parcours_radical_primaire_st*prp = client;
-  return (*prp->prp_f)(rad->urad_symbprim,prp->prp_client);
+  return (*prp->prp_f)(rad->urad_val.vrad_symbprim,prp->prp_client);
 }
 
 /// itérer sur chaque symbole primaire
@@ -475,7 +561,7 @@ mi_iterer_symbole_primaire (mi_itersymb_sigt * f, void *client)
   if (!f)
     return;
   struct Mi_parcours_radical_primaire_st prp= {f,client};
-  mi_parcourir_radical(mi_radical_racine, mi_parcourir_radical_primaire, &prp);
+  mi_parcourir_radical(mi_racine_radical, mi_parcourir_radical_primaire, &prp);
 }				/* fin mi_iterer_symbole_primaire */
 
 
@@ -483,15 +569,15 @@ static bool
 mi_parcourir_radical_nomme(struct MiSt_Radical_st*rad, void*client)
 {
   struct Mi_parcours_radical_primaire_st*prp = client;
-  if ((*prp->prp_f)(rad->urad_symbprim,prp->prp_client))
+  if ((*prp->prp_f)(rad->urad_val.vrad_symbprim,prp->prp_client))
     return true;
-  unsigned t = rad->urad_tailsec;
+  unsigned t = rad->urad_val.vrad_tailsec;
   if (t>0)
     {
-      assert (rad->urad_tabsecsym != NULL);
+      assert (rad->urad_val.vrad_tabsecsym != NULL);
       for (unsigned ix=0; ix<t; ix++)
         {
-          Mit_Symbole*sy = rad->urad_tabsecsym[ix];
+          Mit_Symbole*sy = rad->urad_val.vrad_tabsecsym[ix];
           if (!sy || sy==MI_TROU_SYMBOLE) continue;
           if ((*prp->prp_f)(sy,prp->prp_client))
             return true;
@@ -509,7 +595,7 @@ mi_iterer_symbole_nomme (const char *ch, mi_itersymb_sigt * f, void *client)
   if (!mi_nom_licite_chaine (ch))
     return;
   struct Mi_parcours_radical_primaire_st prp= {f,client};
-  mi_parcourir_radical(mi_radical_racine, mi_parcourir_radical_nomme,
+  mi_parcourir_radical(mi_racine_radical, mi_parcourir_radical_nomme,
                        &prp);
 }				// fin mi_iterer_symbole_nomme
 
@@ -521,25 +607,25 @@ mi_indice_radical_symbole_secondaire(struct MiSt_Radical_st*rad, unsigned ind)
   const Mit_Chaine*nomr = rad->urad_nom;
   assert (nomr && nomr->mi_type == MiTy_Chaine);
   unsigned h = mi_hashage_symbole_indice(nomr,ind);
-  if (!rad->urad_tabsecsym)
+  if (!rad->urad_val.vrad_tabsecsym)
     {
-      assert (!rad->urad_tailsec);
+      assert (!rad->urad_val.vrad_tailsec);
       unsigned ta = 7;
-      rad->urad_tabsecsym = calloc(ta, sizeof(Mit_Symbole*));
-      if (!rad->urad_tabsecsym)
+      rad->urad_val.vrad_tabsecsym = calloc(ta, sizeof(Mit_Symbole*));
+      if (!rad->urad_val.vrad_tabsecsym)
         MI_FATALPRINTF("impossible d'allouer table de symboles"
                        "secondaires de %d nom %s (%s)",
                        ta, nomr->mi_car, strerror(errno));
-      rad->urad_tailsec = ta;
-      rad->urad_nbsec = 0;
+      rad->urad_val.vrad_tailsec = ta;
+      rad->urad_val.vrad_nbsec = 0;
     }
-  unsigned ta = rad->urad_tailsec;
+  unsigned ta = rad->urad_val.vrad_tailsec;
   assert (ta > 2);
-  unsigned debix = h % rad->urad_tailsec;
+  unsigned debix = h % rad->urad_val.vrad_tailsec;
   int pos = -1;
   for (unsigned ix=debix; ix<ta; ix++)
     {
-      const Mit_Symbole*sy = rad->urad_tabsecsym[ix];
+      const Mit_Symbole*sy = rad->urad_val.vrad_tabsecsym[ix];
       if (!sy)
         {
           if (!pos) pos=(int)ix;
@@ -555,7 +641,7 @@ mi_indice_radical_symbole_secondaire(struct MiSt_Radical_st*rad, unsigned ind)
     }
   for (unsigned ix=0; ix<debix; ix++)
     {
-      const Mit_Symbole*sy = rad->urad_tabsecsym[ix];
+      const Mit_Symbole*sy = rad->urad_val.vrad_tabsecsym[ix];
       if (!sy)
         {
           if (!pos) pos=(int)ix;
@@ -577,30 +663,30 @@ void
 mi_agrandir_radical_table_secondaire(struct MiSt_Radical_st*rad, unsigned xtra)
 {
   assert (rad && rad->urad_nmagiq == MI_RAD_NMAGIQ);
-  if (!rad->urad_tabsecsym)
+  if (!rad->urad_val.vrad_tabsecsym)
     {
       unsigned ta = mi_nombre_premier_apres(9*xtra/8+5);
-      rad->urad_tabsecsym = calloc(ta, sizeof(Mit_Symbole*));
-      if (!rad->urad_tabsecsym)
+      rad->urad_val.vrad_tabsecsym = calloc(ta, sizeof(Mit_Symbole*));
+      if (!rad->urad_val.vrad_tabsecsym)
         MI_FATALPRINTF("impossible d'allouer table de symboles secondaire de %d nom %s (%s)",
                        ta, rad->urad_nom->mi_car, strerror(errno));
-      rad->urad_tailsec = ta;
-      rad->urad_nbsec = 0;
+      rad->urad_val.vrad_tailsec = ta;
+      rad->urad_val.vrad_nbsec = 0;
     }
-  else if (5*rad->urad_nbsec + 4*xtra > rad->urad_tailsec)
+  else if (5*rad->urad_val.vrad_nbsec + 4*xtra > rad->urad_val.vrad_tailsec)
     {
-      unsigned ancnb = rad->urad_nbsec;
-      unsigned ta = mi_nombre_premier_apres(4*(rad->urad_nbsec + xtra)/3 + rad->urad_nbsec/32 + 5);
-      if (ta > rad->urad_tailsec)
+      unsigned ancnb = rad->urad_val.vrad_nbsec;
+      unsigned ta = mi_nombre_premier_apres(4*(rad->urad_val.vrad_nbsec + xtra)/3 + rad->urad_val.vrad_nbsec/32 + 5);
+      if (ta > rad->urad_val.vrad_tailsec)
         {
-          Mit_Symbole**anctab = rad->urad_tabsecsym;
-          unsigned anctail = rad->urad_tailsec;
-          rad->urad_tabsecsym = calloc(ta, sizeof(Mit_Symbole*));
-          if (!rad->urad_tabsecsym)
+          Mit_Symbole**anctab = rad->urad_val.vrad_tabsecsym;
+          unsigned anctail = rad->urad_val.vrad_tailsec;
+          rad->urad_val.vrad_tabsecsym = calloc(ta, sizeof(Mit_Symbole*));
+          if (!rad->urad_val.vrad_tabsecsym)
             MI_FATALPRINTF("impossible d'allouer table de symboles secondaire de %d nom %s (%s)",
                            ta, rad->urad_nom->mi_car, strerror(errno));
-          rad->urad_tailsec = ta;
-          rad->urad_nbsec = 0;
+          rad->urad_val.vrad_tailsec = ta;
+          rad->urad_val.vrad_nbsec = 0;
           for (unsigned ix=0; ix<anctail; ix++)
             {
               Mit_Symbole*ancsy = anctab[ix];
@@ -608,11 +694,11 @@ mi_agrandir_radical_table_secondaire(struct MiSt_Radical_st*rad, unsigned xtra)
               assert (ancsy->mi_type == MiTy_Symbole && ancsy->mi_radical == rad);
               assert (ancsy->mi_indice > 0);
               int pos = mi_indice_radical_symbole_secondaire(rad,ancsy->mi_indice);
-              assert (pos >= 0 && pos<(int)ta && rad->urad_tabsecsym[pos]==NULL);
-              rad->urad_tabsecsym[pos] = ancsy;
-              rad->urad_nbsec++;
+              assert (pos >= 0 && pos<(int)ta && rad->urad_val.vrad_tabsecsym[pos]==NULL);
+              rad->urad_val.vrad_tabsecsym[pos] = ancsy;
+              rad->urad_val.vrad_nbsec++;
             }
-          assert (rad->urad_nbsec == ancnb);
+          assert (rad->urad_val.vrad_nbsec == ancnb);
         }
     }
 } /* fin mi_agrandir_radical_table_secondaire */
@@ -622,30 +708,23 @@ mi_agrandir_radical_table_secondaire(struct MiSt_Radical_st*rad, unsigned xtra)
 Mit_Symbole *mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind)
 {
   if (!mi_nom_licite(nom)) return NULL;
-  struct MiSt_Radical_st*rad = mi_trouver_radical(nom);
-  if (!rad)
-    {
-      if (!mi_radical_racine)
-        mi_radical_racine = rad = mi_creer_radical(nom);
-      else
-        rad = mi_inserer_ce_radical_nom(mi_radical_racine, nom);
-    }
+  struct MiSt_Radical_st*rad = mi_radical_insere_nom(nom);
   assert (rad && rad->urad_nmagiq == MI_RAD_NMAGIQ);
   if (ind)
     {
-      if (5*rad->urad_nbsec + 2 >= 4*rad->urad_tailsec)
-        mi_agrandir_radical_table_secondaire(rad, 2+rad->urad_nbsec/32);
+      if (5*rad->urad_val.vrad_nbsec + 2 >= 4*rad->urad_val.vrad_tailsec)
+        mi_agrandir_radical_table_secondaire(rad, 2+rad->urad_val.vrad_nbsec/32);
       int pos = mi_indice_radical_symbole_secondaire(rad,ind);
-      assert (pos >= 0 && pos< (int)rad->urad_tailsec);
-      Mit_Symbole*ancsy = rad->urad_tabsecsym[pos];
+      assert (pos >= 0 && pos< (int)rad->urad_val.vrad_tailsec);
+      Mit_Symbole*ancsy = rad->urad_val.vrad_tabsecsym[pos];
       if (!ancsy || ancsy == MI_TROU_SYMBOLE)
         {
           Mit_Symbole*sy =  mi_allouer_valeur(MiTy_Symbole, sizeof(Mit_Symbole));
           sy->mi_radical = rad;
           sy->mi_indice = ind;
           sy->mi_hash = mi_hashage_symbole_indice(rad->urad_nom, ind);
-          rad->urad_tabsecsym[pos] = sy;
-          rad->urad_nbsec++;
+          rad->urad_val.vrad_tabsecsym[pos] = sy;
+          rad->urad_val.vrad_nbsec++;
           return sy;
         }
       else
@@ -656,11 +735,11 @@ Mit_Symbole *mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind)
     }
   else
     {
-      Mit_Symbole*sy = rad->urad_symbprim;
+      Mit_Symbole*sy = rad->urad_val.vrad_symbprim;
       if (!sy)
         {
           sy = mi_allouer_valeur(MiTy_Symbole, sizeof(Mit_Symbole));
-          rad->urad_symbprim = sy;
+          rad->urad_val.vrad_symbprim = sy;
           sy->mi_radical = rad;
           sy->mi_indice = 0;
           sy->mi_hash = mi_hashage_symbole_indice(rad->urad_nom, 0);
@@ -673,34 +752,23 @@ Mit_Symbole *mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind)
 Mit_Symbole *mi_creer_symbole_chaine (const char *ch, unsigned ind)
 {
   if (!mi_nom_licite_chaine(ch)) return NULL;
-  struct MiSt_Radical_st*rad = mi_trouver_radical_chaine(ch);
-  if (!rad)
-    {
-      if (!mi_radical_racine)
-        {
-          const Mit_Chaine*nom = mi_creer_chaine(ch);
-          mi_radical_racine = rad = mi_creer_radical(nom);
-          rad->urad_couleur = crad_noir;
-        }
-      else
-        rad = mi_inserer_ce_radical_chaine(mi_radical_racine, ch);
-    }
+  struct MiSt_Radical_st*rad = mi_radical_insere_chaine(ch);
   assert (rad && rad->urad_nmagiq == MI_RAD_NMAGIQ);
   if (ind)
     {
-      if (5*rad->urad_nbsec + 2 >= 4*rad->urad_tailsec)
-        mi_agrandir_radical_table_secondaire(rad, 2+rad->urad_nbsec/32);
+      if (5*rad->urad_val.vrad_nbsec + 2 >= 4*rad->urad_val.vrad_tailsec)
+        mi_agrandir_radical_table_secondaire(rad, 2+rad->urad_val.vrad_nbsec/32);
       int pos = mi_indice_radical_symbole_secondaire(rad,ind);
-      assert (pos >= 0 && pos< (int)rad->urad_tailsec);
-      Mit_Symbole*ancsy = rad->urad_tabsecsym[pos];
+      assert (pos >= 0 && pos< (int)rad->urad_val.vrad_tailsec);
+      Mit_Symbole*ancsy = rad->urad_val.vrad_tabsecsym[pos];
       if (!ancsy || ancsy == MI_TROU_SYMBOLE)
         {
           Mit_Symbole*sy =  mi_allouer_valeur(MiTy_Symbole, sizeof(Mit_Symbole));
           sy->mi_radical = rad;
           sy->mi_indice = ind;
           sy->mi_hash = mi_hashage_symbole_indice(rad->urad_nom, ind);
-          rad->urad_tabsecsym[pos] = sy;
-          rad->urad_nbsec++;
+          rad->urad_val.vrad_tabsecsym[pos] = sy;
+          rad->urad_val.vrad_nbsec++;
           return sy;
         }
       else
@@ -711,11 +779,11 @@ Mit_Symbole *mi_creer_symbole_chaine (const char *ch, unsigned ind)
     }
   else
     {
-      Mit_Symbole*sy = rad->urad_symbprim;
+      Mit_Symbole*sy = rad->urad_val.vrad_symbprim;
       if (!sy)
         {
           sy = mi_allouer_valeur(MiTy_Symbole, sizeof(Mit_Symbole));
-          rad->urad_symbprim = sy;
+          rad->urad_val.vrad_symbprim = sy;
           sy->mi_radical = rad;
           sy->mi_indice = 0;
           sy->mi_hash = mi_hashage_symbole_indice(rad->urad_nom, 0);
@@ -730,12 +798,12 @@ Mit_Symbole *mi_trouver_symbole_chaine (const char *ch, unsigned ind)
 {
   struct MiSt_Radical_st*rad = mi_trouver_radical_chaine(ch);
   if (!rad) return NULL;
-  if (ind == 0) return rad->urad_symbprim;
-  if (rad->urad_nbsec == 0)
+  if (ind == 0) return rad->urad_val.vrad_symbprim;
+  if (rad->urad_val.vrad_nbsec == 0)
     return NULL;
   int pos = mi_indice_radical_symbole_secondaire(rad,ind);
-  assert (pos >= 0 && pos< (int)rad->urad_tailsec);
-  Mit_Symbole*sy = rad->urad_tabsecsym[pos];
+  assert (pos >= 0 && pos< (int)rad->urad_val.vrad_tailsec);
+  Mit_Symbole*sy = rad->urad_val.vrad_tabsecsym[pos];
   if (sy && sy != MI_TROU_SYMBOLE)
     {
       assert(sy->mi_type == MiTy_Symbole);
@@ -751,7 +819,7 @@ mi_cloner_symbole(const Mit_Symbole*origsy)
     return NULL;
   struct MiSt_Radical_st*rad = origsy->mi_radical;
   assert (rad && rad->urad_nmagiq == MI_RAD_NMAGIQ);
-  if (rad->urad_nbsec == 0)
+  if (rad->urad_val.vrad_nbsec == 0)
     {
       unsigned ind = 0;
       while (ind < 10) ind = random();
@@ -759,8 +827,8 @@ mi_cloner_symbole(const Mit_Symbole*origsy)
     }
   else
     {
-      if (5*rad->urad_nbsec + 2 > 4*rad->urad_tailsec)
-        mi_agrandir_radical_table_secondaire(rad, rad->urad_nbsec/8+10);
+      if (5*rad->urad_val.vrad_nbsec + 2 > 4*rad->urad_val.vrad_tailsec)
+        mi_agrandir_radical_table_secondaire(rad, rad->urad_val.vrad_nbsec/8+10);
       unsigned ind = 0;
       int pos = -1;
       do
@@ -769,8 +837,8 @@ mi_cloner_symbole(const Mit_Symbole*origsy)
           unsigned i = random();
           if (i<10) continue;
           pos = mi_indice_radical_symbole_secondaire(rad,i);
-          assert (pos >= 0 && pos< (int)rad->urad_tailsec);
-          Mit_Symbole*sy = rad->urad_tabsecsym[pos];
+          assert (pos >= 0 && pos< (int)rad->urad_val.vrad_tailsec);
+          Mit_Symbole*sy = rad->urad_val.vrad_tabsecsym[pos];
           if (!sy || sy == MI_TROU_SYMBOLE)
             ind = i;
           else if (sy->mi_indice == i)
@@ -781,8 +849,8 @@ mi_cloner_symbole(const Mit_Symbole*origsy)
       sy->mi_radical = rad;
       sy->mi_indice = ind;
       sy->mi_hash = mi_hashage_symbole_indice(rad->urad_nom, ind);
-      rad->urad_tabsecsym[pos] = sy;
-      rad->urad_nbsec++;
+      rad->urad_val.vrad_tabsecsym[pos] = sy;
+      rad->urad_val.vrad_nbsec++;
       return sy;
     }
 } /* fin mi_cloner_symbole */
@@ -844,6 +912,8 @@ static void mi_impr_radical(const struct MiSt_Radical_st*rad, int prof)
     }
   if (!feuille)
     printf(" gch@%p drt@%p", (void*)rad->urad_gauche, (void*)rad->urad_droit);
+  if (rad->urad_parent)
+    printf(" par@%p", (void*)rad->urad_parent);
   putchar('\n');
   if (feuille)
     return;
@@ -862,12 +932,12 @@ void mi_afficher_radicaux (void)
 {
   static int count;
   count++;
-  printf("%saffichage des radicaux #%d%s; mi_radical_racine@%p\n",
+  printf("%saffichage des radicaux #%d%s; mi_racine_radical@%p\n",
          MI_TERMINAL_GRAS,
          count,
          MI_TERMINAL_NORMAL,
-         (void*)mi_radical_racine);
-  mi_impr_radical(mi_radical_racine, 0);
+         (void*)mi_racine_radical);
+  mi_impr_radical(mi_racine_radical, 0);
   fputc('\n', stdout);
 } // fin mi_deboguer_symboles
 
