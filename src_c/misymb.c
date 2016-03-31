@@ -294,6 +294,8 @@ mi_radical_insere_chaine(const char*ch)
 {
   MI_DEBOPRINTF("debut ch='%s' mi_racine_radical@%p",
                 ch, mi_racine_radical);
+  if (mi_deboguage)
+    mi_afficher_radicaux("insere_chaine");
   assert (mi_nom_licite_chaine(ch));
   struct MiSt_Radical_st*rady = NULL;
   struct MiSt_Radical_st*radx = mi_racine_radical;
@@ -336,6 +338,7 @@ mi_radical_insere_chaine(const char*ch)
 static void
 mi_correction_apres_insertion (struct MiSt_Radical_st*radz)
 {
+  MI_DEBOPRINTF("début radz@%p", radz);
   assert (radz && radz->urad_nmagiq == MI_RAD_NMAGIQ);
   struct MiSt_Radical_st*radparz = NULL;
   while ((radparz = radz->urad_parent), mi_radical_rouge(radparz))
@@ -942,18 +945,25 @@ static void mi_impr_radical(const struct MiSt_Radical_st*rad, int prof)
 } // fin mi_impr_radical
 
 
-void mi_afficher_radicaux (void)
+void mi_afficher_radicaux_en (const char*fich, int lin, const char*msg)
 {
   static int count;
   count++;
-  printf("%saffichage des radicaux #%d%s; mi_racine_radical@%p\n",
-         MI_TERMINAL_GRAS,
+  printf("%saffichage des radicaux %s #%d%s; %s:%d mi_racine_radical@%p\n",
+         MI_TERMINAL_GRAS, msg,
          count,
-         MI_TERMINAL_NORMAL,
+         MI_TERMINAL_NORMAL, fich, lin,
          (void*)mi_racine_radical);
   mi_impr_radical(mi_racine_radical, 0);
   fputc('\n', stdout);
-} // fin mi_deboguer_symboles
+} // fin mi_afficher_radicaux_en
+
+// pour être appellé directement depuis le débogueur
+#undef mi_afficher_radicaux
+void mi_afficher_radicaux(const char*msg)
+{
+  mi_afficher_radicaux_en("?", 0, msg);
+} // fin mi_afficher_radicaux
 
 
 

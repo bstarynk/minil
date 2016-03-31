@@ -179,7 +179,7 @@ mi_arguments_programme (int argc, char **argv)
           printf("#%d: %smessage%s %s\n", optind, MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL, optarg);
           break;
         case xtraopt_radicaux: // --radicaux
-          mi_afficher_radicaux();
+          mi_afficher_radicaux("**");
           break;
         case xtraopt_sansterminal: // --sans-terminal
           mi_sur_terminal = false;

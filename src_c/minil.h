@@ -471,7 +471,11 @@ Mit_Symbole *mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind);
 Mit_Symbole *mi_creer_symbole_chaine (const char *ch, unsigned ind);
 Mit_Symbole *mi_cloner_symbole(const Mit_Symbole*sy);
 void mi_afficher_contenu_symbole(FILE*fil, const Mit_Symbole*sy);
-void mi_afficher_radicaux (void);
+
+#define mi_afficher_radicaux(Msg) \
+  mi_afficher_radicaux_en(__FILE__, __LINE__, (Msg))
+void mi_afficher_radicaux_en (const char*fich, int lin, const char*msg);
+
 /// itérer sur chaque symbole primaire
 void mi_iterer_symbole_primaire (mi_itersymb_sigt * f, void *client);
 /// itérer sur chaque symbole primaire ou secondaire de nom donné
