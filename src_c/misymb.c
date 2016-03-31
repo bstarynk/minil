@@ -104,10 +104,19 @@ const char*mi_symbole_chaine(const Mit_Symbole*sy)
   return nm->mi_car;
 } /* fin mi_symbole_chaine */
 
+
+static const char*mi_radical_chaine(const struct MiSt_Radical_st*rad)
+{
+  if (!rad) return "?nil?";
+  if (rad->urad_nmagiq != MI_RAD_NMAGIQ) return "?nmagic?";
+  const Mit_Chaine*nm = rad->urad_nom;
+  if (!nm || nm->mi_type != MiTy_Chaine) return "?nom?";
+  return nm->mi_car;
+} // fin mi_radical_chaine */
+
 /// arbre rouge-noir pour les radicaux
 /// voir https://en.wikipedia.org/wiki/Red%E2%80%93black_tree
 /// et https://fr.wikipedia.org/wiki/Arbre_bicolore
-/// code inspiré par https://github.com/sebastiencs/red-black-tree
 
 struct MiSt_Radical_st *
 mi_trouver_radical (const Mit_Chaine *chn)
@@ -269,8 +278,8 @@ mi_radical_insere_nom(const Mit_Chaine*nomz)
       else radx = radx->urad_droit;
     }
   struct MiSt_Radical_st*radz = mi_creer_radical(nomz);
-  MI_DEBOPRINTF("rady@%p radz@%p nomz@%p:'%s'",
-                rady, radz,	nomz, nomz->mi_car);
+  MI_DEBOPRINTF("rady@%p'%s' radz@%p'%s' nomz@%p:'%s'",
+                rady, mi_radical_chaine (rady),  radz, mi_radical_chaine(radz), 	nomz, nomz->mi_car);
   assert (radz && radz->urad_nmagiq == MI_RAD_NMAGIQ);
   radz->urad_parent = rady;
   if (rady == NULL)
@@ -302,7 +311,7 @@ mi_radical_insere_chaine(const char*ch)
   int cmp=0;
   while (radx != NULL)
     {
-      MI_DEBOPRINTF("radx@%p", radx);
+      MI_DEBOPRINTF("radx@%p '%s'", radx, mi_radical_chaine(radx));
       assert (radx->urad_nmagiq == MI_RAD_NMAGIQ);
       assert (radx->urad_nom && radx->urad_nom->mi_type == MiTy_Chaine);
       rady = radx;
@@ -316,7 +325,9 @@ mi_radical_insere_chaine(const char*ch)
       else radx = radx->urad_droit;
     }
   struct MiSt_Radical_st*radz = mi_creer_radical(mi_creer_chaine(ch));
-  MI_DEBOPRINTF("rady@%p radz@%p ch='%s'", rady, radz, ch);
+  MI_DEBOPRINTF("rady@%p'%s' radz@%p'%s' ch='%s'",
+                rady, mi_radical_chaine(rady),
+                radz, mi_radical_chaine(radz),  ch);
   assert (radz && radz->urad_nmagiq == MI_RAD_NMAGIQ);
   radz->urad_parent = rady;
   if (rady == NULL)
@@ -328,13 +339,16 @@ mi_radical_insere_chaine(const char*ch)
   else   // cas impossible
     {
       assert("cas impossible mauvais rady");
-      MI_FATALPRINTF("corruption de radical rady@%p", (void*)rady);
+      MI_FATALPRINTF("corruption de radical rady@%p'%s'",
+                     (void*)rady, mi_radical_chaine(rady));
     }
-  MI_DEBOPRINTF("avant correction radz@%p", radz);
+  MI_DEBOPRINTF("avant correction radz@%p'%s'",
+                radz, mi_radical_chaine(radz));
   if (mi_deboguage)
     mi_afficher_radicaux("insere_ch. avant correction");
   mi_correction_apres_insertion (radz);
-  MI_DEBOPRINTF("apres correction radz@%p", radz);
+  MI_DEBOPRINTF("apres correction radz@%p'%s'",
+                radz, mi_radical_chaine(radz));
   return radz;
 } /* fin mi_radical_insere_chaine */
 
@@ -342,22 +356,28 @@ mi_radical_insere_chaine(const char*ch)
 static void
 mi_correction_apres_insertion (struct MiSt_Radical_st*radz)
 {
-  MI_DEBOPRINTF("début radz@%p", radz);
+  MI_DEBOPRINTF("début radz@%p'%s'", radz, mi_radical_chaine(radz));
   assert (radz && radz->urad_nmagiq == MI_RAD_NMAGIQ);
   struct MiSt_Radical_st*radparz = NULL;
   while ((radparz = radz->urad_parent), mi_radical_rouge(radparz))
     {
-      MI_DEBOPRINTF("radz@%p radparz@%p", radz, radparz);
+      MI_DEBOPRINTF("radz@%p'%s' radparz@%p'%s'",
+                    radz, mi_radical_chaine(radz),
+                    radparz, mi_radical_chaine(radparz));
       assert (radparz->urad_nmagiq == MI_RAD_NMAGIQ);
       assert (radparz->urad_parent != NULL);
       if (radparz == radparz->urad_parent->urad_gauche)
         {
           struct MiSt_Radical_st*rady = radparz->urad_parent->urad_droit;
+          MI_DEBOPRINTF("rady@%p'%s'",
+                        rady, mi_radical_chaine(rady));
           assert (!rady || rady->urad_nmagiq == MI_RAD_NMAGIQ);
           if (mi_radical_rouge(rady))
             {
               radparz->urad_couleur = crad_noir;
               rady->urad_couleur = crad_noir;
+              MI_DEBOPRINTF("radparz@%p'%s'",
+                            radparz, mi_radical_chaine(radparz));
               radparz->urad_parent->urad_couleur = crad_rouge;
               radz = radparz->urad_parent;
             }
@@ -366,18 +386,24 @@ mi_correction_apres_insertion (struct MiSt_Radical_st*radz)
               if (radz == radparz->urad_droit)
                 {
                   radz = radparz;
+                  MI_DEBOPRINTF("radz@%p'%s' avant rot.gauche",
+                                radz, mi_radical_chaine(radz));
                   mi_radical_rotation_gauche(radz);
                   radparz = radz->urad_parent;
                 };
               radparz->urad_couleur = crad_noir;
               assert (radparz->urad_parent);
               radparz->urad_parent->urad_couleur = crad_rouge;
+              MI_DEBOPRINTF("radparz@%p'%s' avant rot.droite parent@%p'%s'",
+                            radparz, mi_radical_chaine(radparz),
+                            radparz->urad_parent, mi_radical_chaine(radparz->urad_parent));
               mi_radical_rotation_droite(radparz->urad_parent);
             }
         }
       else if (radparz == radparz->urad_parent->urad_droit)
         {
           struct MiSt_Radical_st*rady = radparz->urad_parent->urad_gauche;
+          MI_DEBOPRINTF("rady@%p'%s'", rady, mi_radical_chaine(rady));
           assert (!rady || rady->urad_nmagiq == MI_RAD_NMAGIQ);
           if (mi_radical_rouge(rady))
             {
@@ -385,18 +411,25 @@ mi_correction_apres_insertion (struct MiSt_Radical_st*radz)
               rady->urad_couleur = crad_noir;
               radparz->urad_parent->urad_couleur = crad_rouge;
               radz = radparz->urad_parent;
+              MI_DEBOPRINTF("radz@%p'%s'", radz, mi_radical_chaine(radz));
             }
           else
             {
               if (radz == radparz->urad_gauche)
                 {
                   radz = radparz;
+                  MI_DEBOPRINTF("radz@%p'%s' avant rot.droite",
+                                radz, mi_radical_chaine(radz));
                   mi_radical_rotation_droite(radz);
                   radparz = radz->urad_parent;
                 };
               radparz->urad_couleur = crad_noir;
+              MI_DEBOPRINTF("radparz@%p'%s'",
+                            radparz, mi_radical_chaine(radparz));
               assert (radparz->urad_parent);
               radparz->urad_parent->urad_couleur = crad_rouge;
+              MI_DEBOPRINTF("avant rot.gauche raparz.parent@%p'%s'",
+                            radparz->urad_parent, mi_radical_chaine(radparz->urad_parent));
               mi_radical_rotation_gauche(radparz->urad_parent);
             }
         }
