@@ -256,6 +256,8 @@ mi_radical_insere_nom(const Mit_Chaine*nomz)
   struct MiSt_Radical_st*rady = NULL;
   struct MiSt_Radical_st*radx = mi_racine_radical;
   int cmp=0;
+  MI_DEBOPRINTF("début nomz@%p:'%s' mi_racine_radical@%p",
+                nomz, nomz->mi_car, mi_racine_radical);
   while (radx != NULL)
     {
       assert (radx->urad_nmagiq == MI_RAD_NMAGIQ);
@@ -267,6 +269,8 @@ mi_radical_insere_nom(const Mit_Chaine*nomz)
       else radx = radx->urad_droit;
     }
   struct MiSt_Radical_st*radz = mi_creer_radical(nomz);
+  MI_DEBOPRINTF("rady@%p radz@%p nomz@%p:'%s'",
+                rady, radz,	nomz, nomz->mi_car);
   assert (radz && radz->urad_nmagiq == MI_RAD_NMAGIQ);
   radz->urad_parent = rady;
   if (rady == NULL)
@@ -310,7 +314,7 @@ mi_radical_insere_chaine(const char*ch)
       else radx = radx->urad_droit;
     }
   struct MiSt_Radical_st*radz = mi_creer_radical(mi_creer_chaine(ch));
-  MI_DEBOPRINTF("rady@%p radz@%p ch=%s", rady, radz, ch);
+  MI_DEBOPRINTF("rady@%p radz@%p ch='%s'", rady, radz, ch);
   assert (radz && radz->urad_nmagiq == MI_RAD_NMAGIQ);
   radz->urad_parent = rady;
   if (rady == NULL)
