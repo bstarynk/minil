@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "parenthesage"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "type des expressions parenth\u00E9s\u00E9es"
+  }
+ ],
+ "comps": null
+}
