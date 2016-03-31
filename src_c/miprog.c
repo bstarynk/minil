@@ -106,6 +106,10 @@ mi_arguments_programme (int argc, char **argv)
         case 'A':		// --afficher <symbole>
           if (optarg)
             {
+	      if (!mi_repcharge && !access ("symbolist", R_OK)) {
+		mi_charger_etat (".");
+		mi_repcharge = ".";
+	      }
               Mit_Symbole *sy = mi_trouver_symbole (optarg, NULL);
               if (!sy)
                 printf ("%s!! %saucun symbole nommé%s '%s'\n",
@@ -119,8 +123,10 @@ mi_arguments_programme (int argc, char **argv)
           mi_repsauve = optarg;
           // si rien n'a été chargé, il faut le charger avant
           // l'initialisation de la sauvegarde...
-          if (!mi_repcharge && !access ("symbolist", R_OK))
+          if (!mi_repcharge && !access ("symbolist", R_OK)) {
             mi_charger_etat (".");
+	    mi_repcharge = ".";
+	  }
           mi_sauv = calloc (1, sizeof (struct Mi_Sauvegarde_st));
           if (!mi_sauv)
             MI_FATALPRINTF ("impossible de créer la sauvegarde (%s)",
@@ -202,7 +208,7 @@ mi_arguments_programme (int argc, char **argv)
 
 
 // un tableau croissant de certains nombres premiers, obtenu par exemple avec
-//     /usr/games/primes 3 2000000000  | awk '($1>p+p/9){print $1, ","; p=$1}'
+//     /usr/games/primes 3 2147483647  | awk '($1>p+p/9){print $1, ","; p=$1}'
 static const unsigned mi_tableau_premiers[] =
 {
   3, 5, 7, 11, 13, 17, 19, 23, 29, 37, 43, 53, 59, 67, 79, 89, 101, 113,
@@ -224,7 +230,9 @@ static const unsigned mi_tableau_premiers[] =
   223884629, 248760703, 276400823, 307112027, 341235667, 379150777,
   421278643, 468087391, 520097111, 577885681, 642095213, 713439127,
   792710159, 880789067, 978654533, 1087393949, 1208215531, 1342461719,
-  1491624137, 1657360153, 1841511311, 0
+  1491624137, 1657360153, 1841511311, 2046123679,
+  // un seul zéro final
+  0
 };
 
 unsigned
@@ -286,6 +294,10 @@ main (int argc, char **argv)
   mi_initialiser_predefinis ();
   mi_initialiser_alea ();
   mi_arguments_programme (argc, argv);
+  if (!mi_repcharge && !access ("symbolist", R_OK)) {
+    mi_charger_etat (".");
+    mi_repcharge = ".";
+  }
   if (mi_sauv)
     mi_sauvegarde_finir (mi_sauv);
 }				// fin de main
