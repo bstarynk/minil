@@ -68,12 +68,13 @@ struct Mi_RamMiett_st
   unsigned rm_nmagic;
 };
 
-void mi_marquer_valeur(struct Mi_RamMiett_st*rm, Mit_Val v)
+void
+mi_marquer_valeur (struct Mi_RamMiett_st *rm, Mit_Val v)
 {
 }
 
 void
-mi_ramasse_miettes(struct mi_cadre_appel_st*cap)
+mi_ramasse_miettes (struct mi_cadre_appel_st *cap)
 {
 }
 

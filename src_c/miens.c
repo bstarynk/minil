@@ -20,11 +20,11 @@
 
 static const Mit_Ensemble mi_ensvide =
 {
-  .mi_type= MiTy_Ensemble,
-  .mi_taille= 0,
-  .mi_marq= true,
-  .mi_hash= 11,
-  .mi_elements={NULL}
+  .mi_type = MiTy_Ensemble,
+  .mi_taille = 0,
+  .mi_marq = true,
+  .mi_hash = 11,
+  .mi_elements = {NULL}
 };
 
 #define MI_ENSHASH_NMAGIQ 0x30e595d7	/*820352471 */
@@ -68,12 +68,13 @@ mi_creer_ensemble_enshash (struct Mi_EnsHash_st *eh)
     return NULL;
   unsigned c = eh->eh_compte;
   unsigned t = eh->eh_taille;
-  if (c==0) return mi_ensemble_vide();
+  if (c == 0)
+    return mi_ensemble_vide ();
   assert (c < t);
   unsigned n = 0;
-  Mit_Ensemble *e =
-    mi_allouer_valeur (MiTy_Ensemble,
-                       sizeof (Mit_Ensemble) + c * sizeof (Mit_Symbole *));
+  Mit_Ensemble *e = mi_allouer_valeur (MiTy_Ensemble,
+                                       sizeof (Mit_Ensemble) +
+                                       c * sizeof (Mit_Symbole *));
   for (unsigned ix = 0; ix < t; ix++)
     {
       const Mit_Symbole *sy = eh->eh_table[ix];
@@ -95,7 +96,8 @@ mi_creer_ensemble_symboles (unsigned nb, const Mit_Symbole **tab)
 {
   if (nb && !tab)
     return NULL;
-  if (nb==0) return mi_ensemble_vide();
+  if (nb == 0)
+    return mi_ensemble_vide ();
   struct Mi_EnsHash_st eh = { };
   mi_enshash_initialiser (&eh, 4 * nb / 3 + 5);
   for (unsigned ix = 0; ix < nb; ix++)
@@ -116,7 +118,8 @@ mi_creer_ensemble_valeurs (unsigned nb, const Mit_Val *tabval)
 {
   if (nb && !tabval)
     return NULL;
-  if (nb==0) return mi_ensemble_vide();
+  if (nb == 0)
+    return mi_ensemble_vide ();
   struct Mi_EnsHash_st eh = { };
   mi_enshash_initialiser (&eh, 4 * nb / 3 + nb / 8 + 5);
   for (unsigned ix = 0; ix < nb; ix++)
@@ -133,7 +136,8 @@ mi_creer_ensemble_varsym (unsigned nb, ...)
 {
   va_list args;
   struct Mi_EnsHash_st eh = { };
-  if (nb==0) return mi_ensemble_vide();
+  if (nb == 0)
+    return mi_ensemble_vide ();
   mi_enshash_initialiser (&eh, 4 * nb / 3 + 5);
   va_start (args, nb);
   for (unsigned ix = 0; ix < nb; ix++)
@@ -154,7 +158,8 @@ const Mit_Ensemble *
 mi_creer_ensemble_varval (unsigned nb, ...)
 {
   va_list args;
-  if (nb==0) return mi_ensemble_vide();
+  if (nb == 0)
+    return mi_ensemble_vide ();
   struct Mi_EnsHash_st eh = { };
   mi_enshash_initialiser (&eh, 4 * nb / 3 + 5);
   va_start (args, nb);
@@ -336,8 +341,8 @@ mi_enshash_ajouter_valeur (struct Mi_EnsHash_st *eh, const Mit_Val va)
     break;
     case MiTy_Tuple:
     {
-      const Mit_Tuple*tu = va.miva_tup;
-      unsigned t=tu->mi_taille;
+      const Mit_Tuple *tu = va.miva_tup;
+      unsigned t = tu->mi_taille;
       mi_enshash_reserver (eh, 5 * t / 4 + 2);
       for (unsigned ix = 0; ix < t; ix++)
         mi_enshash_ajouter (eh, tu->mi_composants[ix]);
@@ -345,7 +350,7 @@ mi_enshash_ajouter_valeur (struct Mi_EnsHash_st *eh, const Mit_Val va)
         return;
       }
     }
-}// fin mi_enshash_ajouter_valeur
+}				// fin mi_enshash_ajouter_valeur
 
 void
 mi_enshash_oter (struct Mi_EnsHash_st *eh, const Mit_Symbole *sy)
@@ -391,7 +396,7 @@ mi_enshash_iterer (struct Mi_EnsHash_st *eh, mi_itersymb_sigt * f,
       const Mit_Symbole *sy = eh->eh_table[ix];
       if (!sy || sy == MI_TROU_SYMBOLE)
         continue;
-      if ((*f) ((Mit_Symbole*)sy, client))
+      if ((*f) ((Mit_Symbole *) sy, client))
         return;
     }
 }				// fin mi_enshash_iterer

@@ -52,9 +52,9 @@ mi_vecteur_reserver (struct Mi_Vecteur_st *v, unsigned nb)
         mi_nombre_premier_apres (9 * (nb + v->vec_compte) / 8 + 2);
       if (nouvtail == 0 || nouvtail > INT_MAX / 2)
         MI_FATALPRINTF ("vecteur trop grand (%d)", nouvtail);
-      struct Mi_Vecteur_st *nouvec =
-      calloc (1,
-                sizeof (struct Mi_Vecteur_st) + nouvtail * sizeof (Mit_Val));
+      struct Mi_Vecteur_st *nouvec = calloc (1,
+                                             sizeof (struct Mi_Vecteur_st) +
+                                             nouvtail * sizeof (Mit_Val));
       if (!nouvec)
         MI_FATALPRINTF ("vecteur trop grand de taille %d (%s)", nouvtail,
                         strerror (errno));

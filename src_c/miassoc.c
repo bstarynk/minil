@@ -119,10 +119,10 @@ mi_assoc_reserver (struct Mi_Assoc_st *a, unsigned nb)
         mi_nombre_premier_apres (4 * (n + nb) / 3 + nb / 16 + 4);
       if (nouvtail > t)
         {
-          struct Mi_Assoc_st *nouva =
-          calloc (1,
-                    sizeof (struct Mi_Assoc_st) +
-                    nouvtail * sizeof (struct Mi_EntAss_st));
+          struct Mi_Assoc_st *nouva = calloc (1,
+                                              sizeof (struct Mi_Assoc_st) +
+                                              nouvtail *
+                                              sizeof (struct Mi_EntAss_st));
           if (!nouva)
             MI_FATALPRINTF
             ("mémoire pleine pour association de %d entrées (%s)",
@@ -150,10 +150,10 @@ mi_assoc_reserver (struct Mi_Assoc_st *a, unsigned nb)
         mi_nombre_premier_apres (4 * (n + nb) / 3 + nb / 16 + 4);
       if (nouvtail < t)
         {
-          struct Mi_Assoc_st *nouva =
-          calloc (1,
-                    sizeof (struct Mi_Assoc_st) +
-                    nouvtail * sizeof (struct Mi_EntAss_st));
+          struct Mi_Assoc_st *nouva = calloc (1,
+                                              sizeof (struct Mi_Assoc_st) +
+                                              nouvtail *
+                                              sizeof (struct Mi_EntAss_st));
           if (!nouva)
             MI_FATALPRINTF
             ("mémoire pleine pour association de %d entrées (%s)",
@@ -187,7 +187,7 @@ mi_assoc_mettre (struct Mi_Assoc_st *a, const Mit_Symbole *sy,
   assert (sy != MI_TROU_SYMBOLE);
   assert (sy->mi_type == MiTy_Symbole);
   if (!a || 6 * a->a_tai + 2 < 5 * a->a_nbe)
-    a = mi_assoc_reserver (a, a?(3 + a->a_nbe / 4):3);
+    a = mi_assoc_reserver (a, a ? (3 + a->a_nbe / 4) : 3);
   assert (a->a_mag == MI_ASSOC_NMAGIQ);
   int pos = mi_assoc_indice (a, sy);
   assert (pos >= 0 && pos < (int) a->a_tai);

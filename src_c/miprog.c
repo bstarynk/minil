@@ -22,7 +22,7 @@ bool mi_deboguage;
 
 enum
 {
-  xtraopt__debut=1000,
+  xtraopt__debut = 1000,
   xtraopt_predefini,
   xtraopt_commentaire,
   xtraopt_symbole,
@@ -52,8 +52,8 @@ const struct option minil_options[] =
 };
 
 // les répertoires de chargement et de sauvegarde
-static const char*mi_repcharge;
-static const char*mi_repsauve;
+static const char *mi_repcharge;
+static const char *mi_repsauve;
 struct Mi_Sauvegarde_st *mi_sauv;
 bool mi_sur_terminal;
 
@@ -80,7 +80,7 @@ static void
 mi_arguments_programme (int argc, char **argv)
 {
   int ch = 0;
-  char* comment=NULL;
+  char *comment = NULL;
   while ((ch = getopt_long (argc, argv, "hVc:S:O:A:D",
                             minil_options, NULL)) > 0)
     {
@@ -91,7 +91,7 @@ mi_arguments_programme (int argc, char **argv)
           break;
         case 'D':
           mi_deboguage = true;
-          MI_DEBOPRINTF("debut du déboguage pid %d", (int)getpid());
+          MI_DEBOPRINTF ("debut du déboguage pid %d", (int) getpid ());
           break;
         case 'V':		// --version
           printf ("%s daté du %s, modif. %s, somme de contrôle %s\n",
@@ -99,89 +99,101 @@ mi_arguments_programme (int argc, char **argv)
                   minil_checksum);
           exit (EXIT_SUCCESS);
           break;
-        case 'c': // --charge <rep>
+        case 'c':		// --charge <rep>
           mi_repcharge = optarg;
-          mi_charger_etat(optarg);
+          mi_charger_etat (optarg);
           break;
-        case 'A': // --afficher <symbole>
+        case 'A':		// --afficher <symbole>
           if (optarg)
             {
-              Mit_Symbole*sy = mi_trouver_symbole(optarg, NULL);
-              if (!sy) printf("%s!! %saucun symbole nommé%s '%s'\n",
-                                MI_TERMINAL_GRAS,
-                                MI_TERMINAL_ITALIQUE, MI_TERMINAL_NORMAL,
-                                optarg);
-              else mi_afficher_contenu_symbole(stdout, sy);
+              Mit_Symbole *sy = mi_trouver_symbole (optarg, NULL);
+              if (!sy)
+                printf ("%s!! %saucun symbole nommé%s '%s'\n",
+                        MI_TERMINAL_GRAS,
+                        MI_TERMINAL_ITALIQUE, MI_TERMINAL_NORMAL, optarg);
+              else
+                mi_afficher_contenu_symbole (stdout, sy);
             };
           break;
-        case 'S': // --sauvegarde <rep>
+        case 'S':		// --sauvegarde <rep>
           mi_repsauve = optarg;
           // si rien n'a été chargé, il faut le charger avant
           // l'initialisation de la sauvegarde...
-          if (!mi_repcharge && !access("symbolist", R_OK))
-            mi_charger_etat(".");
-          mi_sauv = calloc(1, sizeof(struct Mi_Sauvegarde_st));
+          if (!mi_repcharge && !access ("symbolist", R_OK))
+            mi_charger_etat (".");
+          mi_sauv = calloc (1, sizeof (struct Mi_Sauvegarde_st));
           if (!mi_sauv)
-            MI_FATALPRINTF("impossible de créer la sauvegarde (%s)",
-                           strerror(errno));
-          mi_sauvegarde_init(mi_sauv, mi_repsauve);
+            MI_FATALPRINTF ("impossible de créer la sauvegarde (%s)",
+                            strerror (errno));
+          mi_sauvegarde_init (mi_sauv, mi_repsauve);
           break;
-        case 'O': // --oublier <symb>
+        case 'O':		// --oublier <symb>
           if (!mi_sauv)
-            MI_FATALPRINTF("option de --sauvegarde <répertoire> manquante avant --oubli %s", optarg);
+            MI_FATALPRINTF
+            ("option de --sauvegarde <répertoire> manquante avant --oubli %s",
+             optarg);
           {
-            const Mit_Symbole*sy = mi_trouver_symbole(optarg, NULL);
+            const Mit_Symbole *sy = mi_trouver_symbole (optarg, NULL);
             if (!sy)
-              MI_FATALPRINTF("Le symbole à oublier '%s' n'existe pas!", optarg);
-            mi_sauvegarde_oublier(mi_sauv, sy);
+              MI_FATALPRINTF ("Le symbole à oublier '%s' n'existe pas!",
+                              optarg);
+            mi_sauvegarde_oublier (mi_sauv, sy);
           }
           break;
-        case xtraopt_predefini: // --predefini <nom>
+        case xtraopt_predefini:	// --predefini <nom>
         {
-          Mit_Symbole*sy = NULL;
-          if (optarg && mi_trouver_symbole_chaine(optarg,0))
-            printf("symbole prédéfini %s déjà existant...\n", optarg);
-          else if (!optarg || !isalpha(optarg[0]) || strchr(optarg, '_') ||
-                   !mi_nom_licite_chaine(optarg) || !(sy=mi_creer_symbole_chaine(optarg, 0)))
-            MI_FATALPRINTF("Mauvais nom %s de symbole predefini", optarg?optarg:"??");
+          Mit_Symbole *sy = NULL;
+          if (optarg && mi_trouver_symbole_chaine (optarg, 0))
+            printf ("symbole prédéfini %s déjà existant...\n", optarg);
+          else if (!optarg || !isalpha (optarg[0]) || strchr (optarg, '_')
+                   || !mi_nom_licite_chaine (optarg)
+                   || !(sy = mi_creer_symbole_chaine (optarg, 0)))
+            MI_FATALPRINTF ("Mauvais nom %s de symbole predefini",
+                            optarg ? optarg : "??");
           sy->mi_predef = true;
           if (comment)
             {
-              sy->mi_attrs = mi_assoc_mettre (sy->mi_attrs, MI_PREDEFINI(commentaire),
-                                              MI_CHAINEV(mi_creer_chaine(comment)));
+              sy->mi_attrs =
+                mi_assoc_mettre (sy->mi_attrs, MI_PREDEFINI (commentaire),
+                                 MI_CHAINEV (mi_creer_chaine (comment)));
             }
           comment = NULL;
-          printf("symbole prédéfini %s créé\n", mi_symbole_chaine(sy));
+          printf ("symbole prédéfini %s créé\n",
+                  mi_symbole_chaine (sy));
         }
         break;
-        case xtraopt_symbole: // --symbole <nom>
+        case xtraopt_symbole:	// --symbole <nom>
         {
-          Mit_Symbole*sy = NULL;
-          if (optarg && mi_trouver_symbole_chaine(optarg,0))
-            printf("symbole %s déjà existant...\n", optarg);
-          else if (!optarg || !isalpha(optarg[0]) || strchr(optarg, '_') ||
-                   !mi_nom_licite_chaine(optarg) || !(sy=mi_creer_symbole_chaine(optarg, 0)))
-            MI_FATALPRINTF("Mauvais nom %s de symbole", optarg?optarg:"??");
+          Mit_Symbole *sy = NULL;
+          if (optarg && mi_trouver_symbole_chaine (optarg, 0))
+            printf ("symbole %s déjà existant...\n", optarg);
+          else if (!optarg || !isalpha (optarg[0]) || strchr (optarg, '_')
+                   || !mi_nom_licite_chaine (optarg)
+                   || !(sy = mi_creer_symbole_chaine (optarg, 0)))
+            MI_FATALPRINTF ("Mauvais nom %s de symbole",
+                            optarg ? optarg : "??");
           sy->mi_predef = false;
           if (comment)
             {
-              sy->mi_attrs = mi_assoc_mettre (sy->mi_attrs, MI_PREDEFINI(commentaire),
-                                              MI_CHAINEV(mi_creer_chaine(comment)));
+              sy->mi_attrs =
+                mi_assoc_mettre (sy->mi_attrs, MI_PREDEFINI (commentaire),
+                                 MI_CHAINEV (mi_creer_chaine (comment)));
             }
           comment = NULL;
-          printf("symbole %s créé\n", mi_symbole_chaine(sy));
+          printf ("symbole %s créé\n", mi_symbole_chaine (sy));
         }
         break;
-        case xtraopt_commentaire: // --commentaire <chaine>
+        case xtraopt_commentaire:	// --commentaire <chaine>
           comment = optarg;
           break;
-        case xtraopt_message: // --message <message>
-          printf("#%d: %smessage%s %s\n", optind, MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL, optarg);
+        case xtraopt_message:	// --message <message>
+          printf ("#%d: %smessage%s %s\n", optind, MI_TERMINAL_GRAS,
+                  MI_TERMINAL_NORMAL, optarg);
           break;
-        case xtraopt_radicaux: // --radicaux
-          mi_afficher_radicaux("**");
+        case xtraopt_radicaux:	// --radicaux
+          mi_afficher_radicaux ("**");
           break;
-        case xtraopt_sansterminal: // --sans-terminal
+        case xtraopt_sansterminal:	// --sans-terminal
           mi_sur_terminal = false;
           break;
         }
@@ -261,20 +273,21 @@ mi_nombre_premier_avant (unsigned i)
 
 static void mi_initialiser_predefinis (void);
 
-static void mi_initialiser_alea(void);
+static void mi_initialiser_alea (void);
 
 int
 main (int argc, char **argv)
 {
-  mi_sur_terminal = isatty(STDOUT_FILENO);
-  if (argc>1 && (!strcmp(argv[1], "-D") || !strcmp(argv[1], "--deboguer")))
+  mi_sur_terminal = isatty (STDOUT_FILENO);
+  if (argc > 1
+      && (!strcmp (argv[1], "-D") || !strcmp (argv[1], "--deboguer")))
     mi_deboguage = true;
-  MI_DEBOPRINTF("début minil pid %d argc %d", (int)getpid(), argc);
+  MI_DEBOPRINTF ("début minil pid %d argc %d", (int) getpid (), argc);
   mi_initialiser_predefinis ();
-  mi_initialiser_alea();
+  mi_initialiser_alea ();
   mi_arguments_programme (argc, argv);
   if (mi_sauv)
-    mi_sauvegarde_finir(mi_sauv);
+    mi_sauvegarde_finir (mi_sauv);
 }				// fin de main
 
 /// declarer les prédéfinis
@@ -299,24 +312,24 @@ mi_initialiser_predefinis (void)
 }
 
 void
-mi_initialiser_alea(void)
+mi_initialiser_alea (void)
 {
-  unsigned s = (unsigned)time(NULL) ^ (unsigned)getpid();
+  unsigned s = (unsigned) time (NULL) ^ (unsigned) getpid ();
 #if __APPLE__
-  srandomdev();
-  if (random() != 0)
+  srandomdev ();
+  if (random () != 0)
     return;
 #endif
 #if __linux__
-  FILE*f = fopen("/dev/urandom","r");
+  FILE *f = fopen ("/dev/urandom", "r");
   if (f)
     {
-      fread(&s, sizeof(s),1, f);
-      fclose(f);
+      fread (&s, sizeof (s), 1, f);
+      fclose (f);
     }
 #endif
-  srandom(s);
-} /* fin mi_initialiser_alea */
+  srandom (s);
+}				/* fin mi_initialiser_alea */
 
 void
 mi_emettre_notice_gplv3 (FILE * fichier, const char *prefixe,
