@@ -330,7 +330,11 @@ mi_radical_insere_chaine(const char*ch)
       assert("cas impossible mauvais rady");
       MI_FATALPRINTF("corruption de radical rady@%p", (void*)rady);
     }
+  MI_DEBOPRINTF("avant correction radz@%p", radz);
+  if (mi_deboguage)
+    mi_afficher_radicaux("insere_ch. avant correction");
   mi_correction_apres_insertion (radz);
+  MI_DEBOPRINTF("apres correction radz@%p", radz);
   return radz;
 } /* fin mi_radical_insere_chaine */
 
@@ -958,8 +962,9 @@ void mi_afficher_radicaux_en (const char*fich, int lin, const char*msg)
   fputc('\n', stdout);
 } // fin mi_afficher_radicaux_en
 
-// pour être appellé directement depuis le débogueur
-#undef mi_afficher_radicaux
+// pour être appellé directement depuis le débogueur:
+#undef mi_afficher_radicaux // oublier que c'est une macro
+// redéfinir comme une fonction
 void mi_afficher_radicaux(const char*msg)
 {
   mi_afficher_radicaux_en("?", 0, msg);
