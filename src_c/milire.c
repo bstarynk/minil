@@ -115,7 +115,6 @@ mi_lire_chaine (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
               tamp[lg++] = '\033' /*ESCAPE*/;
               ps += 2;
               break;
-#warning les conversions de caractères doivent calculer une longeur UTF8
             case 'x':
             {
               int p = -1;
@@ -266,8 +265,8 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
       || ((ps[0] == '-' || ps[1] == '+')
           && (isdigit (ps[1])
               // les flottants peuvent être NAN ou INF, traités par strtod
-              ||  !strncasecmp (ps+ 1, "INF", 3)
-              || !strncasecmp (ps  + 1, "NAN",  3))))
+              || !strncasecmp (ps+1, "INF", 3)
+              || !strncasecmp (ps+1, "NAN", 3))))
     {
       // un nombre
       char *finent = NULL;
@@ -383,14 +382,32 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
         MI_ERREUR_LECTURE (lec, pdebtrou + 1, pfintrou,
                            mi_lecture_symbole_absent);
     }
-  else if (ps[0] == '(') {
-  }
+  else if (ps[0] == '(')
+    {
+      char*finpar = NULL;
+      Mit_Val v = mi_lire_valeur(lec,ps+1,&finpar);
+      if (!finpar)
+        MI_ERREUR_LECTURE (lec, ps+1, NULL, "parenthèse non suivie de valeur");
+      while (isspace(*finpar)) finpar++;
+      if (*finpar != ')' && *finpar)
+        MI_ERREUR_LECTURE(lec, ps, finpar, "parenthèse fermante manquante");
+      if (*finpar)
+	finpar++;
+      if (pfin) *pfin = finpar;
+      if (lec->lec_pascreer) return  MI_NILV;
+      Mit_Symbole*sypar = mi_cloner_symbole(MI_PREDEFINI(parenthesage));
+      mi_symbole_mettre_attribut(sypar, MI_PREDEFINI(type),
+                                 MI_SYMBOLEV(MI_PREDEFINI(parenthesage)));
+      mi_symbole_mettre_attribut(sypar, MI_PREDEFINI(arg),
+                                 v);
+      return MI_SYMBOLEV(sypar);
+    }
 }				/* fin mi_lire_primaire */
 
 
 
 Mit_Val
-mi_lire_valeur (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
+mi_lire_valeur (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
 {
   assert (lec && lec->lec_nmagiq == MI_LECTEUR_NMAGIQ);
   assert (ps != NULL);

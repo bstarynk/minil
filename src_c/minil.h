@@ -623,12 +623,16 @@ void
 mi_emettre_notice_gplv3 (FILE * fichier, const char *prefixe,
                          const char *suffixe, const char *nomfich);
 
+
+struct Mi_Lecteur_st;
+Mit_Val mi_lire_valeur (struct Mi_Lecteur_st *lec, char *ps, char **pfin);
+
 extern bool mi_sur_terminal;
 // voir https://en.wikipedia.org/wiki/ANSI_escape_code
 #define MI_TERMINAL_GRAS (mi_sur_terminal?"\033[1m":"")
 #define MI_TERMINAL_PALE (mi_sur_terminal?"\033[2m":"")
 #define MI_TERMINAL_ITALIQUE (mi_sur_terminal?"\033[3m":"")
-#define MI_TERMINAL_SOUSLIGNE (mi_sur_terminal?"\033[4m":"")
+#define MI_TERMINAL_SOULIGNE (mi_sur_terminal?"\033[4m":"")
 #define MI_TERMINAL_INVERSE (mi_sur_terminal?"\033[7m":"")
 #define MI_TERMINAL_NORMAL (mi_sur_terminal?"\033[0m":"")
 
