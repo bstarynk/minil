@@ -106,10 +106,11 @@ mi_arguments_programme (int argc, char **argv)
         case 'A':		// --afficher <symbole>
           if (optarg)
             {
-	      if (!mi_repcharge && !access ("symbolist", R_OK)) {
-		mi_charger_etat (".");
-		mi_repcharge = ".";
-	      }
+              if (!mi_repcharge && !access ("symbolist", R_OK))
+                {
+                  mi_charger_etat (".");
+                  mi_repcharge = ".";
+                }
               Mit_Symbole *sy = mi_trouver_symbole (optarg, NULL);
               if (!sy)
                 printf ("%s!! %saucun symbole nommé%s '%s'\n",
@@ -123,10 +124,11 @@ mi_arguments_programme (int argc, char **argv)
           mi_repsauve = optarg;
           // si rien n'a été chargé, il faut le charger avant
           // l'initialisation de la sauvegarde...
-          if (!mi_repcharge && !access ("symbolist", R_OK)) {
-            mi_charger_etat (".");
-	    mi_repcharge = ".";
-	  }
+          if (!mi_repcharge && !access ("symbolist", R_OK))
+            {
+              mi_charger_etat (".");
+              mi_repcharge = ".";
+            }
           mi_sauv = calloc (1, sizeof (struct Mi_Sauvegarde_st));
           if (!mi_sauv)
             MI_FATALPRINTF ("impossible de créer la sauvegarde (%s)",
@@ -294,10 +296,11 @@ main (int argc, char **argv)
   mi_initialiser_predefinis ();
   mi_initialiser_alea ();
   mi_arguments_programme (argc, argv);
-  if (!mi_repcharge && !access ("symbolist", R_OK)) {
-    mi_charger_etat (".");
-    mi_repcharge = ".";
-  }
+  if (!mi_repcharge && !access ("symbolist", R_OK))
+    {
+      mi_charger_etat (".");
+      mi_repcharge = ".";
+    }
   if (mi_sauv)
     mi_sauvegarde_finir (mi_sauv);
 }				// fin de main

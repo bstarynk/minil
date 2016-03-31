@@ -262,20 +262,12 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
   while (isspace (ps[0]))
     ps++;
   // lire un nombre
-  if (isdigit (ps[0]) || ((ps[0] == '-' || ps[1] == '+') && (isdigit (ps[1])
-                          // les flottants peuvent être NAN ou INF, traités par strtod
-                          ||
-                          !strncasecmp (ps
-                                        +
-                                        1,
-                                        "INF",
-                                        3)
-                          ||
-                          !strncasecmp (ps
-                                        +
-                                        1,
-                                        "NAN",
-                                        3))))
+  if (isdigit (ps[0]) //
+      || ((ps[0] == '-' || ps[1] == '+')
+          && (isdigit (ps[1])
+              // les flottants peuvent être NAN ou INF, traités par strtod
+              ||  !strncasecmp (ps+ 1, "INF", 3)
+              || !strncasecmp (ps  + 1, "NAN",  3))))
     {
       // un nombre
       char *finent = NULL;
@@ -390,8 +382,9 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
       else
         MI_ERREUR_LECTURE (lec, pdebtrou + 1, pfintrou,
                            mi_lecture_symbole_absent);
-
     }
+  else if (ps[0] == '(') {
+  }
 }				/* fin mi_lire_primaire */
 
 
