@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "arg"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "donne l'argument dans une expression"
+  }
+ ],
+ "comps": null
+}
