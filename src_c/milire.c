@@ -251,6 +251,48 @@ mi_afficher_chaine_encodee (FILE * fi, const char *ch)
 }				/* fin mi_afficher_chaine_encodee */
 
 
+// lit un symbole, ou un mot qui pourrait devenir un symbole.
+// positionne pfin pour en donner la position après le dernier caractère.
+// renvoie un symbole, s'il est trouvé.
+static Mit_Symbole *
+mi_lire_symbole (char *ps,  char **pfin)
+{
+  assert (ps != NULL);
+  assert (pfin != NULL);
+  const char *psinit = ps;
+  while (isspace (ps[0]))
+    ps++;
+  if (!isalpha (ps[0]))
+    {
+      *pfin = NULL;
+      return NULL;
+    };
+  char *pdebsymb = ps;
+  char *pfinrad = NULL;		/* la fin du radical */
+  char *pblanc = NULL;		/* le blanc souligné avant indice */
+  char *pfind = NULL;		/* la fin de l'indice */
+  unsigned ind = 0;
+  while (isalnum (*ps))
+    ps++;
+  pfinrad = ps;
+  if (*ps == '_' && isdigit (ps[1]))
+    {
+      pblanc = ps;
+      ind = (unsigned) strtol (ps + 1, &pfind, 10);
+      *pblanc = (char) 0;
+    }
+  Mit_Symbole *sy = mi_trouver_symbole_chaine (pdebsymb, ind);
+  if (pblanc)
+    {
+      *pblanc = '_';
+      *pfin = pfind;
+    }
+  else
+    *pfin = pfinrad;
+  return sy;
+}				/* fin mi_lire_symbole */
+
+
 // la chaine lue est temporairement modifiée
 static Mit_Val
 mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
@@ -261,12 +303,12 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
   while (isspace (ps[0]))
     ps++;
   // lire un nombre
-  if (isdigit (ps[0]) //
-      || ((ps[0] == '-' || ps[1] == '+')
+  if (isdigit (ps[0])		//
+      || ((ps[0] == '-' || ps[1] == '+')	//
           && (isdigit (ps[1])
               // les flottants peuvent être NAN ou INF, traités par strtod
-              || !strncasecmp (ps+1, "INF", 3)
-              || !strncasecmp (ps+1, "NAN", 3))))
+              || !strncasecmp (ps + 1, "INF", 3)
+              || !strncasecmp (ps + 1, "NAN", 3))))
     {
       // un nombre
       char *finent = NULL;
@@ -297,32 +339,18 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
     {
       // un symbole existant
       char *pdebsymb = ps;
-      char *pfinrad = NULL;	/* la fin du radical */
-      char *pblanc = NULL;	/* le blanc souligné avant indice */
-      char *pfind = NULL;	/* la fin de l'indice */
-      unsigned ind = 0;
-      while (isalnum (*ps))
-        ps++;
-      pfinrad = ps;
-      if (*ps == '_' && isdigit (ps[1]))
-        {
-          pblanc = ps;
-          ind = (unsigned) strtol (ps + 1, &pfind, 10);
-          *pblanc = (char) 0;
-        }
-      Mit_Symbole *sy = mi_trouver_symbole_chaine (pdebsymb, ind);
-      if (pblanc)
-        *pblanc = '_';
+      char *pfinsymb = NULL;
+      Mit_Symbole*sy = mi_lire_symbole(pdebsymb,&pfinsymb);
       if (sy)
         {
           if (pfin)
-            *pfin = pfind ? pfind : pfinrad;
+            *pfin = pfinsymb;
           if (lec->lec_pascreer)
             return MI_NILV;
           return MI_SYMBOLEV (sy);
         }
       else
-        MI_ERREUR_LECTURE (lec, pdebsymb, pfinrad, mi_lecture_symbole_absent);
+        MI_ERREUR_LECTURE (lec, pdebsymb, pfinsymb, mi_lecture_symbole_absent);
     }
   // une chaîne de caractères
   else if (ps[0] == '"')
@@ -346,14 +374,9 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
   else if (ps[0] == '$' && isalpha (ps[1]))
     {
       char *pdebtrou = ps;
+      char *pfintrou = NULL;
       ps++;
-      while (isalnum (*ps))
-        ps++;
-      char *pfintrou = ps;
-      char capres = *pfintrou;
-      *pfintrou = (char) 0;
-      Mit_Symbole *sy = mi_trouver_symbole_chaine (pdebtrou + 1, 0);
-      *pfintrou = capres;
+      Mit_Symbole*sy = mi_lire_symbole(ps, &pfintrou);
       if (sy)
         {
           if (pfin)
@@ -384,23 +407,26 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
     }
   else if (ps[0] == '(')
     {
-      char*finpar = NULL;
-      Mit_Val v = mi_lire_valeur(lec,ps+1,&finpar);
+      char *finpar = NULL;
+      Mit_Val v = mi_lire_valeur (lec, ps + 1, &finpar);
       if (!finpar)
-        MI_ERREUR_LECTURE (lec, ps+1, NULL, "parenthèse non suivie de valeur");
-      while (isspace(*finpar)) finpar++;
+        MI_ERREUR_LECTURE (lec, ps + 1, NULL,
+                           "parenthèse non suivie de valeur");
+      while (isspace (*finpar))
+        finpar++;
       if (*finpar != ')' && *finpar)
-        MI_ERREUR_LECTURE(lec, ps, finpar, "parenthèse fermante manquante");
+        MI_ERREUR_LECTURE (lec, ps, finpar, "parenthèse fermante manquante");
       if (*finpar)
-	finpar++;
-      if (pfin) *pfin = finpar;
-      if (lec->lec_pascreer) return  MI_NILV;
-      Mit_Symbole*sypar = mi_cloner_symbole(MI_PREDEFINI(parenthesage));
-      mi_symbole_mettre_attribut(sypar, MI_PREDEFINI(type),
-                                 MI_SYMBOLEV(MI_PREDEFINI(parenthesage)));
-      mi_symbole_mettre_attribut(sypar, MI_PREDEFINI(arg),
-                                 v);
-      return MI_SYMBOLEV(sypar);
+        finpar++;
+      if (pfin)
+        *pfin = finpar;
+      if (lec->lec_pascreer)
+        return MI_NILV;
+      Mit_Symbole *sypar = mi_cloner_symbole (MI_PREDEFINI (parenthesage));
+      mi_symbole_mettre_attribut (sypar, MI_PREDEFINI (type),
+                                  MI_SYMBOLEV (MI_PREDEFINI (parenthesage)));
+      mi_symbole_mettre_attribut (sypar, MI_PREDEFINI (arg), v);
+      return MI_SYMBOLEV (sypar);
     }
 }				/* fin mi_lire_primaire */
 
