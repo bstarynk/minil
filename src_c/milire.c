@@ -53,132 +53,132 @@ mi_lire_chaine (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
   char *tamp = calloc (taille, 1);
   if (!tamp)
     MI_FATALPRINTF
-      ("impossible d'allouer tampon pour chaine de %d octets (%s)", taille,
-       strerror (errno));
+    ("impossible d'allouer tampon pour chaine de %d octets (%s)", taille,
+     strerror (errno));
   ps++;
   while (*ps && *ps != '"')
     {
 #define MI_UTF_PLACE 10
       // on veut au moins 10 octets, au cas où....
       if (lg + MI_UTF_PLACE + 1 >= taille)
-	{
-	  unsigned nouvtaille =
-	    mi_nombre_premier_apres (4 * lg / 3 + MI_UTF_PLACE + 2);
-	  char *nouvtamp = (nouvtaille > 0) ? calloc (nouvtaille, 1) : NULL;
-	  if (!nouvtamp)
-	    MI_FATALPRINTF
-	      ("impossible d'agrandir tampon pour chaine de %d octets (%s)",
-	       nouvtaille ? nouvtaille : lg, strerror (errno));
-	  memcpy (nouvtamp, tamp, lg);
-	  free (tamp);
-	  tamp = nouvtamp;
-	}
+        {
+          unsigned nouvtaille =
+            mi_nombre_premier_apres (4 * lg / 3 + MI_UTF_PLACE + 2);
+          char *nouvtamp = (nouvtaille > 0) ? calloc (nouvtaille, 1) : NULL;
+          if (!nouvtamp)
+            MI_FATALPRINTF
+            ("impossible d'agrandir tampon pour chaine de %d octets (%s)",
+             nouvtaille ? nouvtaille : lg, strerror (errno));
+          memcpy (nouvtamp, tamp, lg);
+          free (tamp);
+          tamp = nouvtamp;
+        }
       if (ps[0] == '\\')
-	{
-	  switch (ps[1])
-	    {
-	    case '\'':
-	    case '\"':
-	    case '\\':
-	      tamp[lg++] = ps[1];
-	      ps += 2;
-	      break;
-	    case 'a':
-	      tamp[lg++] = '\a';
-	      ps += 2;
-	      break;
-	    case 'b':
-	      tamp[lg++] = '\b';
-	      ps += 2;
-	      break;
-	    case 'f':
-	      tamp[lg++] = '\f';
-	      ps += 2;
-	      break;
-	    case 'n':
-	      tamp[lg++] = '\n';
-	      ps += 2;
-	      break;
-	    case 'r':
-	      tamp[lg++] = '\r';
-	      ps += 2;
-	      break;
-	    case 't':
-	      tamp[lg++] = '\t';
-	      ps += 2;
-	      break;
-	    case 'v':
-	      tamp[lg++] = '\v';
-	      ps += 2;
-	      break;
-	    case 'e':
-	      tamp[lg++] = '\033' /*ESCAPE*/;
-	      ps += 2;
-	      break;
-	    case 'x':
-	      {
-		int p = -1;
-		int c = 0;
-		if (sscanf (ps + 2, "%02x%n", &c, &p) > 0 && p > 0)
-		  {
-		    int l =
-		      u8_uctomb ((uint8_t *) tamp, (ucs4_t) c, MI_UTF_PLACE);
-		    if (l > 0)
-		      lg += l;
-		    ps += p + 2;
-		  }
-	      }
-	      break;
-	    case 'u':
-	      {
-		int p = -1;
-		int c = 0;
-		if (sscanf (ps + 2, "%04x%n", &c, &p) > 0 && p > 0)
-		  {
-		    int l =
-		      u8_uctomb ((uint8_t *) tamp, (ucs4_t) c, MI_UTF_PLACE);
-		    if (l > 0)
-		      lg += l;
-		    ps += p + 2;
-		  }
-	      }
-	      break;
-	    case 'U':
-	      {
-		int p = -1;
-		int c = 0;
-		if (sscanf (ps + 2, "%08x%n", &c, &p) > 0 && p > 0)
-		  {
-		    int l =
-		      u8_uctomb ((uint8_t *) tamp, (ucs4_t) c, MI_UTF_PLACE);
-		    if (l > 0)
-		      lg += l;
-		    ps += p + 2;
-		  }
-	      }
-	      break;
-	    default:
-	      tamp[lg++] = ps[1];
-	      ps += 2;
-	      break;
-	    }
-	}
+        {
+          switch (ps[1])
+            {
+            case '\'':
+            case '\"':
+            case '\\':
+              tamp[lg++] = ps[1];
+              ps += 2;
+              break;
+            case 'a':
+              tamp[lg++] = '\a';
+              ps += 2;
+              break;
+            case 'b':
+              tamp[lg++] = '\b';
+              ps += 2;
+              break;
+            case 'f':
+              tamp[lg++] = '\f';
+              ps += 2;
+              break;
+            case 'n':
+              tamp[lg++] = '\n';
+              ps += 2;
+              break;
+            case 'r':
+              tamp[lg++] = '\r';
+              ps += 2;
+              break;
+            case 't':
+              tamp[lg++] = '\t';
+              ps += 2;
+              break;
+            case 'v':
+              tamp[lg++] = '\v';
+              ps += 2;
+              break;
+            case 'e':
+              tamp[lg++] = '\033' /*ESCAPE*/;
+              ps += 2;
+              break;
+            case 'x':
+            {
+              int p = -1;
+              int c = 0;
+              if (sscanf (ps + 2, "%02x%n", &c, &p) > 0 && p > 0)
+                {
+                  int l =
+                    u8_uctomb ((uint8_t *) tamp, (ucs4_t) c, MI_UTF_PLACE);
+                  if (l > 0)
+                    lg += l;
+                  ps += p + 2;
+                }
+            }
+            break;
+            case 'u':
+            {
+              int p = -1;
+              int c = 0;
+              if (sscanf (ps + 2, "%04x%n", &c, &p) > 0 && p > 0)
+                {
+                  int l =
+                    u8_uctomb ((uint8_t *) tamp, (ucs4_t) c, MI_UTF_PLACE);
+                  if (l > 0)
+                    lg += l;
+                  ps += p + 2;
+                }
+            }
+            break;
+            case 'U':
+            {
+              int p = -1;
+              int c = 0;
+              if (sscanf (ps + 2, "%08x%n", &c, &p) > 0 && p > 0)
+                {
+                  int l =
+                    u8_uctomb ((uint8_t *) tamp, (ucs4_t) c, MI_UTF_PLACE);
+                  if (l > 0)
+                    lg += l;
+                  ps += p + 2;
+                }
+            }
+            break;
+            default:
+              tamp[lg++] = ps[1];
+              ps += 2;
+              break;
+            }
+        }
       else
-	{
-	  ucs4_t uc = 0;
-	  int lc =
-	    u8_mbtouc (&uc, (const uint8_t *) ps, psinit + lginit - ps);
-	  if (lc <= 0)
-	    MI_ERREUR_LECTURE (lec, ps, NULL, "mauvaise chaine UTF8");
-	  memcpy (tamp + lg, ps, lc);
-	  lg += lc;
-	  ps += lc;
-	}
+        {
+          ucs4_t uc = 0;
+          int lc =
+            u8_mbtouc (&uc, (const uint8_t *) ps, psinit + lginit - ps);
+          if (lc <= 0)
+            MI_ERREUR_LECTURE (lec, ps, NULL, "mauvaise chaine UTF8");
+          memcpy (tamp + lg, ps, lc);
+          lg += lc;
+          ps += lc;
+        }
     }
   if (*ps == '"')
     {
       if (pfin)
-	*pfin = ps + 1;
+        *pfin = ps + 1;
     };
   const Mit_Chaine *ch = mi_creer_chaine (tamp);
   free (tamp), tamp = NULL;
@@ -200,52 +200,52 @@ mi_afficher_chaine_encodee (FILE * fi, const char *ch)
       ucs4_t uc = 0;
       int lc = u8_mbtouc_unsafe (&uc, (const uint8_t *) (ch + off), ln - off);
       if (lc <= 0)
-	break;
+        break;
       if (uc < 128)
-	{
-	  switch ((char) uc)
-	    {
-	    case '\'':
-	    case '\"':
-	    case '\\':
-	      fprintf (fi, "\\%c", (char) uc);
-	      break;
-	    case '\a':
-	      fputs ("\\a", fi);
-	      break;
-	    case '\b':
-	      fputs ("\\b", fi);
-	      break;
-	    case '\f':
-	      fputs ("\\f", fi);
-	      break;
-	    case '\n':
-	      fputs ("\\n", fi);
-	      break;
-	    case '\r':
-	      fputs ("\\r", fi);
-	      break;
-	    case '\t':
-	      fputs ("\\t", fi);
-	      break;
-	    case '\v':
-	      fputs ("\\v", fi);
-	      break;
-	    case '\033' /* ESCAPE */ :
-	      fputs ("\\e", fi);
-	      break;
-	    default:
-	      if (isprint ((char) uc))
-		fputc ((char) uc, fi);
-	      else
-		fprintf (fi, "\\x%02x", uc);
-	      break;
-	    }
-	}
+        {
+          switch ((char) uc)
+            {
+            case '\'':
+            case '\"':
+            case '\\':
+              fprintf (fi, "\\%c", (char) uc);
+              break;
+            case '\a':
+              fputs ("\\a", fi);
+              break;
+            case '\b':
+              fputs ("\\b", fi);
+              break;
+            case '\f':
+              fputs ("\\f", fi);
+              break;
+            case '\n':
+              fputs ("\\n", fi);
+              break;
+            case '\r':
+              fputs ("\\r", fi);
+              break;
+            case '\t':
+              fputs ("\\t", fi);
+              break;
+            case '\v':
+              fputs ("\\v", fi);
+              break;
+            case '\033' /* ESCAPE */ :
+              fputs ("\\e", fi);
+              break;
+            default:
+              if (isprint ((char) uc))
+                fputc ((char) uc, fi);
+              else
+                fprintf (fi, "\\x%02x", uc);
+              break;
+            }
+        }
       else if (uc < 0xffff)
-	fprintf (fi, "\\u%04x", (unsigned) uc);
+        fprintf (fi, "\\u%04x", (unsigned) uc);
       else
-	fprintf (fi, "\\U%08x", (unsigned) uc);
+        fprintf (fi, "\\U%08x", (unsigned) uc);
       off += lc;
     }
 }				/* fin mi_afficher_chaine_encodee */
@@ -296,7 +296,7 @@ mi_lire_symbole (char *ps, char **pfin)
 // fonction ou l'indexation
 static Mit_Val
 mi_lire_complement (struct Mi_Lecteur_st *lec, Mit_Val v, char *ps,
-		    char **pfin)
+                    char **pfin)
 {
   assert (lec && lec->lec_nmagiq == MI_LECTEUR_NMAGIQ);
   assert (ps != NULL);
@@ -306,7 +306,42 @@ mi_lire_complement (struct Mi_Lecteur_st *lec, Mit_Val v, char *ps,
   if (*ps == '(')
     {
       ps++;
-      
+      Mit_Symbole *syapp =	//
+        (lec->lec_pascreer) ? NULL :
+        mi_cloner_symbole (MI_PREDEFINI (application));
+      if (syapp)
+        {
+          mi_symbole_mettre_attribut
+          (syapp, MI_PREDEFINI (type),
+           MI_SYMBOLEV (MI_PREDEFINI (application)));
+          mi_symbole_mettre_attribut
+          (syapp, MI_PREDEFINI (application),
+           v);
+        }
+      for (;;)
+        {
+          while (isspace(*ps)) ps++;
+          if (*ps == ')' || !*ps)
+            break;
+          char*pdebarg = ps;
+          char*pfinarg = NULL;
+          Mit_Val varg = mi_lire_expression(lec, pdebarg, &pfinarg);
+          if (!pfinarg || pfinarg==pdebarg)
+            MI_ERREUR_LECTURE (lec, pdebarg, NULL, "argument manquant");
+
+          Mit_Symbole *syarg =	//
+            (lec->lec_pascreer) ? NULL :
+            mi_cloner_symbole (MI_PREDEFINI (arg));
+          if (syarg)
+            {
+              mi_symbole_mettre_attribut
+              (syarg, MI_PREDEFINI (type),
+               MI_SYMBOLEV (MI_PREDEFINI (arg)));
+              mi_symbole_mettre_attribut
+              (syarg, MI_PREDEFINI (arg),
+               varg);
+            }
+        }
     }
   else if (*ps == '[')
     {
@@ -329,10 +364,10 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
   // lire un nombre
   if (isdigit (ps[0])		//
       || ((ps[0] == '-' || ps[1] == '+')	//
-	  && (isdigit (ps[1])
-	      // les flottants peuvent être NAN ou INF, traités par strtod
-	      || !strncasecmp (ps + 1, "INF", 3)
-	      || !strncasecmp (ps + 1, "NAN", 3))))
+          && (isdigit (ps[1])
+              // les flottants peuvent être NAN ou INF, traités par strtod
+              || !strncasecmp (ps + 1, "INF", 3)
+              || !strncasecmp (ps + 1, "NAN", 3))))
     {
       // un nombre
       char *finent = NULL;
@@ -340,23 +375,23 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
       long e = strtol (ps, &finent, 0);
       double d = strtod (ps, &findbl);
       if (findbl > finent)
-	{
-	  if (pfin)
-	    *pfin = findbl;
-	  if (lec->lec_pascreer)
-	    return MI_NILV;
-	  return MI_DOUBLEV (mi_creer_double (d));
-	}
+        {
+          if (pfin)
+            *pfin = findbl;
+          if (lec->lec_pascreer)
+            return MI_NILV;
+          return MI_DOUBLEV (mi_creer_double (d));
+        }
       else if (finent > ps)
-	{
-	  if (pfin)
-	    *pfin = finent;
-	  if (lec->lec_pascreer)
-	    return MI_NILV;
-	  return MI_ENTIERV (mi_creer_entier (e));
-	}
+        {
+          if (pfin)
+            *pfin = finent;
+          if (lec->lec_pascreer)
+            return MI_NILV;
+          return MI_ENTIERV (mi_creer_entier (e));
+        }
       else
-	MI_ERREUR_LECTURE (lec, ps, NULL, "mauvais nombre");
+        MI_ERREUR_LECTURE (lec, ps, NULL, "mauvais nombre");
     }
   // lire un symbole
   else if (isalpha (ps[0]))
@@ -366,19 +401,19 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
       char *pfinsymb = NULL;
       Mit_Symbole *sy = mi_lire_symbole (pdebsymb, &pfinsymb);
       if (sy)
-	{
-	  assert (pfinsymb != NULL && pfinsymb > pdebsymb);
-	  char *pc = pfinsymb;
-	  Mit_Val vc = mi_lire_complement (lec, MI_SYMBOLEV (sy), pc, &pc);
-	  if (pfin)
-	    *pfin = pc;
-	  if (lec->lec_pascreer)
-	    return MI_NILV;
-	  return vc;
-	}
+        {
+          assert (pfinsymb != NULL && pfinsymb > pdebsymb);
+          char *pc = pfinsymb;
+          Mit_Val vc = mi_lire_complement (lec, MI_SYMBOLEV (sy), pc, &pc);
+          if (pfin)
+            *pfin = pc;
+          if (lec->lec_pascreer)
+            return MI_NILV;
+          return vc;
+        }
       else
-	MI_ERREUR_LECTURE (lec, pdebsymb, pfinsymb,
-			   mi_lecture_symbole_absent);
+        MI_ERREUR_LECTURE (lec, pdebsymb, pfinsymb,
+                           mi_lecture_symbole_absent);
     }
   // une chaîne de caractères
   else if (ps[0] == '"')
@@ -389,13 +424,13 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
       char *debch = ps;
       unsigned l = strlen (ps);
       if (ps[l - 1] == '\n')
-	ps[--l] = (char) 0;
+        ps[--l] = (char) 0;
       if (u8_check ((const uint8_t *) ps, l))
-	MI_ERREUR_LECTURE (lec, debch, ps + l,
-			   "mauvaise chaine verbatim UTF8");
+        MI_ERREUR_LECTURE (lec, debch, ps + l,
+                           "mauvaise chaine verbatim UTF8");
       const Mit_Chaine *ch = mi_creer_chaine (ps + 1);
       if (pfin)
-	*pfin = ps + l;
+        *pfin = ps + l;
       return MI_CHAINEV (ch);
     }
   /// lire un trou
@@ -406,67 +441,68 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
       ps++;
       Mit_Symbole *sy = mi_lire_symbole (ps, &pfintrou);
       if (sy)
-	{
-	  struct Mi_trouve_st tr =	//
-	    mi_assoc_chercher (lec->lec_assoctrou, sy);
-	  Mit_Val vtrou = tr.t_pres ? (tr.t_val) : MI_SYMBOLEV (sy);
-	  char *pfincomp = NULL;
-	  Mit_Val vcomp =
-	    mi_lire_complement (lec, vtrou, pfintrou, &pfincomp);
-	  if (pfin)
-	    *pfin = pfincomp;
-	  if (lec->lec_pascreer)
-	    {
-	      if (!tr.t_pres)
-		{
-		  lec->lec_assoctrou =	//
-		    mi_assoc_mettre (lec->lec_assoctrou,
-				     sy, MI_SYMBOLEV (MI_PREDEFINI (trou)));
-		};
-	      return MI_NILV;
-	    }
-	  else
-	    {
-	      // La première passe aurait dû trouver le trou...
-	      if (!tr.t_pres)
-		MI_FATALPRINTF ("le trou $%s est manquant", pdebtrou + 1);
-	      return vcomp;
-	    }
-	}
+        {
+          struct Mi_trouve_st tr =	//
+          mi_assoc_chercher (lec->lec_assoctrou, sy);
+          Mit_Val vtrou = tr.t_pres ? (tr.t_val) : MI_SYMBOLEV (sy);
+          char *pfincomp = NULL;
+          Mit_Val vcomp =
+            mi_lire_complement (lec, vtrou, pfintrou, &pfincomp);
+          if (pfin)
+            *pfin = pfincomp;
+          if (lec->lec_pascreer)
+            {
+              if (!tr.t_pres)
+                {
+                  lec->lec_assoctrou =	//
+                    mi_assoc_mettre (lec->lec_assoctrou,
+                                     sy,
+                                     MI_SYMBOLEV (MI_PREDEFINI (trou)));
+                };
+              return MI_NILV;
+            }
+          else
+            {
+              // La première passe aurait dû trouver le trou...
+              if (!tr.t_pres)
+                MI_FATALPRINTF ("le trou $%s est manquant", pdebtrou + 1);
+              return vcomp;
+            }
+        }
       else
-	MI_ERREUR_LECTURE (lec, pdebtrou + 1, pfintrou,
-			   mi_lecture_symbole_absent);
+        MI_ERREUR_LECTURE (lec, pdebtrou + 1, pfintrou,
+                           mi_lecture_symbole_absent);
     }
   else if (ps[0] == '(')
     {
-      char *finpar = NULL;
-      Mit_Val v = mi_lire_expression (lec, ps + 1, &finpar);
-      if (!finpar)
-	MI_ERREUR_LECTURE (lec, ps + 1, NULL,
-			   "parenthèse non suivie de valeur");
-      while (isspace (*finpar))
-	finpar++;
-      if (*finpar != ')' && *finpar)
-	MI_ERREUR_LECTURE (lec, ps, finpar, "parenthèse fermante manquante");
-      if (*finpar)
-	finpar++;
+      char *pfinpar = NULL;
+      Mit_Val v = mi_lire_expression (lec, ps + 1, &pfinpar);
+      if (!pfinpar)
+        MI_ERREUR_LECTURE (lec, ps + 1, NULL,
+                           "parenthèse non suivie de valeur");
+      while (isspace (*pfinpar))
+        pfinpar++;
+      if (*pfinpar != ')' && *pfinpar)
+        MI_ERREUR_LECTURE (lec, ps, pfinpar, "parenthèse fermante manquante");
+      if (*pfinpar)
+        pfinpar++;
       Mit_Symbole *sypar =	//
-	(lec->lec_pascreer) ? NULL :
-	mi_cloner_symbole (MI_PREDEFINI (parenthesage));
+        (lec->lec_pascreer) ? NULL :
+        mi_cloner_symbole (MI_PREDEFINI (parenthesage));
       if (sypar)
-	{
-	  mi_symbole_mettre_attribut (sypar, MI_PREDEFINI (type),
-				      MI_SYMBOLEV (MI_PREDEFINI
-						   (parenthesage)));
-	  mi_symbole_mettre_attribut (sypar, MI_PREDEFINI (arg), v);
-	}
+        {
+          mi_symbole_mettre_attribut
+          (sypar, MI_PREDEFINI (type),
+           MI_SYMBOLEV (MI_PREDEFINI  (parenthesage)));
+          mi_symbole_mettre_attribut (sypar, MI_PREDEFINI (arg), v);
+        }
       Mit_Val vpar = sypar ? MI_SYMBOLEV (sypar) : MI_NILV;
       char *fincomp = NULL;
-      Mit_Val vcomp = mi_lire_complement (lec, vpar, finpar, &fincomp);
+      Mit_Val vcomp = mi_lire_complement (lec, vpar, pfinpar, &fincomp);
       if (pfin)
-	*pfin = fincomp;
+        *pfin = fincomp;
       if (lec->lec_pascreer)
-	return MI_NILV;
+        return MI_NILV;
       return vcomp;
     }
 }				/* fin mi_lire_primaire */
