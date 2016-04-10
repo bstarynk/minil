@@ -152,9 +152,9 @@ mi_creer_tuple_symboles (unsigned nb, const Mit_Symbole **tabsym)
       if (sy && sy != MI_TROU_SYMBOLE && sy->mi_type == MiTy_Symbole)
         tab[cnt++] = sy;
     };
-  Mit_Tuple *tu =
-    mi_allouer_valeur (MiTy_Tuple,
-                       sizeof (Mit_Tuple) + cnt * sizeof (Mit_Symbole *));
+  Mit_Tuple *tu = mi_allouer_valeur (MiTy_Tuple,
+                                     sizeof (Mit_Tuple) +
+                                     cnt * sizeof (Mit_Symbole *));
   for (unsigned ix = 0; ix < cnt; ix++)
     tu->mi_composants[ix] = (Mit_Symbole *) tab[ix];
   if (tab != petitab)

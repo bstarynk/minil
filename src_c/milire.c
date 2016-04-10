@@ -255,7 +255,7 @@ mi_afficher_chaine_encodee (FILE * fi, const char *ch)
 // positionne pfin pour en donner la position après le dernier caractère.
 // renvoie un symbole, s'il est trouvé.
 static Mit_Symbole *
-mi_lire_symbole (char *ps,  char **pfin)
+mi_lire_symbole (char *ps, char **pfin)
 {
   assert (ps != NULL);
   assert (pfin != NULL);
@@ -340,7 +340,7 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
       // un symbole existant
       char *pdebsymb = ps;
       char *pfinsymb = NULL;
-      Mit_Symbole*sy = mi_lire_symbole(pdebsymb,&pfinsymb);
+      Mit_Symbole *sy = mi_lire_symbole (pdebsymb, &pfinsymb);
       if (sy)
         {
           if (pfin)
@@ -350,7 +350,8 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
           return MI_SYMBOLEV (sy);
         }
       else
-        MI_ERREUR_LECTURE (lec, pdebsymb, pfinsymb, mi_lecture_symbole_absent);
+        MI_ERREUR_LECTURE (lec, pdebsymb, pfinsymb,
+                           mi_lecture_symbole_absent);
     }
   // une chaîne de caractères
   else if (ps[0] == '"')
@@ -376,7 +377,7 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
       char *pdebtrou = ps;
       char *pfintrou = NULL;
       ps++;
-      Mit_Symbole*sy = mi_lire_symbole(ps, &pfintrou);
+      Mit_Symbole *sy = mi_lire_symbole (ps, &pfintrou);
       if (sy)
         {
           if (pfin)
@@ -408,7 +409,7 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
   else if (ps[0] == '(')
     {
       char *finpar = NULL;
-      Mit_Val v = mi_lire_valeur (lec, ps + 1, &finpar);
+      Mit_Val v = mi_lire_expression (lec, ps + 1, &finpar);
       if (!finpar)
         MI_ERREUR_LECTURE (lec, ps + 1, NULL,
                            "parenthèse non suivie de valeur");
@@ -433,7 +434,7 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
 
 
 Mit_Val
-mi_lire_valeur (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
+mi_lire_expression (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
 {
   assert (lec && lec->lec_nmagiq == MI_LECTEUR_NMAGIQ);
   assert (ps != NULL);
