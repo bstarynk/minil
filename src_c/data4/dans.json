@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "dans"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "donne le contenant"
+  }
+ ],
+ "comps": null
+}

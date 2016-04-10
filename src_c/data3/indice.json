@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "indice"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "donne un indice, souvent entier"
+  }
+ ],
+ "comps": null
+}
