@@ -318,6 +318,8 @@ mi_lire_complement (struct Mi_Lecteur_st *lec, Mit_Val v, char *ps,
           (syapp, MI_PREDEFINI (application),
            v);
         }
+      int nbarg = 0;
+#warning il faut gérer un tableau ou vecteurs d arguments
       for (;;)
         {
           while (isspace(*ps)) ps++;
@@ -328,7 +330,7 @@ mi_lire_complement (struct Mi_Lecteur_st *lec, Mit_Val v, char *ps,
           Mit_Val varg = mi_lire_expression(lec, pdebarg, &pfinarg);
           if (!pfinarg || pfinarg==pdebarg)
             MI_ERREUR_LECTURE (lec, pdebarg, NULL, "argument manquant");
-
+          nbarg++;
           Mit_Symbole *syarg =	//
             (lec->lec_pascreer) ? NULL :
             mi_cloner_symbole (MI_PREDEFINI (arg));
@@ -340,6 +342,13 @@ mi_lire_complement (struct Mi_Lecteur_st *lec, Mit_Val v, char *ps,
               mi_symbole_mettre_attribut
               (syarg, MI_PREDEFINI (arg),
                varg);
+              if (syapp)
+                mi_symbole_mettre_attribut
+                (syarg, MI_PREDEFINI (dans),
+                 MI_SYMBOLEV(syapp));
+              mi_symbole_mettre_attribut
+              (syarg, MI_PREDEFINI (indice),
+               MI_ENTIERV(mi_creer_entier(nbarg)));
             }
         }
     }
