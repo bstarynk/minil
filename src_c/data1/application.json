@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "application"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "application de fonction"
+  }
+ ],
+ "comps": null
+}

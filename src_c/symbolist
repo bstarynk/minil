@@ -15,9 +15,10 @@
 #   along with Minil; see the file COPYING3.   If not see 
 #   <http://www.gnu.org/licenses/>. 
 # 
+application
 arg
 commentaire
 parenthesage
 trou
 type
-# fin 5 symboles
+# fin 6 symboles
