@@ -319,7 +319,15 @@ mi_lire_complement (struct Mi_Lecteur_st *lec, Mit_Val v, char *ps,
            v);
         }
       int nbarg = 0;
-#warning il faut gérer un tableau ou vecteurs d arguments
+      int tailargs = 0; // taille allouée de tabargs
+      Mit_Symbole** tabargs = NULL;
+      if (!lec->lec_pascreer)
+        {
+          tailargs = 5;
+          tabargs = calloc(tailargs, sizeof(Mit_Symbole*));
+          if (!tabargs)
+            MI_FATALPRINTF("impossible d'allouer tableau pour %d arguments", tailargs);
+        }
       for (;;)
         {
           while (isspace(*ps)) ps++;
@@ -330,6 +338,18 @@ mi_lire_complement (struct Mi_Lecteur_st *lec, Mit_Val v, char *ps,
           Mit_Val varg = mi_lire_expression(lec, pdebarg, &pfinarg);
           if (!pfinarg || pfinarg==pdebarg)
             MI_ERREUR_LECTURE (lec, pdebarg, NULL, "argument manquant");
+          if (!lec->lec_pascreer && tailargs >= nbarg)
+            {
+              int nouvtailargs = mi_nombre_premier_apres (5*nbarg/4+3);
+              Mit_Val* nouvtabargs = calloc (nouvtabargs, sizeof(Mit_Val));
+              if (!nouvtabargs)
+                MI_FATALPRINTF("impossible d'agrandir le tableau pour %d arguments", nouvtailargs);
+              if (nbarg>0)
+                memcpy(nouvtabargs, tabargs, nbarg*sizeof(Mit_Symbole*));
+              free (tabargs);
+              tabargs = nouvtabargs;
+              tailargs = nouvtailargs;
+            }
           nbarg++;
           Mit_Symbole *syarg =	//
             (lec->lec_pascreer) ? NULL :
@@ -349,7 +369,17 @@ mi_lire_complement (struct Mi_Lecteur_st *lec, Mit_Val v, char *ps,
               mi_symbole_mettre_attribut
               (syarg, MI_PREDEFINI (indice),
                MI_ENTIERV(mi_creer_entier(nbarg)));
+              assert (tabargs != NULL && tailargs > nbarg);
+              tabargs[nbarg] = syarg;
             }
+        }
+      if (tabargs)
+        {
+          assert (syapp != NULL);
+          const Mit_Tuple *tupargs = mi_creer_tuple_symboles (nbarg, tabargs);
+          mi_symbole_mettre_attribut
+          (syapp, MI_PREDEFINI (arg),
+           MI_TUPLEV(tupargs));
         }
     }
   else if (*ps == '[')
@@ -484,6 +514,7 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
     }
   else if (ps[0] == '(')
     {
+      /* une expression entre parenthèses */
       char *pfinpar = NULL;
       Mit_Val v = mi_lire_expression (lec, ps + 1, &pfinpar);
       if (!pfinpar)
@@ -514,6 +545,32 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
         return MI_NILV;
       return vcomp;
     }
+  else if (ps[0] == '-')
+    {
+      /* le moins unaire */
+      char*debmoins = ps;
+      char*finmoins = NULL;
+      ps++;
+      while (*ps && isspace(*ps)) ps++;
+      Mit_Val negv = mi_lire_primaire (lec, ps, &finmoins);
+      if (!finmoins || finmoins == ps)
+        MI_ERREUR_LECTURE(lec, debmoins, NULL, "erreur de lecture après moins unaire");
+      Mit_Symbole *syopp =	//
+        (lec->lec_pascreer) ? NULL :
+        mi_cloner_symbole (MI_PREDEFINI (oppose));
+      if (syopp)
+        {
+          mi_symbole_mettre_attribut
+          (syopp, MI_PREDEFINI (type),
+           MI_SYMBOLEV (MI_PREDEFINI  (oppose)));
+          mi_symbole_mettre_attribut (syopp, MI_PREDEFINI (arg), negv);
+          return (MI_SYMBOLEV (syopp));
+        }
+      else return MI_NILV;
+    }
+  else
+    MI_ERREUR_LECTURE (lec, ps, NULL, "erreur de lecture d'un primaire");
+
 }				/* fin mi_lire_primaire */
 
 

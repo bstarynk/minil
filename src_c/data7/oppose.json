@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "oppose"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "pour le moins unaire"
+  }
+ ],
+ "comps": null
+}
