@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "negation"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "pour negation avec \u00AC"
+  }
+ ],
+ "comps": null
+}
