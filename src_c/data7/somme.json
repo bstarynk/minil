@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "somme"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "pour les sommes"
+  }
+ ],
+ "comps": null
+}

@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "gauche"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "pour op\u00E9rande gauche"
+  }
+ ],
+ "comps": null
+}

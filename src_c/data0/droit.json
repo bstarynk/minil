@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "droit"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "pour op\u00E9rande droit"
+  }
+ ],
+ "comps": null
+}

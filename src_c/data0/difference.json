@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "difference"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "pour les differences"
+  }
+ ],
+ "comps": null
+}
