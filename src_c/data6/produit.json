@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "produit"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "pour les produits "
+  }
+ ],
+ "comps": null
+}

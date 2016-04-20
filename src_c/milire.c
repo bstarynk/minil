@@ -599,6 +599,91 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
 
 }				/* fin mi_lire_primaire */
 
+
+
+Mit_Val
+mi_lire_facteur (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
+{
+  Mit_Val vfac = MI_NILV;
+  assert (lec && lec->lec_nmagiq == MI_LECTEUR_NMAGIQ);
+  assert (ps != NULL);
+  assert (pfin != NULL);
+  while (*ps && isspace (*ps))
+    ps++;
+  char *debsom = ps;
+  const char *fingch = NULL;
+  Mit_Val vgch = mi_lire_primaire (lec, ps, &fingch);
+  if (!fingch)
+    MI_ERREUR_LECTURE (lec, debsom, NULL,
+                       "erreur de lecture du membre gauche d'un facteur");
+  vfac = vgch;
+  ps = (char*) fingch;
+  for (;;)
+    {
+      Mit_Val vdrt = MI_NILV;
+      Mit_Symbole* sypro = NULL;
+      const char*findrt= NULL;
+      while (*ps && isspace (*ps))
+        ps++;
+      if (*ps != '/' && *ps != '*')
+        {
+          *pfin = ps;
+          return vfac;
+        }
+      else if (*ps == '*')
+        {
+          vdrt = mi_lire_primaire (lec, ps+1, &findrt);
+          if (!findrt)
+            MI_ERREUR_LECTURE (lec, ps, NULL,
+                               "erreur de lecture du membre droit d'un produit");
+          Mit_Symbole *sypro =	//
+            (lec->lec_pascreer) ? NULL :
+            mi_cloner_symbole (MI_PREDEFINI (produit));
+          if (sypro)
+            {
+              mi_symbole_mettre_attribut
+              (sypro, MI_PREDEFINI (type),
+               MI_SYMBOLEV (MI_PREDEFINI (produit)));
+              mi_symbole_mettre_attribut
+              (sypro, MI_PREDEFINI (gauche),
+               vfac);
+              mi_symbole_mettre_attribut
+              (sypro, MI_PREDEFINI (droit),
+               vdrt);
+              vfac = MI_SYMBOLEV(sypro);
+            }
+        }
+      else if (*ps == '/')
+        {
+          vdrt = mi_lire_primaire (lec, ps+1, &findrt);
+          if (!findrt)
+            MI_ERREUR_LECTURE (lec, ps, NULL,
+                               "erreur de lecture du membre droit d'un quotien");
+          Mit_Symbole *syquo =	//
+            (lec->lec_pascreer) ? NULL :
+            mi_cloner_symbole (MI_PREDEFINI (quotient));
+          if (syquo)
+            {
+              mi_symbole_mettre_attribut
+              (syquo, MI_PREDEFINI (type),
+               MI_SYMBOLEV (MI_PREDEFINI (difference)));
+              mi_symbole_mettre_attribut
+              (syquo, MI_PREDEFINI (gauche),
+               vfac);
+              mi_symbole_mettre_attribut
+              (syquo, MI_PREDEFINI (droit),
+               vdrt);
+              vfac = MI_SYMBOLEV(syquo);
+            }
+        }
+      else
+        MI_FATALPRINTF("caractère[s] impossible[s] %s dans facteur", ps);
+    };
+  return vfac;
+}				/* fin mi_lire_facteur */
+
+
+
 Mit_Val
 mi_lire_somme (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
 {
@@ -610,7 +695,7 @@ mi_lire_somme (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
     ps++;
   char *debsom = ps;
   const char *fingch = NULL;
-  Mit_Val vgch = mi_lire_primaire (lec, ps, &fingch);
+  Mit_Val vgch = mi_lire_facteur (lec, ps, &fingch);
   if (!fingch)
     MI_ERREUR_LECTURE (lec, debsom, NULL,
                        "erreur de lecture du membre gauche d'une somme");
@@ -630,7 +715,7 @@ mi_lire_somme (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
         }
       else if (*ps == '+')
         {
-          vdrt = mi_lire_primaire (lec, ps+1, &findrt);
+          vdrt = mi_lire_facteur (lec, ps+1, &findrt);
           if (!findrt)
             MI_ERREUR_LECTURE (lec, ps, NULL,
                                "erreur de lecture du membre droit d'une somme");

@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "quotient"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "pour les quotients"
+  }
+ ],
+ "comps": null
+}
