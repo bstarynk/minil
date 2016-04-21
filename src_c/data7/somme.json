@@ -8,6 +8,14 @@
     "symb": "commentaire"
    },
    "va": "pour les sommes"
+  },
+  {
+   "at": {
+    "symb": "expressif"
+   },
+   "va": {
+    "symb": "vrai"
+   }
   }
  ],
  "comps": null

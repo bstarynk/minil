@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "vrai"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "le vrai"
+  }
+ ],
+ "comps": null
+}

@@ -8,6 +8,14 @@
     "symb": "commentaire"
    },
    "va": "type des expressions parenth\u00E9s\u00E9es"
+  },
+  {
+   "at": {
+    "symb": "expressif"
+   },
+   "va": {
+    "symb": "vrai"
+   }
   }
  ],
  "comps": null

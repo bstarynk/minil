@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "expressif"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "pour les types expressifs"
+  }
+ ],
+ "comps": null
+}
