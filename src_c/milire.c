@@ -918,9 +918,63 @@ mi_lire_comparaison (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
   while (*ps && isspace (*ps))
     ps++;
   Mit_Symbole*sycmp = NULL;
-  if (*ps == '=') sycmp = MI_PREDEFINI(egal), ps++;
-  else if (*ps == '<') sycmp = MI_PREDEFINI(inferieur);
-  else if (*ps == '>') sycmp = MI_PREDEFINI(superieur);
+  if (*ps == '=')
+    sycmp = MI_PREDEFINI(egal), ps++;
+  else if (!strncmp(ps, "<=", 2))
+    sycmp = MI_PREDEFINI(inferieurEgal), ps+=2;
+  else if (!strncmp(ps, "\342\211\244", 3 /* U+2264 LESS-THAN OR EQUAL TO ≤ */))
+    sycmp = MI_PREDEFINI(inferieurEgal), ps+=3;
+  else if (!strncmp(ps, ">=", 2))
+    sycmp = MI_PREDEFINI(superieurEgal), ps+=2;
+  else if (!strncmp(ps, "\342\211\245", 3 /* U+2265 GREATER-THAN OR EQUAL TO ≥ */))
+    sycmp = MI_PREDEFINI(superieurEgal), ps+=3;
+  else if (!strncmp(ps, "\342\211\240", 3 /* U+2260 NOT EQUAL TO ≠ */))
+    sycmp = MI_PREDEFINI(inegal), ps+=3;
+  else if (!strncmp(ps, "!=", 2))
+    sycmp = MI_PREDEFINI(inegal), ps+=2;
+  else if (*ps == '<')
+    sycmp = MI_PREDEFINI(inferieur), ps++;
+  else if (*ps == '>')
+    sycmp = MI_PREDEFINI(superieur), ps++;
+  if (!sycmp) return vgch;
+  char *findrt = NULL;
+  Mit_Val vdrt = mi_lire_comparande (lec, ps, &findrt);
+  if (!findrt)
+    MI_ERREUR_LECTURE (lec, debsom, NULL,
+                       "erreur de lecture du membre droit d'une comparaison");
+  ps = (char *) findrt;
+  Mit_Symbole *syrescomp =	//
+    (lec->lec_pascreer) ? NULL :
+    mi_cloner_symbole (sycmp);
+  if (syrescomp)
+    {
+      Mit_Symbole *sygch = mi_symbole_expressif (vgch);
+      if (sygch)
+        {
+          mi_symbole_mettre_attribut
+          (sygch, MI_PREDEFINI (dans), MI_SYMBOLEV (syrescomp));
+          mi_symbole_mettre_attribut
+          (sygch, MI_PREDEFINI (indice),
+           MI_SYMBOLEV (MI_PREDEFINI (gauche)));
+        }
+      Mit_Symbole *sydrt = mi_symbole_expressif (vdrt);
+      if (sydrt)
+        {
+          mi_symbole_mettre_attribut
+          (sydrt, MI_PREDEFINI (dans), MI_SYMBOLEV (syrescomp));
+          mi_symbole_mettre_attribut
+          (sydrt, MI_PREDEFINI (indice),
+           MI_SYMBOLEV (MI_PREDEFINI (droit)));
+        }
+      mi_symbole_mettre_attribut
+      (syrescomp, MI_PREDEFINI (type),
+       MI_SYMBOLEV (sycmp));
+      mi_symbole_mettre_attribut (syrescomp, MI_PREDEFINI (gauche), vsom);
+      mi_symbole_mettre_attribut (syrescomp, MI_PREDEFINI (droit), vdrt);
+      return MI_SYMBOLEV(syrescomp);
+    }
+  else
+    return MI_NILV;
 }
 
 Mit_Val
