@@ -917,6 +917,10 @@ mi_lire_comparaison (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
   ps = (char *) fingch;
   while (*ps && isspace (*ps))
     ps++;
+  Mit_Symbole*sycmp = NULL;
+  if (*ps == '=') sycmp = MI_PREDEFINI(egal), ps++;
+  else if (*ps == '<') sycmp = MI_PREDEFINI(inferieur);
+  else if (*ps == '>') sycmp = MI_PREDEFINI(superieur);
 }
 
 Mit_Val

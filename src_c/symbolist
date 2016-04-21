@@ -27,6 +27,7 @@ gauche
 indice
 inegal
 inferieur
+inferieurEgal
 negation
 oppose
 parenthesage
@@ -34,7 +35,8 @@ produit
 quotient
 somme
 superieur
+superieurEgal
 trou
 type
 vrai
-# fin 22 symboles
+# fin 24 symboles

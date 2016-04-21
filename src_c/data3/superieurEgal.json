@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "superieurEgal"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "test de sup\u00E9riorit\u00E9 large >="
+  }
+ ],
+ "comps": null
+}
