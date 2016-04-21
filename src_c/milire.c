@@ -667,6 +667,26 @@ mi_lire_terme (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
               mi_symbole_mettre_attribut
               (sypro, MI_PREDEFINI (type),
                MI_SYMBOLEV (MI_PREDEFINI (produit)));
+              Mit_Symbole*sygch = mi_symbole_expressif(vterme);
+              if (sygch)
+                {
+                  mi_symbole_mettre_attribut
+                  (sygch, MI_PREDEFINI (dans),
+                   MI_SYMBOLEV(sypro));
+                  mi_symbole_mettre_attribut
+                  (sygch, MI_PREDEFINI (indice),
+                   MI_SYMBOLEV(MI_PREDEFINI(gauche)));
+                }
+              Mit_Symbole*sydrt = mi_symbole_expressif(vdrt);
+              if (sydrt)
+                {
+                  mi_symbole_mettre_attribut
+                  (sydrt, MI_PREDEFINI (dans),
+                   MI_SYMBOLEV(sypro));
+                  mi_symbole_mettre_attribut
+                  (sydrt, MI_PREDEFINI (indice),
+                   MI_SYMBOLEV(MI_PREDEFINI(droit)));
+                }
               mi_symbole_mettre_attribut
               (sypro, MI_PREDEFINI (gauche), vterme);
               mi_symbole_mettre_attribut (sypro, MI_PREDEFINI (droit), vdrt);
@@ -689,6 +709,26 @@ mi_lire_terme (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
                MI_SYMBOLEV (MI_PREDEFINI (difference)));
               mi_symbole_mettre_attribut
               (syquo, MI_PREDEFINI (gauche), vterme);
+              Mit_Symbole*sygch = mi_symbole_expressif(vterme);
+              if (sygch)
+                {
+                  mi_symbole_mettre_attribut
+                  (sygch, MI_PREDEFINI (dans),
+                   MI_SYMBOLEV(syquo));
+                  mi_symbole_mettre_attribut
+                  (sygch, MI_PREDEFINI (indice),
+                   MI_SYMBOLEV(MI_PREDEFINI(gauche)));
+                }
+              Mit_Symbole*sydrt = mi_symbole_expressif(vdrt);
+              if (sydrt)
+                {
+                  mi_symbole_mettre_attribut
+                  (sydrt, MI_PREDEFINI (dans),
+                   MI_SYMBOLEV(syquo));
+                  mi_symbole_mettre_attribut
+                  (sydrt, MI_PREDEFINI (indice),
+                   MI_SYMBOLEV(MI_PREDEFINI(droit)));
+                }
               mi_symbole_mettre_attribut (syquo, MI_PREDEFINI (droit), vdrt);
               vterme = MI_SYMBOLEV (syquo);
             }
@@ -741,6 +781,26 @@ mi_lire_comparande (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
             mi_cloner_symbole (MI_PREDEFINI (somme));
           if (sysom)
             {
+              Mit_Symbole*sygch = mi_symbole_expressif(vsom);
+              if (sygch)
+                {
+                  mi_symbole_mettre_attribut
+                  (sygch, MI_PREDEFINI (dans),
+                   MI_SYMBOLEV(sysom));
+                  mi_symbole_mettre_attribut
+                  (sygch, MI_PREDEFINI (indice),
+                   MI_SYMBOLEV(MI_PREDEFINI(gauche)));
+                }
+              Mit_Symbole*sydrt = mi_symbole_expressif(vdrt);
+              if (sydrt)
+                {
+                  mi_symbole_mettre_attribut
+                  (sydrt, MI_PREDEFINI (dans),
+                   MI_SYMBOLEV(sysom));
+                  mi_symbole_mettre_attribut
+                  (sydrt, MI_PREDEFINI (indice),
+                   MI_SYMBOLEV(MI_PREDEFINI(droit)));
+                }
               mi_symbole_mettre_attribut
               (sysom, MI_PREDEFINI (type),
                MI_SYMBOLEV (MI_PREDEFINI (somme)));
@@ -760,6 +820,26 @@ mi_lire_comparande (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
             mi_cloner_symbole (MI_PREDEFINI (difference));
           if (sydif)
             {
+              Mit_Symbole*sygch = mi_symbole_expressif(vsom);
+              if (sygch)
+                {
+                  mi_symbole_mettre_attribut
+                  (sygch, MI_PREDEFINI (dans),
+                   MI_SYMBOLEV(sydif));
+                  mi_symbole_mettre_attribut
+                  (sygch, MI_PREDEFINI (indice),
+                   MI_SYMBOLEV(MI_PREDEFINI(gauche)));
+                }
+              Mit_Symbole*sydrt = mi_symbole_expressif(vdrt);
+              if (sydrt)
+                {
+                  mi_symbole_mettre_attribut
+                  (sydrt, MI_PREDEFINI (dans),
+                   MI_SYMBOLEV(sydif));
+                  mi_symbole_mettre_attribut
+                  (sydrt, MI_PREDEFINI (indice),
+                   MI_SYMBOLEV(MI_PREDEFINI(droit)));
+                }
               mi_symbole_mettre_attribut
               (sydif, MI_PREDEFINI (type),
                MI_SYMBOLEV (MI_PREDEFINI (difference)));

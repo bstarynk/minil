@@ -8,6 +8,14 @@
     "symb": "commentaire"
    },
    "va": "pour les produits "
+  },
+  {
+   "at": {
+    "symb": "expressif"
+   },
+   "va": {
+    "symb": "vrai"
+   }
   }
  ],
  "comps": null
