@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "inferieur"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "test d'inferiorit\u00E9 <"
+  }
+ ],
+ "comps": null
+}

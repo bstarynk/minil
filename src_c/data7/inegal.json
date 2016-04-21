@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "inegal"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "test d'inegalit\u00E9"
+  }
+ ],
+ "comps": null
+}

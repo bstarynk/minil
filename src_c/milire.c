@@ -431,22 +431,22 @@ mi_lire_complement (struct Mi_Lecteur_st *lec, Mit_Val v, char *ps,
           if (sygch)
             {
               mi_symbole_mettre_attribut (sygch,
-                                          MI_PREDEFINI(dans), MIT_SYMBOLEV(syind));
+                                          MI_PREDEFINI(dans), MI_SYMBOLEV(syind));
               mi_symbole_mettre_attribut (sygch,
-                                          MI_PREDEFINI(indice), MIT_SYMBOLEV(MI_PREDEFINI(gauche)));
+                                          MI_PREDEFINI(indice), MI_SYMBOLEV(MI_PREDEFINI(gauche)));
             }
           if (sydrt)
             {
               mi_symbole_mettre_attribut (sydrt,
-                                          MI_PREDEFINI(dans), MIT_SYMBOLEV(syind));
+                                          MI_PREDEFINI(dans), MI_SYMBOLEV(syind));
               mi_symbole_mettre_attribut (sydrt,
-                                          MI_PREDEFINI(indice), MIT_SYMBOLEV(MI_PREDEFINI(droit)));
+                                          MI_PREDEFINI(indice), MI_SYMBOLEV(MI_PREDEFINI(droit)));
             }
           mi_symbole_mettre_attribut (syind, MI_PREDEFINI (gauche), v);
           mi_symbole_mettre_attribut (syind, MI_PREDEFINI (droit), varg);
         }
       *pfin = ps;
-      v = MI_SYMBOLEV(syapp);
+      v = MI_SYMBOLEV(syind);
       return v;
     }
   else
@@ -781,8 +781,8 @@ mi_lire_terme (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
               vterme = MI_SYMBOLEV (syquo);
             }
         }
-      else
-        MI_FATALPRINTF ("caractère[s] impossible[s] %s dans facteur", ps);
+      else // impossible
+        MI_FATALPRINTF ("caractère[s] impossible[s] %s dans terme", ps);
     };
   return vterme;
 }				/* fin mi_lire_terme */
@@ -803,7 +803,7 @@ mi_lire_comparande (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
   Mit_Val vgch = mi_lire_terme (lec, ps, &fingch);
   if (!fingch)
     MI_ERREUR_LECTURE (lec, debsom, NULL,
-                       "erreur de lecture du membre gauche d'un terme");
+                       "erreur de lecture du membre gauche d'un comparande");
   vsom = vgch;
   ps = (char *) fingch;
   for (;;)
@@ -823,7 +823,7 @@ mi_lire_comparande (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
           vdrt = mi_lire_terme (lec, ps + 1, &findrt);
           if (!findrt)
             MI_ERREUR_LECTURE (lec, ps, NULL,
-                               "erreur de lecture du membre droit d'une somme");
+                               "erreur de lecture du membre droit d'un comparande");
           Mit_Symbole *sysom =	//
             (lec->lec_pascreer) ? NULL :
             mi_cloner_symbole (MI_PREDEFINI (somme));
@@ -892,13 +892,32 @@ mi_lire_comparande (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
               vsom = MI_SYMBOLEV (sydif);
             }
         }
-      else
-        MI_FATALPRINTF ("caractère[s] impossible[s] %s dans terme", ps);
+      else // impossible
+        MI_FATALPRINTF ("caractère[s] impossible[s] %s dans comparande", ps);
     };
   return vsom;
 }				/* fin mi_lire_comparande */
 
 
+Mit_Val
+mi_lire_comparaison (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
+{
+  Mit_Val vsom = MI_NILV;
+  assert (lec && lec->lec_nmagiq == MI_LECTEUR_NMAGIQ);
+  assert (ps != NULL);
+  assert (pfin != NULL);
+  while (*ps && isspace (*ps))
+    ps++;
+  char *debsom = ps;
+  char *fingch = NULL;
+  Mit_Val vgch = mi_lire_comparande (lec, ps, &fingch);
+  if (!fingch)
+    MI_ERREUR_LECTURE (lec, debsom, NULL,
+                       "erreur de lecture du membre gauche d'une comparaison");
+  ps = (char *) fingch;
+  while (*ps && isspace (*ps))
+    ps++;
+}
 
 Mit_Val
 mi_lire_expression (struct Mi_Lecteur_st *lec, char *ps, char **pfin)

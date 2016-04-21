@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "egal"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "test d'\u00E9galit\u00E9 ="
+  }
+ ],
+ "comps": null
+}
