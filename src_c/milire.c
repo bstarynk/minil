@@ -1006,13 +1006,14 @@ mi_lire_conjonction (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
     return vgch;
   int tailarg = 3;
   int nbarg = 1;
-  Mit_Symbole **tabarg = NULL;
+  const Mit_Symbole **tabarg = NULL;
   Mit_Symbole *syconj = NULL;
   if (!lec->lec_pascreer)
     {
-      syconj = mi_cloner_symbole(MI_PREDEFINI(conjonction));
+      syconj = mi_cloner_symbole (MI_PREDEFINI (conjonction));
       mi_symbole_mettre_attribut
-      (syconj, MI_PREDEFINI (type), MI_SYMBOLEV (MI_PREDEFINI (conjonction)));
+      (syconj, MI_PREDEFINI (type),
+       MI_SYMBOLEV (MI_PREDEFINI (conjonction)));
       tabarg = calloc (tailarg, sizeof (Mit_Symbole *));
       if (!tabarg)
         MI_FATALPRINTF
@@ -1027,10 +1028,76 @@ mi_lire_conjonction (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
           (sygch, MI_PREDEFINI (type), MI_SYMBOLEV (MI_PREDEFINI (arg)));
           mi_symbole_mettre_attribut (sygch, MI_PREDEFINI (arg), vgch);
         }
+      mi_symbole_mettre_attribut (sygch, MI_PREDEFINI (dans),
+                                  MI_SYMBOLEV (syconj));
+      mi_symbole_mettre_attribut (sygch, MI_PREDEFINI (indice),
+                                  MI_ENTIERV (mi_creer_entier (0)));
+
       vgch = MI_SYMBOLEV (sygch);
       tabarg[0] = sygch;
     }
-#warning mi_lire_conjonction à completer
+  for (;;)
+    {
+      while (*ps && isspace (*ps))
+        ps++;
+      if (strncmp (ps, "&&", 2)
+          || strncmp (ps, "\342\210\247" /*U+2227 LOGICAL AND ∧ */ , 3))
+        break;
+      if (nbarg >= tailarg && !lec->lec_pascreer)
+        {
+          unsigned nouvtailargs =
+            mi_nombre_premier_apres (4 * nbarg / 3 + 10);
+          const Mit_Symbole **nouvtabarg =
+            calloc (nouvtailargs, sizeof (Mit_Symbole *));
+          if (!nouvtabarg)
+            MI_FATALPRINTF
+            ("impossible d'agrandir à %d arguments de conjonction (%s)",
+             nouvtailargs, strerror (errno));
+          memcpy (nouvtabarg, tabarg, nbarg * sizeof (Mit_Symbole *));
+          free (tabarg), tabarg = nouvtabarg;
+          tailarg = nouvtailargs;
+        }
+      if (!strncmp (ps, "&&", 2))
+        ps += 2;
+      else if (!strncmp (ps, "\342\210\247" /*U+2227 LOGICAL AND ∧ */ , 3))
+        ps += 3;
+      else			//impossible
+        MI_FATALPRINTF ("corruption: mauvais operateur de conjonction %s",
+                        ps);
+      char *finop = NULL;
+      Mit_Val vop = mi_lire_comparande (lec, ps, &finop);
+      if (!finop)
+        MI_ERREUR_LECTURE (lec, ps, NULL,
+                           "erreur de lecture d'une conjonction");
+      if (!lec->lec_pascreer)
+        {
+          Mit_Symbole *syxop = mi_symbole_expressif (vop);
+          Mit_Symbole *syop =	//
+            syxop ? syxop : mi_cloner_symbole (MI_PREDEFINI (arg));
+          if (!syxop)
+            {
+              mi_symbole_mettre_attribut
+              (syop, MI_PREDEFINI (type), MI_SYMBOLEV (MI_PREDEFINI (arg)));
+              mi_symbole_mettre_attribut (syop, MI_PREDEFINI (arg), vop);
+            }
+          mi_symbole_mettre_attribut (syop, MI_PREDEFINI (dans),
+                                      MI_SYMBOLEV (syconj));
+          mi_symbole_mettre_attribut (syop, MI_PREDEFINI (indice),
+                                      MI_ENTIERV (mi_creer_entier (nbarg)));
+          vop = MI_SYMBOLEV (syop);
+          tabarg[nbarg++] = syop;
+        }
+    };
+  Mit_Val vconj = MI_NILV;
+  if (!lec->lec_pascreer)
+    {
+      assert (syconj != NULL);
+      const Mit_Tuple *tupargs = mi_creer_tuple_symboles (nbarg, tabarg);
+      mi_symbole_mettre_attribut (syconj, MI_PREDEFINI (arg),
+                                  MI_TUPLEV (tupargs));
+      vconj = MI_SYMBOLEV (syconj);
+    }
+  return vconj;
 }				/* fin mi_lire_conjonction */
 
 
