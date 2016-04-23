@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "conjonction"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "conjonction && ou bien \u2227"
+  }
+ ],
+ "comps": null
+}
