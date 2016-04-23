@@ -8,6 +8,14 @@
     "symb": "commentaire"
    },
    "va": "application de fonction"
+  },
+  {
+   "at": {
+    "symb": "expressif"
+   },
+   "va": {
+    "symb": "vrai"
+   }
   }
  ],
  "comps": null

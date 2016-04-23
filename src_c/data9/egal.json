@@ -8,6 +8,14 @@
     "symb": "commentaire"
    },
    "va": "test d'\u00E9galit\u00E9 ="
+  },
+  {
+   "at": {
+    "symb": "expressif"
+   },
+   "va": {
+    "symb": "vrai"
+   }
   }
  ],
  "comps": null

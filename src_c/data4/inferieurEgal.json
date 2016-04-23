@@ -8,6 +8,14 @@
     "symb": "commentaire"
    },
    "va": "test d'inferiorit\u00E9 large <="
+  },
+  {
+   "at": {
+    "symb": "expressif"
+   },
+   "va": {
+    "symb": "vrai"
+   }
   }
  ],
  "comps": null

@@ -8,6 +8,14 @@
     "symb": "commentaire"
    },
    "va": "conjonction && ou bien \u2227"
+  },
+  {
+   "at": {
+    "symb": "expressif"
+   },
+   "va": {
+    "symb": "vrai"
+   }
   }
  ],
  "comps": null
