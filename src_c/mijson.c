@@ -727,14 +727,15 @@ mi_charger_contenu_symbole (Mit_Symbole *sy, const char *rep)
   asprintf (&nomfi, "%s/data%01d/%s%s.json", rep, h % 10,
             mi_symbole_chaine (sy), mi_symbole_indice_ch (sufind, sy));
   if (!nomfi)
-    MI_FATALPRINTF ("impossible de creer le nom de fichier pour %s%s (%s)",
+    MI_FATALPRINTF ("impossible de creer le nom de fichier pour %s%s (%s), h=%d",
                     mi_symbole_chaine (sy),
-                    mi_symbole_indice_ch (sufind, sy), strerror (errno));
+                    mi_symbole_indice_ch (sufind, sy), strerror (errno), h);
 
   if (access (nomfi, R_OK))
     {
-      fprintf (stderr, "impossible de lire %s au chargement: %s\n", nomfi,
-               strerror (errno));
+      fprintf (stderr, "impossible de lire %s au chargement: %s (h=%u)\n",
+               nomfi,
+               strerror (errno), h);
       free (nomfi);
       return;
     }

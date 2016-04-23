@@ -8,6 +8,14 @@
     "symb": "commentaire"
    },
    "va": "pour le moins unaire"
+  },
+  {
+   "at": {
+    "symb": "expressif"
+   },
+   "va": {
+    "symb": "vrai"
+   }
   }
  ],
  "comps": null

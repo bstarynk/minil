@@ -8,6 +8,14 @@
     "symb": "commentaire"
    },
    "va": "pour negation avec \u00AC"
+  },
+  {
+   "at": {
+    "symb": "expressif"
+   },
+   "va": {
+    "symb": "vrai"
+   }
   }
  ],
  "comps": null
