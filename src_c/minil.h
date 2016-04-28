@@ -38,6 +38,7 @@
 #include <math.h>
 #include <unistr.h>		// GNU libunistring
 #include <readline/readline.h>	// GNU readline
+#include <readline/history.h>	// GNU readline
 #include <jansson.h>		// JSON parsing library
 /// les constantes d'empreinte dans le fichier généré _timestamp.c
 extern const char minil_timestamp[];

@@ -1125,10 +1125,93 @@ mi_lire_expression (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
 }				/* fin mi_lire_expression */
 
 
+#define MI_LECTROUS_NMAGIQ 422688701 /*0x1931b7bd*/
+struct Mi_LecTrous_st
+{
+  unsigned mlt_nmagiq; // toujours  MI_LECTROUS_NMAGIQ
+  unsigned mlt_comptrou;
+  struct Mi_Lecteur_st*mlt_lect;
+  const Mit_Symbole**mlt_tabtrous;
+};
 
+bool mi_ajouter_trou_lu(const Mit_Symbole*sy, const Mit_Val va, void*client)
+{
+  struct Mi_LecTrous_st*ltr = client;
+  assert (ltr != NULL && ltr->mlt_nmagiq == MI_LECTROUS_NMAGIQ);
+  assert (ltr->mlt_lect != NULL);
+  assert (ltr->mlt_comptrou < mi_assoc_compte(ltr->mlt_lect->lec_assoctrou));
+  ltr->mlt_tabtrous[ltr->mlt_comptrou++] = sy;
+  return false;
+}
+
+void mi_lire_trous(struct Mi_Lecteur_st*lec, const char*invite)
+{
+  assert (lec && lec->lec_nmagiq == MI_LECTEUR_NMAGIQ);
+  assert (invite!=NULL);
+  unsigned nbtrous = mi_assoc_compte(lec->lec_assoctrou);
+  struct Mi_LecTrous_st lectrous;
+  memset (&lectrous, 0, sizeof(lectrous));
+  lectrous.mlt_nmagiq = MI_LECTROUS_NMAGIQ;
+  lectrous.mlt_comptrou = 0;
+  lectrous.mlt_lect = lec;
+  lectrous.mlt_tabtrous = calloc (nbtrous+1, sizeof(Mit_Symbole*));
+  if (!lectrous.mlt_tabtrous)
+    MI_FATALPRINTF("impossible d'allouer table pour %d trous", nbtrous);
+  mi_assoc_iterer(lec->lec_assoctrou, mi_ajouter_trou_lu, &lectrous);
+  assert (lectrous.mlt_comptrou == nbtrous);
+  qsort (lectrous.mlt_tabtrous, nbtrous, sizeof (Mit_Symbole *), mi_cmp_symboleptr);
+  printf("remplissez les %d trous pour %s\n", nbtrous, invite);
+  char invitrou[40];
+  jmp_buf jborig;
+  memset (invitrou, 0, sizeof(invitrou));
+  memcpy (&jborig, &lec->lec_jb, sizeof(jmp_buf));
+  for (unsigned ixt=0; ixt<nbtrous; ixt++)
+    {
+      const Mit_Symbole*sytrou = lectrous.mlt_tabtrous[ixt];
+      assert (sytrou && sytrou->mi_type == MiTy_Symbole);
+      char comptrou[16];
+      memset (comptrou, 0, sizeof(comptrou));
+      snprintf(invitrou, sizeof(invitrou), "%s %s$%s%s?%s ", invite,
+               MI_TERMINAL_GRAS, mi_symbole_chaine(sytrou), mi_symbole_indice_ch(comptrou, sytrou),
+               MI_TERMINAL_NORMAL);
+      Mit_Val vtrou = MI_NILV;
+      for (;;)
+        {
+          char* lintrou = readline(invitrou);
+          MI_DEBOPRINTF("trou %s%s: lintrou:%s",
+                        mi_symbole_chaine(sytrou), mi_symbole_indice_ch(comptrou, sytrou), lintrou);
+          if (!lintrou)
+            MI_FATALPRINTF ("lecture de trou %s%s échoue",
+                            mi_symbole_chaine(sytrou), mi_symbole_indice_ch(comptrou, sytrou));
+          int errt = setjmp(lectrous.mlt_lect->lec_jb);
+          char* fintrou = NULL;
+          if (!errt)
+            {
+              vtrou = mi_lire_expression(lectrous.mlt_lect, lintrou, &fintrou);
+              if (vtrou.miva_ptr != NULL && fintrou != NULL)
+                {
+                  lectrous.mlt_lect->lec_assoctrou = mi_assoc_mettre(lectrous.mlt_lect->lec_assoctrou, sytrou, vtrou);
+                  free (lintrou), lintrou = NULL;
+                  break;
+                }
+            }
+          else
+            {
+              printf("%serreur de lecture%s du trou#%d %s%s%s%s (pos#%zd): %s\n",
+                     MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL,
+                     ixt+1, MI_TERMINAL_ITALIQUE, mi_symbole_chaine(sytrou), mi_symbole_indice_ch(comptrou, sytrou), MI_TERMINAL_NORMAL,
+                     lectrous.mlt_lect->lec_errptr- lintrou, lectrous.mlt_lect->lec_errmsg);
+              free (lintrou), lintrou = NULL;
+            }
+        }
+    }
+  memcpy(&lec->lec_jb , &jborig, sizeof(jmp_buf));
+  printf("fin du remplissage des %d trous pour %s\n\n", nbtrous, invite);
+} /* fin mi_lire_trous */
 
 void mi_lire_expressions_en_boucle(void)
 {
+  using_history();
   printf("Entrez des expressions en boucle, et une ligne vide pour terminer...\n");
   int cnt=0;
   for (;;)
@@ -1177,7 +1260,20 @@ void mi_lire_expressions_en_boucle(void)
                    (lecteur.lec_errfin - lin),
                    MI_TERMINAL_ITALIQUE, lecteur.lec_errmsg, MI_TERMINAL_NORMAL);
           fflush(NULL);
+          add_history(lin);
+          continue;
         }
+      unsigned nbtrous = mi_assoc_compte(lecteur.lec_assoctrou);
+      lecteur.lec_pascreer = false;
+      if (nbtrous>0)
+        {
+          char promptrou[24];
+          snprintf(promptrou,sizeof(promptrou), "Exp#%d", cnt);
+          mi_lire_trous(&lecteur,promptrou);
+        }
+      lecteur.lec_pascreer = false;
+      int err2 = setjmp(lecteur.lec_jb);
+      MI_DEBOPRINTF("cnt#%d err2#%d", cnt, err2);
       MI_DEBOPRINTF("fin lin#%d=%s", cnt, lin);
     }
   printf("\n fin de lecture de %d expressions en boucle\n", cnt);
