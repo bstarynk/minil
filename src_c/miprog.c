@@ -19,6 +19,7 @@
 #include "minil.h"
 
 bool mi_deboguage;
+bool mi_faut_lire_en_boucle;
 
 enum
 {
@@ -29,6 +30,7 @@ enum
   xtraopt_message,
   xtraopt_radicaux,
   xtraopt_sansterminal,
+  xtraopt_lireboucle,
   xtraopt__fin
 };
 
@@ -45,6 +47,7 @@ const struct option minil_options[] =
   {"oublier", required_argument, NULL, 'O'},
   {"predefini", required_argument, NULL, xtraopt_predefini},
   {"sans-terminal", no_argument, NULL, xtraopt_sansterminal},
+  {"lire-boucle", no_argument, NULL, xtraopt_lireboucle},
   {"sauvegarde", required_argument, NULL, 'S'},
   {"symbole", required_argument, NULL, xtraopt_symbole},
   {"version", no_argument, NULL, 'V'},
@@ -73,6 +76,7 @@ mi_usage (const char *nomprog)
   printf (" --symbole <symbole> #créer un symbole normal\n");
   printf (" --sauvegarde | -S <repertoire> #sauvegarder l'état\n");
   printf (" --sans-terminal #la sortie n'est pas un terminal\n");
+  printf (" --lire-boucle #boucler en lecture d'expressions\n");
   printf (" --version | -V #donne la version\n");
 }
 
@@ -204,6 +208,9 @@ mi_arguments_programme (int argc, char **argv)
         case xtraopt_sansterminal:	// --sans-terminal
           mi_sur_terminal = false;
           break;
+        case xtraopt_lireboucle:
+          mi_faut_lire_en_boucle = true;
+          break;
         }
     }
 }				// fin de mi_arguments_programme
@@ -300,6 +307,14 @@ main (int argc, char **argv)
     {
       mi_charger_etat (".");
       mi_repcharge = ".";
+    }
+  if (mi_faut_lire_en_boucle)
+    {
+      if (!isatty(STDIN_FILENO))
+        printf("lecture en boucle sans terminal en entrée standard.\n");
+      else
+        printf("Lecture en boucle d'expressions.\n");
+      mi_lire_expressions_en_boucle();
     }
   if (mi_sauv)
     mi_sauvegarde_finir (mi_sauv);

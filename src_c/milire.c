@@ -487,7 +487,7 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
       char *findbl = NULL;
       long e = strtol (ps, &finent, 0);
       double d = strtod (ps, &findbl);
-      if (findbl > finent)
+      if (findbl > ps && findbl > finent)
         {
           if (pfin)
             *pfin = findbl;
@@ -694,11 +694,11 @@ mi_lire_terme (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
   assert (pfin != NULL);
   while (*ps && isspace (*ps))
     ps++;
-  char *debsom = ps;
+  char *debterm = ps;
   const char *fingch = NULL;
   Mit_Val vgch = mi_lire_primaire (lec, ps, &fingch);
   if (!fingch)
-    MI_ERREUR_LECTURE (lec, debsom, NULL,
+    MI_ERREUR_LECTURE (lec, debterm, NULL,
                        "erreur de lecture du membre gauche d'un terme");
   vterme = vgch;
   ps = (char *) fingch;
@@ -718,7 +718,7 @@ mi_lire_terme (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
           vdrt = mi_lire_primaire (lec, ps + 1, &findrt);
           if (!findrt)
             MI_ERREUR_LECTURE (lec, ps, NULL,
-                               "erreur de lecture du membre droit d'un produit");
+                               "erreur de lecture du membre droit d'un produit dans un terme");
           Mit_Symbole *sypro =	//
             (lec->lec_pascreer) ? NULL :
             mi_cloner_symbole (MI_PREDEFINI (produit));
@@ -791,6 +791,8 @@ mi_lire_terme (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
         }
       else			// impossible
         MI_FATALPRINTF ("caractère[s] impossible[s] %s dans terme", ps);
+      assert (findrt != NULL && findrt > ps);
+      ps = (char*)findrt;
     };
   return vterme;
 }				/* fin mi_lire_terme */
@@ -901,6 +903,8 @@ mi_lire_comparande (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
         }
       else			// impossible
         MI_FATALPRINTF ("caractère[s] impossible[s] %s dans comparande", ps);
+      assert (findrt != NULL && findrt > ps);
+      ps = findrt;
     };
   return vsom;
 }				/* fin mi_lire_comparande */
@@ -945,7 +949,10 @@ mi_lire_comparaison (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
   else if (*ps == '>')
     sycmp = MI_PREDEFINI (superieur), ps++;
   if (!sycmp)
-    return vgch;
+    {
+      *pfin = (char*)fingch;
+      return vgch;
+    }
   char *findrt = NULL;
   Mit_Val vdrt = mi_lire_comparande (lec, ps, &findrt);
   if (!findrt)
@@ -954,6 +961,7 @@ mi_lire_comparaison (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
   ps = (char *) findrt;
   Mit_Symbole *syrescomp =	//
     (lec->lec_pascreer) ? NULL : mi_cloner_symbole (sycmp);
+  *pfin = findrt;
   if (syrescomp)
     {
       Mit_Symbole *sygch = mi_symbole_expressif (vgch);
@@ -984,40 +992,44 @@ mi_lire_comparaison (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
     return MI_NILV;
 }
 
+
 Mit_Val
-mi_lire_conjonction (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
+mi_lire_disjonction (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
 {
   assert (lec && lec->lec_nmagiq == MI_LECTEUR_NMAGIQ);
   assert (ps != NULL);
   assert (pfin != NULL);
   while (*ps && isspace (*ps))
     ps++;
-  char *debconj = ps;
+  char *debdisj = ps;
   char *fingch = NULL;
   Mit_Val vgch = mi_lire_comparande (lec, ps, &fingch);
   if (!fingch)
-    MI_ERREUR_LECTURE (lec, debconj, NULL,
-                       "erreur de lecture du membre gauche d'une conjonction");
+    MI_ERREUR_LECTURE (lec, debdisj, NULL,
+                       "erreur de lecture du membre gauche d'une disjonction");
   ps = (char *) fingch;
   while (*ps && isspace (*ps))
     ps++;
-  if (strncmp (ps, "&&", 2)
-      || strncmp (ps, "\342\210\247" /*U+2227 LOGICAL AND ∧ */ , 3))
-    return vgch;
+  if (strncmp (ps, "||", 2)
+      || strncmp (ps, "\342\210\250" /*U+2228 LOGICAL OR ∨ */ , 3))
+    {
+      *pfin = (char*)fingch;
+      return vgch;
+    };
   int tailarg = 3;
   int nbarg = 1;
   const Mit_Symbole **tabarg = NULL;
-  Mit_Symbole *syconj = NULL;
+  Mit_Symbole *sydisj = NULL;
   if (!lec->lec_pascreer)
     {
-      syconj = mi_cloner_symbole (MI_PREDEFINI (conjonction));
+      sydisj = mi_cloner_symbole (MI_PREDEFINI (disjonction));
       mi_symbole_mettre_attribut
-      (syconj, MI_PREDEFINI (type),
-       MI_SYMBOLEV (MI_PREDEFINI (conjonction)));
+      (sydisj, MI_PREDEFINI (type),
+       MI_SYMBOLEV (MI_PREDEFINI (disjonction)));
       tabarg = calloc (tailarg, sizeof (Mit_Symbole *));
       if (!tabarg)
         MI_FATALPRINTF
-        ("impossible d'allouer %d arguments de conjonction (%s)", tailarg,
+        ("impossible d'allouer %d arguments de disjonction (%s)", tailarg,
          strerror (errno));
       Mit_Symbole *syxgch = mi_symbole_expressif (vgch);
       Mit_Symbole *sygch =	//
@@ -1029,7 +1041,7 @@ mi_lire_conjonction (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
           mi_symbole_mettre_attribut (sygch, MI_PREDEFINI (arg), vgch);
         }
       mi_symbole_mettre_attribut (sygch, MI_PREDEFINI (dans),
-                                  MI_SYMBOLEV (syconj));
+                                  MI_SYMBOLEV (sydisj));
       mi_symbole_mettre_attribut (sygch, MI_PREDEFINI (indice),
                                   MI_ENTIERV (mi_creer_entier (0)));
 
@@ -1040,8 +1052,8 @@ mi_lire_conjonction (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
     {
       while (*ps && isspace (*ps))
         ps++;
-      if (strncmp (ps, "&&", 2)
-          || strncmp (ps, "\342\210\247" /*U+2227 LOGICAL AND ∧ */ , 3))
+      if (strncmp (ps, "||", 2)
+          || strncmp (ps, "\342\210\250" /*U+2228 LOGICAL OR ∨ */ , 3))
         break;
       if (nbarg >= tailarg && !lec->lec_pascreer)
         {
@@ -1051,7 +1063,7 @@ mi_lire_conjonction (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
             calloc (nouvtailargs, sizeof (Mit_Symbole *));
           if (!nouvtabarg)
             MI_FATALPRINTF
-            ("impossible d'agrandir à %d arguments de conjonction (%s)",
+            ("impossible d'agrandir à %d arguments de disjonction (%s)",
              nouvtailargs, strerror (errno));
           memcpy (nouvtabarg, tabarg, nbarg * sizeof (Mit_Symbole *));
           free (tabarg), tabarg = nouvtabarg;
@@ -1059,16 +1071,16 @@ mi_lire_conjonction (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
         }
       if (!strncmp (ps, "&&", 2))
         ps += 2;
-      else if (!strncmp (ps, "\342\210\247" /*U+2227 LOGICAL AND ∧ */ , 3))
+      else if (!strncmp (ps,"\342\210\250" /*U+2228 LOGICAL OR ∨ */ , 3))
         ps += 3;
       else			//impossible
-        MI_FATALPRINTF ("corruption: mauvais operateur de conjonction %s",
+        MI_FATALPRINTF ("corruption: mauvais operateur de disjonction %s",
                         ps);
       char *finop = NULL;
       Mit_Val vop = mi_lire_comparande (lec, ps, &finop);
       if (!finop)
         MI_ERREUR_LECTURE (lec, ps, NULL,
-                           "erreur de lecture d'une conjonction");
+                           "erreur de lecture d'une disjonction");
       if (!lec->lec_pascreer)
         {
           Mit_Symbole *syxop = mi_symbole_expressif (vop);
@@ -1081,24 +1093,26 @@ mi_lire_conjonction (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
               mi_symbole_mettre_attribut (syop, MI_PREDEFINI (arg), vop);
             }
           mi_symbole_mettre_attribut (syop, MI_PREDEFINI (dans),
-                                      MI_SYMBOLEV (syconj));
+                                      MI_SYMBOLEV (sydisj));
           mi_symbole_mettre_attribut (syop, MI_PREDEFINI (indice),
                                       MI_ENTIERV (mi_creer_entier (nbarg)));
           vop = MI_SYMBOLEV (syop);
           tabarg[nbarg++] = syop;
         }
+      ps = finop;
     };
-  Mit_Val vconj = MI_NILV;
+  Mit_Val vdisj = MI_NILV;
   if (!lec->lec_pascreer)
     {
-      assert (syconj != NULL);
+      assert (sydisj != NULL);
       const Mit_Tuple *tupargs = mi_creer_tuple_symboles (nbarg, tabarg);
-      mi_symbole_mettre_attribut (syconj, MI_PREDEFINI (arg),
+      mi_symbole_mettre_attribut (sydisj, MI_PREDEFINI (arg),
                                   MI_TUPLEV (tupargs));
-      vconj = MI_SYMBOLEV (syconj);
+      vdisj = MI_SYMBOLEV (sydisj);
     }
-  return vconj;
-}				/* fin mi_lire_conjonction */
+  *pfin = ps;
+  return vdisj;
+}				/* fin mi_lire_disjonction */
 
 
 Mit_Val
@@ -1107,4 +1121,64 @@ mi_lire_expression (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
   assert (lec && lec->lec_nmagiq == MI_LECTEUR_NMAGIQ);
   assert (ps != NULL);
   assert (pfin != NULL);
+  return mi_lire_disjonction(lec,ps,pfin);
 }				/* fin mi_lire_expression */
+
+
+
+
+void mi_lire_expressions_en_boucle(void)
+{
+  printf("Entrez des expressions en boucle, et une ligne vide pour terminer...\n");
+  int cnt=0;
+  for (;;)
+    {
+      cnt++;
+      char promptx[32];
+      snprintf(promptx, sizeof(promptx), "%sEXP#%d:%s ", MI_TERMINAL_PALE, cnt, MI_TERMINAL_NORMAL);
+      char*lin = readline(promptx);
+      if (!lin || !lin[0]) break;
+      fflush(NULL);
+      MI_DEBOPRINTF("lin#%d=%s", cnt, lin);
+      struct Mi_Lecteur_st lecteur;
+      memset(&lecteur, 0, sizeof(lecteur));
+      lecteur.lec_nmagiq = MI_LECTEUR_NMAGIQ;
+      lecteur.lec_pascreer = true;
+      int err1 = setjmp(lecteur.lec_jb);
+      MI_DEBOPRINTF("cnt#%d err1#%d", cnt, err1);
+      if (!err1)
+        {
+          char*finexp = NULL;
+          Mit_Val vexp = mi_lire_expression(&lecteur,lin,&finexp);
+          char posfinx[16];
+          memset (posfinx, 0, sizeof(posfinx));
+          if (finexp)
+            {
+              while (isspace(*finexp)) finexp++;
+              snprintf(posfinx, sizeof(posfinx), "%d", (int)(finexp-lin));
+            };
+          MI_DEBOPRINTF("première passe finexp=%s=%s%s", finexp, finexp?"lin+":"*rien*", posfinx);
+        }
+      else   //err1>0
+        {
+          assert (lecteur.lec_errmsg != NULL);
+          assert (lecteur.lec_errptr != NULL);
+          if (lecteur.lec_errfin == NULL)
+            printf("%sERREUR%s /%d (pos#%d): %s%s%s\n",
+                   MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL,
+                   err1,
+                   (int)(lecteur.lec_errptr - lin),
+                   MI_TERMINAL_ITALIQUE, lecteur.lec_errmsg, MI_TERMINAL_NORMAL);
+          else
+            printf("%sERREUR%s /%d (pos#%zd-%zd): %s%s%s\n",
+                   MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL,
+                   err1,
+                   (lecteur.lec_errptr - lin),
+                   (lecteur.lec_errfin - lin),
+                   MI_TERMINAL_ITALIQUE, lecteur.lec_errmsg, MI_TERMINAL_NORMAL);
+          fflush(NULL);
+        }
+      MI_DEBOPRINTF("fin lin#%d=%s", cnt, lin);
+    }
+  printf("\n fin de lecture de %d expressions en boucle\n", cnt);
+} /* fin mi_lire_expressions_en_boucle */

@@ -631,6 +631,8 @@ mi_emettre_notice_gplv3 (FILE * fichier, const char *prefixe,
 struct Mi_Lecteur_st;
 Mit_Val mi_lire_expression (struct Mi_Lecteur_st *lec, char *ps, char **pfin);
 
+void mi_lire_expressions_en_boucle(void);
+
 extern bool mi_sur_terminal;
 // voir https://en.wikipedia.org/wiki/ANSI_escape_code
 #define MI_TERMINAL_GRAS (mi_sur_terminal?"\033[1m":"")

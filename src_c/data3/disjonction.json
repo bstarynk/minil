@@ -1,0 +1,14 @@
+{
+ "ContSymb": {
+  "symb": "disjonction"
+ },
+ "attrs": [
+  {
+   "at": {
+    "symb": "commentaire"
+   },
+   "va": "disjonction variaire pour op\u00E9rateur \u2228"
+  }
+ ],
+ "comps": null
+}
