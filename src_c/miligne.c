@@ -29,7 +29,7 @@ struct Mi_LecTrous_st
   const Mit_Symbole**mlt_tabtrous;
 };
 
-bool mi_ajouter_trou_lu(const Mit_Symbole*sy, const Mit_Val va, void*client)
+bool mi_ajouter_trou_lu(const Mit_Symbole*sy, const Mit_Val va __attribute__((unused)), void*client)
 {
   struct Mi_LecTrous_st*ltr = client;
   assert (ltr != NULL && ltr->mlt_nmagiq == MI_LECTROUS_NMAGIQ);
@@ -133,6 +133,7 @@ void mi_lire_expressions_en_boucle(void)
           char*finexp = NULL;
           Mit_Val vexp = mi_lire_expression(&lecteur,lin,&finexp);
           char posfinx[16];
+          assert (vexp.miva_ptr == NULL);// première passe
           memset (posfinx, 0, sizeof(posfinx));
           if (finexp)
             {
@@ -178,6 +179,13 @@ void mi_lire_expressions_en_boucle(void)
         {
           char*finexp = NULL;
           Mit_Val vexp = mi_lire_expression(&lecteur,lin,&finexp);
+          printf("expression lue #%d:\n", cnt);
+          if (mi_vtype(vexp) == MiTy_Symbole)
+            mi_afficher_contenu_symbole(stdout, mi_en_symbole(vexp));
+          else
+            mi_afficher_valeur(stdout, vexp);
+          putchar('\n');
+          fflush(NULL);
         }
       else
         {
