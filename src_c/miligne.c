@@ -113,6 +113,8 @@ void mi_lire_expressions_en_boucle(void)
   int numexpcorr=0;		/* le numéro de la dernière expression correcte */
   for (;;)
     {
+      int err1 = 0;
+      int err2 = 0;
       cnt++;
       char promptx[32];
       snprintf(promptx, sizeof(promptx), "%sEXP#%d:%s ",
@@ -122,48 +124,98 @@ void mi_lire_expressions_en_boucle(void)
       fflush(NULL);
       MI_DEBOPRINTF("lin#%d=%s numexpcorr=%d wherehist=%d",
                     cnt, lin, numexpcorr, where_history());
+      volatile bool repeterlect = false;
       struct Mi_Lecteur_st lecteur;
       memset(&lecteur, 0, sizeof(lecteur));
-      lecteur.lec_nmagiq = MI_LECTEUR_NMAGIQ;
-      lecteur.lec_pascreer = true;
-      int err1 = setjmp(lecteur.lec_jb);
-      MI_DEBOPRINTF("cnt#%d err1#%d", cnt, err1);
-      if (!err1)
+      do
         {
-          char*finexp = NULL;
-          Mit_Val vexp = mi_lire_expression(&lecteur,lin,&finexp);
-          char posfinx[16];
-          assert (vexp.miva_ptr == NULL);// première passe
-          memset (posfinx, 0, sizeof(posfinx));
-          if (finexp)
+          memset(&lecteur, 0, sizeof(lecteur));
+          repeterlect = false;
+          lecteur.lec_nmagiq = MI_LECTEUR_NMAGIQ;
+          lecteur.lec_pascreer = true;
+          err1 = setjmp(lecteur.lec_jb);
+          MI_DEBOPRINTF("cnt#%d err1#%d", cnt, err1);
+          if (!err1)
             {
-              while (isspace(*finexp)) finexp++;
-              snprintf(posfinx, sizeof(posfinx), "%d", (int)(finexp-lin));
-            };
-          MI_DEBOPRINTF("première passe finexp=%s=%s%s", finexp, finexp?"lin+":"*rien*", posfinx);
-          numexpcorr = cnt;
+              char*finexp = NULL;
+              MI_DEBOPRINTF("cnt#%d lirexp lin'%s'", cnt, lin);
+              Mit_Val vexp = mi_lire_expression(&lecteur,lin,&finexp);
+              char posfinx[16];
+              assert (vexp.miva_ptr == NULL);// première passe
+              memset (posfinx, 0, sizeof(posfinx));
+              if (finexp)
+                {
+                  while (isspace(*finexp)) finexp++;
+                  snprintf(posfinx, sizeof(posfinx), "%d", (int)(finexp-lin));
+                };
+              MI_DEBOPRINTF("première passe finexp=%s=%s%s", finexp, finexp?"lin+":"*rien*", posfinx);
+              numexpcorr = cnt;
+            }
+          else   //err1>0
+            {
+              assert (lecteur.lec_errmsg != NULL);
+              assert (lecteur.lec_errptr != NULL);
+              if (lecteur.lec_errfin == NULL)
+                printf("%sERREUR%s /%d (pos#%d): %s%s%s\n",
+                       MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL,
+                       err1,
+                       (int)(lecteur.lec_errptr - lin),
+                       MI_TERMINAL_ITALIQUE, lecteur.lec_errmsg, MI_TERMINAL_NORMAL);
+              else if (lecteur.lec_errmsg == mi_lecture_symbole_absent)
+                {
+                  int lgsym = (int)(lecteur.lec_errfin - lecteur.lec_errptr);
+                  char* nouvnom = malloc(lgsym+1);
+                  if (!nouvnom)
+                    MI_FATALPRINTF("impossible d'allouer mémoire pour un nouveau nom (%d c) - %s",
+                                   lgsym, strerror(errno));
+                  memset(nouvnom, 0, lgsym+1);
+                  strncpy(nouvnom,  lecteur.lec_errptr, lgsym);
+                  printf("%sERREUR%s /%d (pos#%zd-%zd): %s%s%s '%s'\n",
+                         MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL,
+                         err1,
+                         (lecteur.lec_errptr - lin),
+                         (lecteur.lec_errfin - lin),
+                         MI_TERMINAL_ITALIQUE, lecteur.lec_errmsg, MI_TERMINAL_NORMAL,
+                         nouvnom);
+                  if (mi_nom_licite_chaine(nouvnom))
+                    {
+                      printf("Entrez un commentaire pour créer le symbole %s%s%s, ou rien pour recommencer...\n",
+                             MI_TERMINAL_ITALIQUE, nouvnom, MI_TERMINAL_NORMAL);
+                      char invitcom[24];
+                      memset (invitcom, 0, sizeof(invitcom));
+                      if (lgsym < (int) sizeof(invitcom)-8)
+                        snprintf(invitcom, sizeof(invitcom), "%s? ", nouvnom);
+                      else
+                        snprintf(invitcom, sizeof(invitcom), "%*s...? ", (int)sizeof(invitcom)-8, nouvnom);
+                      char*licom = readline(invitcom);
+                      if (licom && licom[0])
+                        {
+                          Mit_Symbole*nouvsymb = mi_creer_symbole_chaine(nouvnom, 0);
+                          if (nouvsymb)
+                            {
+                              nouvsymb->mi_attrs =
+                                mi_assoc_mettre (nouvsymb->mi_attrs, MI_PREDEFINI (commentaire),
+                                                 MI_CHAINEV (mi_creer_chaine (licom)));
+                              repeterlect = true;
+                              printf("Nouveau symbole %s%s%s créé!\n", MI_TERMINAL_GRAS, nouvnom, MI_TERMINAL_NORMAL);
+                            }
+                        }
+                      free (nouvnom), nouvnom=NULL;
+                    }
+                }
+              else
+                printf("%sERREUR%s /%d (pos#%zd-%zd): %s%s%s\n",
+                       MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL,
+                       err1,
+                       (lecteur.lec_errptr - lin),
+                       (lecteur.lec_errfin - lin),
+                       MI_TERMINAL_ITALIQUE, lecteur.lec_errmsg, MI_TERMINAL_NORMAL);
+              fflush(NULL);
+              add_history(lin);
+            }
         }
-      else   //err1>0
-        {
-          assert (lecteur.lec_errmsg != NULL);
-          assert (lecteur.lec_errptr != NULL);
-          if (lecteur.lec_errfin == NULL)
-            printf("%sERREUR%s /%d (pos#%d): %s%s%s\n",
-                   MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL,
-                   err1,
-                   (int)(lecteur.lec_errptr - lin),
-                   MI_TERMINAL_ITALIQUE, lecteur.lec_errmsg, MI_TERMINAL_NORMAL);
-          else
-            printf("%sERREUR%s /%d (pos#%zd-%zd): %s%s%s\n",
-                   MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL,
-                   err1,
-                   (lecteur.lec_errptr - lin),
-                   (lecteur.lec_errfin - lin),
-                   MI_TERMINAL_ITALIQUE, lecteur.lec_errmsg, MI_TERMINAL_NORMAL);
-          fflush(NULL);
-          add_history(lin);
-          continue;
-        }
+      while(repeterlect);
+      if (err1>0) continue;
       unsigned nbtrous = mi_assoc_compte(lecteur.lec_assoctrou);
       lecteur.lec_pascreer = false;
       if (nbtrous>0)
@@ -173,7 +225,7 @@ void mi_lire_expressions_en_boucle(void)
           mi_lire_trous(&lecteur,promptrou);
         }
       lecteur.lec_pascreer = false;
-      int err2 = setjmp(lecteur.lec_jb);
+      err2 = setjmp(lecteur.lec_jb);
       MI_DEBOPRINTF("cnt#%d err2#%d", cnt, err2);
       if (!err2)
         {
