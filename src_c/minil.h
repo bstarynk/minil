@@ -629,7 +629,29 @@ mi_emettre_notice_gplv3 (FILE * fichier, const char *prefixe,
                          const char *suffixe, const char *nomfich);
 
 
-struct Mi_Lecteur_st;
+#define MI_LECTEUR_NMAGIQ 345961075	/*0x149ef273 */
+extern const char mi_lecture_symbole_absent[];
+
+struct Mi_Lecteur_st
+{
+  unsigned lec_nmagiq;		/* toujours MI_LECTEUR_NMAGIQ */
+  bool lec_pascreer;		/* vrai si on veut lire sans allocation */
+  const char *lec_errptr;	/* en erreur, le pointer courant */
+  const char *lec_errfin;	/* en erreur, le pointer finissant le mot, etc.. */
+  const char *lec_errmsg;	/* en erreur, un message */
+  jmp_buf lec_jb;		/* pour sortir en erreur via longjmp */
+  struct Mi_Assoc_st *lec_assoctrou;	/* l'association des "trous" $nom */
+};
+#define MI_ERREUR_LECTURE(Lec,Ptr,Fin,Msg) do {		\
+    struct Mi_Lecteur_st*_lec = (Lec);			\
+    assert (_lec != NULL				\
+	    && _lec->lec_nmagiq == MI_LECTEUR_NMAGIQ);	\
+    _lec->lec_errptr = (Ptr);				\
+    _lec->lec_errfin = (Fin);				\
+    _lec->lec_errmsg = (Msg);				\
+    longjmp(_lec->lec_jb, __LINE__); } while(0)
+
+
 Mit_Val mi_lire_expression (struct Mi_Lecteur_st *lec, char *ps, char **pfin);
 
 void mi_lire_expressions_en_boucle(void);
