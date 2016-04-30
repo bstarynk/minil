@@ -251,6 +251,7 @@ mi_lire_symbole (char *ps, char **pfin)
   char *pblanc = NULL;		/* le blanc souligné avant indice */
   char *pfind = NULL;		/* la fin de l'indice */
   unsigned ind = 0;
+  char finrad = 0;
   while (isalnum (*ps))
     ps++;
   pfinrad = ps;
@@ -260,6 +261,11 @@ mi_lire_symbole (char *ps, char **pfin)
       ind = (unsigned) strtol (ps + 1, &pfind, 10);
       *pblanc = (char) 0;
     }
+  else
+    {
+      finrad = (*pfinrad);
+      *pfinrad = (char)0;
+    };
   Mit_Symbole *sy = mi_trouver_symbole_chaine (pdebsymb, ind);
   if (pblanc)
     {
@@ -267,9 +273,13 @@ mi_lire_symbole (char *ps, char **pfin)
       *pfin = pfind;
     }
   else
-    *pfin = pfinrad;
+    {
+      *pfinrad = finrad;
+      *pfin = pfinrad;
+    }
   return sy;
 }				/* fin mi_lire_symbole */
+
 
 // Etant donné une valeur, teste si c'est une expression propre, c.a.d. un
 // symbole dont le type est expressif, renvoie alors le symbole
