@@ -105,9 +105,22 @@ void mi_lire_trous(struct Mi_Lecteur_st*lec, const char*invite)
 } /* fin mi_lire_trous */
 
 
+char** mi_tenter_completion(const char*txt, int debc, int finc)
+{
+  MI_DEBOPRINTF("txt='%s' debc=%d finc=%d mot='%*s'",
+                txt, debc, finc, (finc>debc)?(finc-debc):0, txt);
+  char*mot = NULL;
+  if (finc>debc)
+    asprintf(&mot, "%*s", finc-debc, txt);
+  MI_DEBOPRINTF("mot='%s'", mot);
+#warning mi_tenter_completion incomplet
+  return NULL;
+}
+
 void mi_lire_expressions_en_boucle(void)
 {
   using_history();
+  rl_attempted_completion_function = mi_tenter_completion;
   printf("Entrez des expressions en boucle, et une ligne vide pour terminer...\n");
   int cnt=0;
   int numexpcorr=0;		/* le numéro de la dernière expression correcte */
@@ -212,6 +225,7 @@ void mi_lire_expressions_en_boucle(void)
                        MI_TERMINAL_ITALIQUE, lecteur.lec_errmsg, MI_TERMINAL_NORMAL);
               fflush(NULL);
               add_history(lin);
+              MI_DEBOPRINTF("err1=%d cnt=%d wherehist=%d lin='%s'", err1, cnt, where_history(), lin);
             }
         }
       while(repeterlect);
@@ -231,6 +245,8 @@ void mi_lire_expressions_en_boucle(void)
         {
           char*finexp = NULL;
           Mit_Val vexp = mi_lire_expression(&lecteur,lin,&finexp);
+          add_history(lin);
+          MI_DEBOPRINTF("ok cnt=%d wherehist=%d lin='%s'", cnt, where_history(), lin);
           printf("expression lue #%d:\n", cnt);
           if (mi_vtype(vexp) == MiTy_Symbole)
             mi_afficher_contenu_symbole(stdout, mi_en_symbole(vexp));

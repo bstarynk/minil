@@ -485,6 +485,11 @@ void mi_iterer_symbole_primaire (mi_itersymb_sigt * f, void *client);
 void mi_iterer_symbole_nomme (const char *ch, mi_itersymb_sigt * f,
                               void *client);
 
+Mit_Symbole*mi_radical_symbole_primaire(const struct MiSt_Radical_st*rad);
+const Mit_Chaine*mi_radical_nom(const struct MiSt_Radical_st*rad);
+void mi_iterer_symbole_radical (const struct MiSt_Radical_st*, mi_itersymb_sigt * f,
+                                void *client);
+
 const char *mi_symbole_chaine (const Mit_Symbole *sy);
 
 const Mit_Chaine *mi_symbole_nom (const Mit_Symbole *sy);

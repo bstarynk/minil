@@ -601,6 +601,19 @@ mi_cmp_symboleptr (const void *p1, const void *p2)
 }
 
 
+Mit_Symbole*mi_radical_symbole_primaire(const struct MiSt_Radical_st*rad)
+{
+  if (!rad) return NULL;
+  assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
+  return rad->urad_val.vrad_symbprim;
+} /* fin mi_radical_symbole_primaire */
+
+const Mit_Chaine*mi_radical_nom(const struct MiSt_Radical_st*rad)
+{
+  if (!rad) return NULL;
+  assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
+  return rad->urad_nom;
+} /* fin mi_radical_nom */
 
 typedef bool mi_iterradical_sigt (struct MiSt_Radical_st *rad, void *client);
 static struct MiSt_Radical_st *
@@ -656,6 +669,28 @@ mi_iterer_symbole_primaire (mi_itersymb_sigt * f, void *client)
                         &prp);
 }				/* fin mi_iterer_symbole_primaire */
 
+
+void mi_iterer_symbole_radical (const struct MiSt_Radical_st*rad, mi_itersymb_sigt * f,
+                                void *client)
+{
+  if (!rad || !f) return;
+  assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
+  if ((*f)(rad->urad_val.vrad_symbprim, client))
+    return;
+  unsigned t = rad->urad_val.vrad_tailsec;
+  if (t > 0)
+    {
+      assert (rad->urad_val.vrad_tabsecsym != NULL);
+      for (unsigned ix = 0; ix < t; ix++)
+        {
+          Mit_Symbole *sy = rad->urad_val.vrad_tabsecsym[ix];
+          if (!sy || sy == MI_TROU_SYMBOLE)
+            continue;
+          if ((*f) (sy, client))
+            return;
+        }
+    }
+} /* fin mi_iterer_symbole_radical */
 
 static bool
 mi_parcourir_radical_nomme (struct MiSt_Radical_st *rad, void *client)
