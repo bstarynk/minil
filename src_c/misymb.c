@@ -206,11 +206,30 @@ mi_trouver_radical_apres_ou_egal(const char*ch)
             }
           else
             {
-              MI_DEBOPRINTF("ch=%s rad@%p:%s fini", ch, rad, rad->urad_nom->mi_car);
+              MI_DEBOPRINTF("ch=%s rad@%p:%s feuille", ch, rad, rad->urad_nom->mi_car);
+              while (rad->urad_parent != NULL)
+                {
+                  struct MiSt_Radical_st *parad = rad->urad_parent;
+                  int pacmp = strcmp (ch, parad->urad_nom->mi_car);
+                  MI_DEBOPRINTF("ch=%s rad@%p:%s parad@%p:%s pacmp=%d",
+                                ch,
+                                rad,  rad->urad_nom->mi_car,
+                                parad,  parad->urad_nom->mi_car, pacmp);
+                  if (pacmp<0)
+                    {
+                      MI_DEBOPRINTF("ch=%s donne parad@%p:%s", ch,
+                                    parad,  parad->urad_nom->mi_car);
+                      return parad;
+                    }
+                  rad = parad;
+                }
+              MI_DEBOPRINTF("ch=%s rad@%p:%s finfeuille", ch, rad, rad->urad_nom->mi_car);
+
               return rad;
             }
         }
     }
+  return NULL;
 } /* fin mi_trouver_radical_apres_ou_egal */
 
 

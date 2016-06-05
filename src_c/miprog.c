@@ -215,14 +215,14 @@ mi_arguments_programme (int argc, char **argv)
               struct MiSt_Radical_st*rad
               = mi_trouver_radical_apres_ou_egal(optarg);
               if (rad)
-                printf("Après ou égal '%s%s%s': %s%s%s",
+                printf("Après ou égal '%s%s%s': %s%s%s\n",
                        MI_TERMINAL_ITALIQUE, optarg,
                        MI_TERMINAL_NORMAL,
                        MI_TERMINAL_GRAS,
                        mi_val_chaine(MI_CHAINEV(mi_radical_nom(rad))),
                        MI_TERMINAL_NORMAL);
               else
-                printf("%sRien%s après ou égal '%s%s%s'",
+                printf("%sRien%s après ou égal '%s%s%s'\n",
                        MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL,
                        MI_TERMINAL_ITALIQUE, optarg,
                        MI_TERMINAL_NORMAL);
