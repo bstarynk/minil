@@ -170,6 +170,51 @@ mi_trouver_radical_chaine (const char *ch)
   return NULL;
 }				/* fin mi_trouver_radical_chaine */
 
+struct MiSt_Radical_st *
+mi_trouver_radical_apres_ou_egal(const char*ch)
+{
+  if (!ch) return NULL;
+  MI_DEBOPRINTF("ch=%s", ch);
+  struct MiSt_Radical_st *rad = mi_racine_radical;
+  while (rad)
+    {
+      assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
+      assert (rad->urad_nom && rad->urad_nom->mi_type == MiTy_Chaine);
+      int cmp = strcmp (ch, rad->urad_nom->mi_car);
+      MI_DEBOPRINTF("ch=%s rad@%p:%s cmp=%d", ch,
+                    rad, rad->urad_nom->mi_car, cmp);
+      if (cmp == 0) return rad;
+      if (cmp < 0)
+        {
+          if (rad->urad_gauche != NULL)
+            {
+              rad = rad->urad_gauche;
+              continue;
+            }
+          else
+            {
+              MI_DEBOPRINTF("ch=%s rad@%p:%s fini", ch, rad, rad->urad_nom->mi_car);
+              return rad;
+            }
+        }
+      else   // cmp > 0
+        {
+          if (rad->urad_droit != NULL)
+            {
+              rad = rad->urad_droit;
+              continue;
+            }
+          else
+            {
+              MI_DEBOPRINTF("ch=%s rad@%p:%s fini", ch, rad, rad->urad_nom->mi_car);
+              return rad;
+            }
+        }
+    }
+} /* fin mi_trouver_radical_apres_ou_egal */
+
+
+
 static inline bool
 mi_radical_rouge (const struct MiSt_Radical_st *rad)
 {

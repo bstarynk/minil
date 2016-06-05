@@ -31,6 +31,7 @@ enum
   xtraopt_radicaux,
   xtraopt_sansterminal,
   xtraopt_lireboucle,
+  xtraopt_apresegal,
   xtraopt__fin
 };
 
@@ -50,6 +51,7 @@ const struct option minil_options[] =
   {"lire-boucle", no_argument, NULL, xtraopt_lireboucle},
   {"sauvegarde", required_argument, NULL, 'S'},
   {"symbole", required_argument, NULL, xtraopt_symbole},
+  {"apres-egal", required_argument, NULL, xtraopt_apresegal},
   {"version", no_argument, NULL, 'V'},
   {NULL, 0, NULL, 0}
 };
@@ -77,6 +79,7 @@ mi_usage (const char *nomprog)
   printf (" --sauvegarde | -S <repertoire> #sauvegarder l'état\n");
   printf (" --sans-terminal #la sortie n'est pas un terminal\n");
   printf (" --lire-boucle #boucler en lecture d'expressions\n");
+  printf (" --apres-egal <nom> #trouver le symbole après égal\n");
   printf (" --version | -V #donne la version\n");
 }
 
@@ -204,6 +207,26 @@ mi_arguments_programme (int argc, char **argv)
           break;
         case xtraopt_radicaux:	// --radicaux
           mi_afficher_radicaux ("**");
+          break;
+        case xtraopt_apresegal: // --apres-egal <nom>
+          if (optarg)
+            {
+              MI_DEBOPRINTF("apresegal %s", optarg);
+              struct MiSt_Radical_st*rad
+              = mi_trouver_radical_apres_ou_egal(optarg);
+              if (rad)
+                printf("Après ou égal '%s%s%s': %s%s%s",
+                       MI_TERMINAL_ITALIQUE, optarg,
+                       MI_TERMINAL_NORMAL,
+                       MI_TERMINAL_GRAS,
+                       mi_val_chaine(MI_CHAINEV(mi_radical_nom(rad))),
+                       MI_TERMINAL_NORMAL);
+              else
+                printf("%sRien%s après ou égal '%s%s%s'",
+                       MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL,
+                       MI_TERMINAL_ITALIQUE, optarg,
+                       MI_TERMINAL_NORMAL);
+            }
           break;
         case xtraopt_sansterminal:	// --sans-terminal
           mi_sur_terminal = false;

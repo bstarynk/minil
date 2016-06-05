@@ -467,7 +467,7 @@ Mit_Symbole *mi_trouver_symbole_chaine (const char *ch, unsigned ind);
 // éventuel indice commençant par un blanc souligné
 // si pfin est non nul il est mis au caractère suivant le nom
 Mit_Symbole *mi_trouver_symbole (const char *ch, const char **pfin);
-// Créer pi trouver un symbole de radical et indice donnés
+// Créer ou trouver un symbole de radical et indice donnés
 Mit_Symbole* mi_creer_symbole_radical(struct MiSt_Radical_st*rad, unsigned ind);
 // Créer (ou trouver, s'il existe déjà) un symbole de nom et indice donnés
 Mit_Symbole *mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind);
@@ -489,6 +489,8 @@ Mit_Symbole*mi_radical_symbole_primaire(const struct MiSt_Radical_st*rad);
 const Mit_Chaine*mi_radical_nom(const struct MiSt_Radical_st*rad);
 void mi_iterer_symbole_radical (const struct MiSt_Radical_st*, mi_itersymb_sigt * f,
                                 void *client);
+
+struct MiSt_Radical_st *mi_trouver_radical_apres_ou_egal(const char*ch);
 
 const char *mi_symbole_chaine (const Mit_Symbole *sy);
 
