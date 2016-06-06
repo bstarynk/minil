@@ -491,7 +491,9 @@ void mi_iterer_symbole_radical (const struct MiSt_Radical_st*, mi_itersymb_sigt 
                                 void *client);
 
 struct MiSt_Radical_st *mi_trouver_radical_apres_ou_egal(const char*ch);
+struct MiSt_Radical_st *mi_trouver_radical_apres(const char*ch);
 struct MiSt_Radical_st *mi_trouver_radical_avant_ou_egal(const char*ch);
+struct MiSt_Radical_st *mi_trouver_radical_avant(const char*ch);
 
 const char *mi_symbole_chaine (const Mit_Symbole *sy);
 

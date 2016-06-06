@@ -113,8 +113,42 @@ char** mi_tenter_completion(const char*txt, int debc, int finc)
   if (finc>debc)
     asprintf(&mot, "%*s", finc-debc, txt);
   MI_DEBOPRINTF("mot='%s'", mot);
-#warning mi_tenter_completion incomplet
-  return NULL;
+  unsigned lgmot = strlen(mot);
+  unsigned taille = 0;
+  unsigned nbcompl = 0;
+  char**vec = calloc(taille, sizeof(char*));
+  if (!vec)
+    MI_FATALPRINTF("impossible d'allouer la completion de taille %d",
+                   taille);
+  const char*nomrad = NULL;
+  for (struct MiSt_Radical_st *rad = mi_trouver_radical_apres_ou_egal(mot);
+       rad != NULL;
+       rad = mi_trouver_radical_apres(nomrad))
+    {
+      nomrad = mi_val_chaine(MI_CHAINEV(mi_radical_nom(rad)));
+      if (nbcompl >= taille)
+        {
+          unsigned nouvtaille = mi_nombre_premier_apres(5*nbcompl/4+10);
+          char**nouvec = calloc(nouvtaille, sizeof(char*));
+          if (!nouvec)
+            MI_FATALPRINTF("impossible d'agrandir la completion de taille %d",
+                           nouvtaille);
+          memcpy (nouvec, vec, nbcompl*sizeof(char*));
+          free (vec);
+          vec = nouvec;
+          taille = nouvtaille;
+        }
+      if (!strncpy(nomrad, mot, lgmot))
+        {
+          vec[nbcompl] = nomrad;
+          MI_DEBOPRINTF("vec[%d]=%s", nbcompl, vec[nbcompl]);
+          nbcompl++;
+        }
+      else
+        break;
+    }
+  MI_DEBOPRINTF("nbcompl=%d vec@%p", nbcompl, vec);
+  return vec;
 }
 
 void mi_lire_expressions_en_boucle(void)
