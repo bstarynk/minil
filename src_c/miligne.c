@@ -105,13 +105,16 @@ void mi_lire_trous(struct Mi_Lecteur_st*lec, const char*invite)
 } /* fin mi_lire_trous */
 
 
+// Pour readline.  Doit renvoyer un tableau dynamiquement alloué de
+// chaînes dynamiquement alloué, ou bien NULL en échec.
 char** mi_tenter_completion(const char*txt, int debc, int finc)
 {
   MI_DEBOPRINTF("txt='%s' debc=%d finc=%d mot='%*s'",
                 txt, debc, finc, (finc>debc)?(finc-debc):0, txt);
   char*mot = NULL;
   if (finc>debc)
-    asprintf(&mot, "%*s", finc-debc, txt);
+    if (asprintf(&mot, "%*s", finc-debc, txt)<0)
+      MI_FATALPRINTF("impossible de dupliquer le mot '%*s'",(finc-debc), txt);
   MI_DEBOPRINTF("mot='%s'", mot);
   unsigned lgmot = strlen(mot);
   unsigned taille = 0;
@@ -122,13 +125,14 @@ char** mi_tenter_completion(const char*txt, int debc, int finc)
                    taille);
   const char*nomrad = NULL;
   for (struct MiSt_Radical_st *rad = mi_trouver_radical_apres_ou_egal(mot);
-       rad != NULL;
+       rad != NULL
+       && (nomrad = mi_val_chaine(MI_CHAINEV(mi_radical_nom(rad))))
+       != NULL;
        rad = mi_trouver_radical_apres(nomrad))
     {
-      nomrad = mi_val_chaine(MI_CHAINEV(mi_radical_nom(rad)));
-      if (nbcompl >= taille)
+      if (nbcompl + 1 >= taille)
         {
-          unsigned nouvtaille = mi_nombre_premier_apres(5*nbcompl/4+10);
+          unsigned nouvtaille = mi_nombre_premier_apres(5*nbcompl/4+11);
           char**nouvec = calloc(nouvtaille, sizeof(char*));
           if (!nouvec)
             MI_FATALPRINTF("impossible d'agrandir la completion de taille %d",
@@ -138,9 +142,13 @@ char** mi_tenter_completion(const char*txt, int debc, int finc)
           vec = nouvec;
           taille = nouvtaille;
         }
-      if (!strncpy(nomrad, mot, lgmot))
+      if (!strncmp(nomrad, mot, lgmot))
         {
-          vec[nbcompl] = nomrad;
+          char*dupnomrad = strdup(nomrad);
+          if (!dupnomrad)
+            MI_FATALPRINTF("impossible de dupliquer '%s' (%s)",
+                           nomrad, strerror(errno));
+          vec[nbcompl] = dupnomrad;
           MI_DEBOPRINTF("vec[%d]=%s", nbcompl, vec[nbcompl]);
           nbcompl++;
         }
@@ -148,8 +156,11 @@ char** mi_tenter_completion(const char*txt, int debc, int finc)
         break;
     }
   MI_DEBOPRINTF("nbcompl=%d vec@%p", nbcompl, vec);
+  if (!nbcompl)
+    free (vec), vec= NULL;
   return vec;
-}
+} /* fin  mi_tenter_completion */
+
 
 void mi_lire_expressions_en_boucle(void)
 {

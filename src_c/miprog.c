@@ -32,6 +32,9 @@ enum
   xtraopt_sansterminal,
   xtraopt_lireboucle,
   xtraopt_apresegal,
+  xtraopt_apres,
+  xtraopt_avantegal,
+  xtraopt_avant,
   xtraopt__fin
 };
 
@@ -52,6 +55,9 @@ const struct option minil_options[] =
   {"sauvegarde", required_argument, NULL, 'S'},
   {"symbole", required_argument, NULL, xtraopt_symbole},
   {"apres-egal", required_argument, NULL, xtraopt_apresegal},
+  {"apres", required_argument, NULL, xtraopt_apres},
+  {"avant-egal", required_argument, NULL, xtraopt_avantegal},
+  {"avant", required_argument, NULL, xtraopt_avant},
   {"version", no_argument, NULL, 'V'},
   {NULL, 0, NULL, 0}
 };
@@ -79,7 +85,10 @@ mi_usage (const char *nomprog)
   printf (" --sauvegarde | -S <repertoire> #sauvegarder l'état\n");
   printf (" --sans-terminal #la sortie n'est pas un terminal\n");
   printf (" --lire-boucle #boucler en lecture d'expressions\n");
-  printf (" --apres-egal <nom> #trouver le symbole après égal\n");
+  printf (" --apres-egal <nom> #trouver le symbole après ou égal au <nom>\n");
+  printf (" --apres <nom> #trouver le symbole après <nom>\n");
+  printf (" --avant-egal <nom> #trouver le symbole avant ou égal au <nom>\n");
+  printf (" --avant <nom> #trouver le symbole avant <nom>\n");
   printf (" --version | -V #donne la version\n");
 }
 
@@ -223,6 +232,66 @@ mi_arguments_programme (int argc, char **argv)
                        MI_TERMINAL_NORMAL);
               else
                 printf("%sRien%s après ou égal '%s%s%s'\n",
+                       MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL,
+                       MI_TERMINAL_ITALIQUE, optarg,
+                       MI_TERMINAL_NORMAL);
+            }
+          break;
+        case xtraopt_apres: // --apres <nom>
+          if (optarg)
+            {
+              MI_DEBOPRINTF("apres %s", optarg);
+              struct MiSt_Radical_st*rad
+              = mi_trouver_radical_apres(optarg);
+              if (rad)
+                printf("Après '%s%s%s': %s%s%s\n",
+                       MI_TERMINAL_ITALIQUE, optarg,
+                       MI_TERMINAL_NORMAL,
+                       MI_TERMINAL_GRAS,
+                       mi_val_chaine(MI_CHAINEV(mi_radical_nom(rad))),
+                       MI_TERMINAL_NORMAL);
+              else
+                printf("%sRien%s après '%s%s%s'\n",
+                       MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL,
+                       MI_TERMINAL_ITALIQUE, optarg,
+                       MI_TERMINAL_NORMAL);
+            }
+          break;
+        case xtraopt_avantegal: // --avant-egal <nom>
+          if (optarg)
+            {
+              MI_DEBOPRINTF("avantegal %s", optarg);
+              struct MiSt_Radical_st*rad
+              = mi_trouver_radical_avant_ou_egal(optarg);
+              if (rad)
+                printf("Avant ou égal '%s%s%s': %s%s%s\n",
+                       MI_TERMINAL_ITALIQUE, optarg,
+                       MI_TERMINAL_NORMAL,
+                       MI_TERMINAL_GRAS,
+                       mi_val_chaine(MI_CHAINEV(mi_radical_nom(rad))),
+                       MI_TERMINAL_NORMAL);
+              else
+                printf("%sRien%s avant ou égal '%s%s%s'\n",
+                       MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL,
+                       MI_TERMINAL_ITALIQUE, optarg,
+                       MI_TERMINAL_NORMAL);
+            }
+          break;
+        case xtraopt_avant: // --avant <nom>
+          if (optarg)
+            {
+              MI_DEBOPRINTF("avant %s", optarg);
+              struct MiSt_Radical_st*rad
+              = mi_trouver_radical_avant(optarg);
+              if (rad)
+                printf("Avant '%s%s%s': %s%s%s\n",
+                       MI_TERMINAL_ITALIQUE, optarg,
+                       MI_TERMINAL_NORMAL,
+                       MI_TERMINAL_GRAS,
+                       mi_val_chaine(MI_CHAINEV(mi_radical_nom(rad))),
+                       MI_TERMINAL_NORMAL);
+              else
+                printf("%sRien%s avant '%s%s%s'\n",
                        MI_TERMINAL_GRAS, MI_TERMINAL_NORMAL,
                        MI_TERMINAL_ITALIQUE, optarg,
                        MI_TERMINAL_NORMAL);
