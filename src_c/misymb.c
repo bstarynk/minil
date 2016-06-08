@@ -172,19 +172,21 @@ mi_trouver_radical_chaine (const char *ch)
 
 
 struct MiSt_Radical_st *
-mi_trouver_radical_apres_ou_egal(const char*ch)
+mi_trouver_radical_apres_ou_egal (const char *ch)
 {
-  if (!ch) return NULL;
-  MI_DEBOPRINTF("ch=%s", ch);
+  if (!ch)
+    return NULL;
+  MI_DEBOPRINTF ("ch=%s", ch);
   struct MiSt_Radical_st *rad = mi_racine_radical;
   while (rad)
     {
       assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
       assert (rad->urad_nom && rad->urad_nom->mi_type == MiTy_Chaine);
       int cmp = strcmp (ch, rad->urad_nom->mi_car);
-      MI_DEBOPRINTF("ch=%s rad@%p:%s cmp=%d", ch,
-                    rad, rad->urad_nom->mi_car, cmp);
-      if (cmp == 0) return rad;
+      MI_DEBOPRINTF ("ch=%s rad@%p:%s cmp=%d", ch,
+                     rad, rad->urad_nom->mi_car, cmp);
+      if (cmp == 0)
+        return rad;
       if (cmp < 0)
         {
           if (rad->urad_gauche != NULL)
@@ -194,11 +196,12 @@ mi_trouver_radical_apres_ou_egal(const char*ch)
             }
           else
             {
-              MI_DEBOPRINTF("ch=%s rad@%p:%s fini", ch, rad, rad->urad_nom->mi_car);
+              MI_DEBOPRINTF ("ch=%s rad@%p:%s fini", ch, rad,
+                             rad->urad_nom->mi_car);
               return rad;
             }
         }
-      else   // cmp > 0
+      else			// cmp > 0
         {
           if (rad->urad_droit != NULL)
             {
@@ -207,46 +210,49 @@ mi_trouver_radical_apres_ou_egal(const char*ch)
             }
           else
             {
-              MI_DEBOPRINTF("ch=%s rad@%p:%s feuille", ch, rad, rad->urad_nom->mi_car);
+              MI_DEBOPRINTF ("ch=%s rad@%p:%s feuille", ch, rad,
+                             rad->urad_nom->mi_car);
               while (rad->urad_parent != NULL)
                 {
                   struct MiSt_Radical_st *parad = rad->urad_parent;
                   int pacmp = strcmp (ch, parad->urad_nom->mi_car);
-                  MI_DEBOPRINTF("ch=%s rad@%p:%s parad@%p:%s pacmp=%d",
-                                ch,
-                                rad,  rad->urad_nom->mi_car,
-                                parad,  parad->urad_nom->mi_car, pacmp);
-                  if (pacmp<0)
+                  MI_DEBOPRINTF ("ch=%s rad@%p:%s parad@%p:%s pacmp=%d",
+                                 ch,
+                                 rad, rad->urad_nom->mi_car,
+                                 parad, parad->urad_nom->mi_car, pacmp);
+                  if (pacmp < 0)
                     {
-                      MI_DEBOPRINTF("ch=%s donne parad@%p:%s", ch,
-                                    parad,  parad->urad_nom->mi_car);
+                      MI_DEBOPRINTF ("ch=%s donne parad@%p:%s", ch,
+                                     parad, parad->urad_nom->mi_car);
                       return parad;
                     }
                   rad = parad;
                 }
-              MI_DEBOPRINTF("ch=%s rad@%p:%s finfeuille", ch, rad, rad->urad_nom->mi_car);
+              MI_DEBOPRINTF ("ch=%s rad@%p:%s finfeuille", ch, rad,
+                             rad->urad_nom->mi_car);
 
               return rad;
             }
         }
     }
-  MI_DEBOPRINTF("ch=%s échec", ch);
+  MI_DEBOPRINTF ("ch=%s échec", ch);
   return NULL;
-} /* fin mi_trouver_radical_apres_ou_egal */
+}				/* fin mi_trouver_radical_apres_ou_egal */
 
 struct MiSt_Radical_st *
-mi_trouver_radical_apres(const char*ch)
+mi_trouver_radical_apres (const char *ch)
 {
-  if (!ch) return NULL;
-  MI_DEBOPRINTF("ch=%s", ch);
+  if (!ch)
+    return NULL;
+  MI_DEBOPRINTF ("ch=%s", ch);
   struct MiSt_Radical_st *rad = mi_racine_radical;
   while (rad)
     {
       assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
       assert (rad->urad_nom && rad->urad_nom->mi_type == MiTy_Chaine);
       int cmp = strcmp (ch, rad->urad_nom->mi_car);
-      MI_DEBOPRINTF("ch=%s rad@%p:%s cmp=%d", ch,
-                    rad, rad->urad_nom->mi_car, cmp);
+      MI_DEBOPRINTF ("ch=%s rad@%p:%s cmp=%d", ch,
+                     rad, rad->urad_nom->mi_car, cmp);
       if (cmp < 0)
         {
           if (rad->urad_gauche != NULL)
@@ -256,11 +262,12 @@ mi_trouver_radical_apres(const char*ch)
             }
           else
             {
-              MI_DEBOPRINTF("ch=%s rad@%p:%s fini", ch, rad, rad->urad_nom->mi_car);
+              MI_DEBOPRINTF ("ch=%s rad@%p:%s fini", ch, rad,
+                             rad->urad_nom->mi_car);
               return rad;
             }
         }
-      else   // cmp >= 0
+      else			// cmp >= 0
         {
           if (rad->urad_droit != NULL)
             {
@@ -269,48 +276,52 @@ mi_trouver_radical_apres(const char*ch)
             }
           else
             {
-              MI_DEBOPRINTF("ch=%s rad@%p:%s feuille", ch, rad, rad->urad_nom->mi_car);
+              MI_DEBOPRINTF ("ch=%s rad@%p:%s feuille", ch, rad,
+                             rad->urad_nom->mi_car);
               while (rad->urad_parent != NULL)
                 {
                   struct MiSt_Radical_st *parad = rad->urad_parent;
                   int pacmp = strcmp (ch, parad->urad_nom->mi_car);
-                  MI_DEBOPRINTF("ch=%s rad@%p:%s parad@%p:%s pacmp=%d",
-                                ch,
-                                rad,  rad->urad_nom->mi_car,
-                                parad,  parad->urad_nom->mi_car, pacmp);
-                  if (pacmp<0)
+                  MI_DEBOPRINTF ("ch=%s rad@%p:%s parad@%p:%s pacmp=%d",
+                                 ch,
+                                 rad, rad->urad_nom->mi_car,
+                                 parad, parad->urad_nom->mi_car, pacmp);
+                  if (pacmp < 0)
                     {
-                      MI_DEBOPRINTF("ch=%s donne parad@%p:%s", ch,
-                                    parad,  parad->urad_nom->mi_car);
+                      MI_DEBOPRINTF ("ch=%s donne parad@%p:%s", ch,
+                                     parad, parad->urad_nom->mi_car);
                       return parad;
                     }
                   rad = parad;
                 }
-              MI_DEBOPRINTF("ch=%s rad@%p:%s finfeuille", ch, rad, rad->urad_nom->mi_car);
+              MI_DEBOPRINTF ("ch=%s rad@%p:%s finfeuille", ch, rad,
+                             rad->urad_nom->mi_car);
 
               return rad;
             }
         }
     }
-  MI_DEBOPRINTF("ch=%s échec", ch);
+  MI_DEBOPRINTF ("ch=%s échec", ch);
   return NULL;
-} /* fin mi_trouver_radical_apres_ou_egal */
+}				/* fin mi_trouver_radical_apres_ou_egal */
 
 
 struct MiSt_Radical_st *
-mi_trouver_radical_avant_ou_egal(const char*ch)
+mi_trouver_radical_avant_ou_egal (const char *ch)
 {
-  if (!ch) return NULL;
-  MI_DEBOPRINTF("ch=%s", ch);
+  if (!ch)
+    return NULL;
+  MI_DEBOPRINTF ("ch=%s", ch);
   struct MiSt_Radical_st *rad = mi_racine_radical;
   while (rad)
     {
       assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
       assert (rad->urad_nom && rad->urad_nom->mi_type == MiTy_Chaine);
       int cmp = strcmp (ch, rad->urad_nom->mi_car);
-      MI_DEBOPRINTF("ch=%s rad@%p:%s cmp=%d", ch,
-                    rad, rad->urad_nom->mi_car, cmp);
-      if (cmp == 0) return rad;
+      MI_DEBOPRINTF ("ch=%s rad@%p:%s cmp=%d", ch,
+                     rad, rad->urad_nom->mi_car, cmp);
+      if (cmp == 0)
+        return rad;
       if (cmp > 0)
         {
           if (rad->urad_droit != NULL)
@@ -320,11 +331,12 @@ mi_trouver_radical_avant_ou_egal(const char*ch)
             }
           else
             {
-              MI_DEBOPRINTF("ch=%s rad@%p:%s fini", ch, rad, rad->urad_nom->mi_car);
+              MI_DEBOPRINTF ("ch=%s rad@%p:%s fini", ch, rad,
+                             rad->urad_nom->mi_car);
               return rad;
             }
         }
-      else   // cmp < 0
+      else			// cmp < 0
         {
           if (rad->urad_gauche != NULL)
             {
@@ -333,47 +345,50 @@ mi_trouver_radical_avant_ou_egal(const char*ch)
             }
           else
             {
-              MI_DEBOPRINTF("ch=%s rad@%p:%s feuille", ch, rad, rad->urad_nom->mi_car);
+              MI_DEBOPRINTF ("ch=%s rad@%p:%s feuille", ch, rad,
+                             rad->urad_nom->mi_car);
               while (rad->urad_parent != NULL)
                 {
                   struct MiSt_Radical_st *parad = rad->urad_parent;
                   int pacmp = strcmp (ch, parad->urad_nom->mi_car);
-                  MI_DEBOPRINTF("ch=%s rad@%p:%s parad@%p:%s pacmp=%d",
-                                ch,
-                                rad,  rad->urad_nom->mi_car,
-                                parad,  parad->urad_nom->mi_car, pacmp);
-                  if (pacmp<0)
+                  MI_DEBOPRINTF ("ch=%s rad@%p:%s parad@%p:%s pacmp=%d",
+                                 ch,
+                                 rad, rad->urad_nom->mi_car,
+                                 parad, parad->urad_nom->mi_car, pacmp);
+                  if (pacmp > 0)
                     {
-                      MI_DEBOPRINTF("ch=%s donne parad@%p:%s", ch,
-                                    parad,  parad->urad_nom->mi_car);
+                      MI_DEBOPRINTF ("ch=%s donne parad@%p:%s", ch,
+                                     parad, parad->urad_nom->mi_car);
                       return parad;
                     }
                   rad = parad;
                 }
-              MI_DEBOPRINTF("ch=%s rad@%p:%s finfeuille", ch, rad, rad->urad_nom->mi_car);
+              MI_DEBOPRINTF ("ch=%s rad@%p:%s finfeuille", ch, rad,
+                             rad->urad_nom->mi_car);
 
               return rad;
             }
         }
     }
-  MI_DEBOPRINTF("ch=%s échec", ch);
+  MI_DEBOPRINTF ("ch=%s échec", ch);
   return NULL;
-} /* fin mi_trouver_radical_avant_ou_egal */
+}				/* fin mi_trouver_radical_avant_ou_egal */
 
 
 struct MiSt_Radical_st *
-mi_trouver_radical_avant(const char*ch)
+mi_trouver_radical_avant (const char *ch)
 {
-  if (!ch) return NULL;
-  MI_DEBOPRINTF("ch=%s", ch);
+  if (!ch)
+    return NULL;
+  MI_DEBOPRINTF ("ch=%s", ch);
   struct MiSt_Radical_st *rad = mi_racine_radical;
   while (rad)
     {
       assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
       assert (rad->urad_nom && rad->urad_nom->mi_type == MiTy_Chaine);
       int cmp = strcmp (ch, rad->urad_nom->mi_car);
-      MI_DEBOPRINTF("ch=%s rad@%p:%s cmp=%d", ch,
-                    rad, rad->urad_nom->mi_car, cmp);
+      MI_DEBOPRINTF ("ch=%s rad@%p:%s cmp=%d", ch,
+                     rad, rad->urad_nom->mi_car, cmp);
       if (cmp > 0)
         {
           if (rad->urad_droit != NULL)
@@ -383,11 +398,12 @@ mi_trouver_radical_avant(const char*ch)
             }
           else
             {
-              MI_DEBOPRINTF("ch=%s rad@%p:%s fini", ch, rad, rad->urad_nom->mi_car);
+              MI_DEBOPRINTF ("ch=%s rad@%p:%s fini", ch, rad,
+                             rad->urad_nom->mi_car);
               return rad;
             }
         }
-      else   // cmp <= 0
+      else			// cmp <= 0
         {
           if (rad->urad_gauche != NULL)
             {
@@ -396,32 +412,34 @@ mi_trouver_radical_avant(const char*ch)
             }
           else
             {
-              MI_DEBOPRINTF("ch=%s rad@%p:%s feuille", ch, rad, rad->urad_nom->mi_car);
+              MI_DEBOPRINTF ("ch=%s rad@%p:%s feuille", ch, rad,
+                             rad->urad_nom->mi_car);
               while (rad->urad_parent != NULL)
                 {
                   struct MiSt_Radical_st *parad = rad->urad_parent;
                   int pacmp = strcmp (ch, parad->urad_nom->mi_car);
-                  MI_DEBOPRINTF("ch=%s rad@%p:%s parad@%p:%s pacmp=%d",
-                                ch,
-                                rad,  rad->urad_nom->mi_car,
-                                parad,  parad->urad_nom->mi_car, pacmp);
-                  if (pacmp<0)
+                  MI_DEBOPRINTF ("ch=%s rad@%p:%s parad@%p:%s pacmp=%d",
+                                 ch,
+                                 rad, rad->urad_nom->mi_car,
+                                 parad, parad->urad_nom->mi_car, pacmp);
+                  if (pacmp > 0)
                     {
-                      MI_DEBOPRINTF("ch=%s donne parad@%p:%s", ch,
-                                    parad,  parad->urad_nom->mi_car);
+                      MI_DEBOPRINTF ("ch=%s donne parad@%p:%s", ch,
+                                     parad, parad->urad_nom->mi_car);
                       return parad;
                     }
                   rad = parad;
                 }
-              MI_DEBOPRINTF("ch=%s rad@%p:%s finfeuille", ch, rad, rad->urad_nom->mi_car);
+              MI_DEBOPRINTF ("ch=%s rad@%p:%s finfeuille", ch, rad,
+                             rad->urad_nom->mi_car);
 
               return rad;
             }
         }
     }
-  MI_DEBOPRINTF("ch=%s échec", ch);
+  MI_DEBOPRINTF ("ch=%s échec", ch);
   return NULL;
-} /* fin mi_trouver_radical_avant_ou_egal */
+}				/* fin mi_trouver_radical_avant_ou_egal */
 
 
 
@@ -740,7 +758,8 @@ mi_trouver_symbole_nom (const Mit_Chaine *nom, unsigned ind)
     return NULL;
   int pos = mi_indice_radical_symbole_secondaire (rad, ind);
   assert (pos < (int) rad->urad_val.vrad_tailsec);
-  if (pos<0) return NULL;
+  if (pos < 0)
+    return NULL;
   Mit_Symbole *sy = rad->urad_val.vrad_tabsecsym[pos];
   if (sy && sy != MI_TROU_SYMBOLE)
     {
@@ -856,19 +875,23 @@ mi_cmp_symboleptr (const void *p1, const void *p2)
 }
 
 
-Mit_Symbole*mi_radical_symbole_primaire(const struct MiSt_Radical_st*rad)
+Mit_Symbole *
+mi_radical_symbole_primaire (const struct MiSt_Radical_st *rad)
 {
-  if (!rad) return NULL;
+  if (!rad)
+    return NULL;
   assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
   return rad->urad_val.vrad_symbprim;
-} /* fin mi_radical_symbole_primaire */
+}				/* fin mi_radical_symbole_primaire */
 
-const Mit_Chaine*mi_radical_nom(const struct MiSt_Radical_st*rad)
+const Mit_Chaine *
+mi_radical_nom (const struct MiSt_Radical_st *rad)
 {
-  if (!rad) return NULL;
+  if (!rad)
+    return NULL;
   assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
   return rad->urad_nom;
-} /* fin mi_radical_nom */
+}				/* fin mi_radical_nom */
 
 typedef bool mi_iterradical_sigt (struct MiSt_Radical_st *rad, void *client);
 static struct MiSt_Radical_st *
@@ -925,12 +948,14 @@ mi_iterer_symbole_primaire (mi_itersymb_sigt * f, void *client)
 }				/* fin mi_iterer_symbole_primaire */
 
 
-void mi_iterer_symbole_radical (const struct MiSt_Radical_st*rad, mi_itersymb_sigt * f,
-                                void *client)
+void
+mi_iterer_symbole_radical (const struct MiSt_Radical_st *rad,
+                           mi_itersymb_sigt * f, void *client)
 {
-  if (!rad || !f) return;
+  if (!rad || !f)
+    return;
   assert (rad->urad_nmagiq == MI_RAD_NMAGIQ);
-  if ((*f)(rad->urad_val.vrad_symbprim, client))
+  if ((*f) (rad->urad_val.vrad_symbprim, client))
     return;
   unsigned t = rad->urad_val.vrad_tailsec;
   if (t > 0)
@@ -945,7 +970,7 @@ void mi_iterer_symbole_radical (const struct MiSt_Radical_st*rad, mi_itersymb_si
             return;
         }
     }
-} /* fin mi_iterer_symbole_radical */
+}				/* fin mi_iterer_symbole_radical */
 
 static bool
 mi_parcourir_radical_nomme (struct MiSt_Radical_st *rad, void *client)
@@ -1011,13 +1036,13 @@ mi_indice_radical_symbole_secondaire (struct MiSt_Radical_st *rad,
       const Mit_Symbole *sy = rad->urad_val.vrad_tabsecsym[ix];
       if (!sy)
         {
-          if (pos<0)
+          if (pos < 0)
             pos = (int) ix;
           return pos;
         }
       else if (sy == MI_TROU_SYMBOLE)
         {
-          if (pos<0)
+          if (pos < 0)
             pos = (int) ix;
           continue;
         }
@@ -1030,13 +1055,13 @@ mi_indice_radical_symbole_secondaire (struct MiSt_Radical_st *rad,
       const Mit_Symbole *sy = rad->urad_val.vrad_tabsecsym[ix];
       if (!sy)
         {
-          if (pos<0)
+          if (pos < 0)
             pos = (int) ix;
           return pos;
         }
       else if (sy == MI_TROU_SYMBOLE)
         {
-          if (pos<0)
+          if (pos < 0)
             pos = (int) ix;
           continue;
         }
@@ -1103,10 +1128,11 @@ mi_agrandir_radical_table_secondaire (struct MiSt_Radical_st *rad,
 }				/* fin mi_agrandir_radical_table_secondaire */
 
 // Créer ou trouver un symbole de radical et indice donnés
-Mit_Symbole*
-mi_creer_symbole_radical(struct MiSt_Radical_st*rad, unsigned ind)
+Mit_Symbole *
+mi_creer_symbole_radical (struct MiSt_Radical_st *rad, unsigned ind)
 {
-  if (!rad) return NULL;
+  if (!rad)
+    return NULL;
   assert (rad && rad->urad_nmagiq == MI_RAD_NMAGIQ);
   assert (rad && rad->urad_nmagiq == MI_RAD_NMAGIQ);
   if (ind)
@@ -1148,7 +1174,7 @@ mi_creer_symbole_radical(struct MiSt_Radical_st*rad, unsigned ind)
         }
       return sy;
     }
-} /* fin mi_creer_symbole_radical */
+}				/* fin mi_creer_symbole_radical */
 
 
 // Creer (ou trouver, s'il existe déjà) un symbole de nom et indice donnés
@@ -1158,7 +1184,7 @@ mi_creer_symbole_nom (const Mit_Chaine *nom, unsigned ind)
   if (!mi_nom_licite (nom))
     return NULL;
   struct MiSt_Radical_st *rad = mi_radical_insere_nom (nom);
-  return mi_creer_symbole_radical(rad,ind);
+  return mi_creer_symbole_radical (rad, ind);
 }				/* fin mi_creer_symbole_nom */
 
 
@@ -1168,7 +1194,7 @@ mi_creer_symbole_chaine (const char *ch, unsigned ind)
   if (!mi_nom_licite_chaine (ch))
     return NULL;
   struct MiSt_Radical_st *rad = mi_radical_insere_chaine (ch);
-  return mi_creer_symbole_radical(rad,ind);
+  return mi_creer_symbole_radical (rad, ind);
 }				/* fin mi_creer_symbole_chaine */
 
 
@@ -1205,11 +1231,10 @@ mi_cloner_symbole (const Mit_Symbole *origsy)
   struct MiSt_Radical_st *rad = origsy->mi_radical;
   assert (rad && rad->urad_nmagiq == MI_RAD_NMAGIQ);
   if (rad->urad_val.vrad_tailsec == 0)
-    mi_agrandir_radical_table_secondaire(rad, 7);
+    mi_agrandir_radical_table_secondaire (rad, 7);
   else if (5 * rad->urad_val.vrad_nbsec + 2 > 4 * rad->urad_val.vrad_tailsec)
     mi_agrandir_radical_table_secondaire (rad,
-                                          rad->urad_val.vrad_nbsec / 4 +
-                                          10);
+                                          rad->urad_val.vrad_nbsec / 4 + 10);
   unsigned ind = 0;
   int pos = -1;
   do
@@ -1227,8 +1252,7 @@ mi_cloner_symbole (const Mit_Symbole *origsy)
         continue;
     }
   while (ind == 0);
-  Mit_Symbole *sy =
-    mi_allouer_valeur (MiTy_Symbole, sizeof (Mit_Symbole));
+  Mit_Symbole *sy = mi_allouer_valeur (MiTy_Symbole, sizeof (Mit_Symbole));
   sy->mi_radical = rad;
   sy->mi_indice = ind;
   sy->mi_hash = mi_hashage_symbole_indice (rad->urad_nom, ind);
