@@ -116,8 +116,8 @@ char** mi_tenter_completion(const char*txt, int debc, int finc)
     if (asprintf(&mot, "%*s", finc-debc, txt)<0)
       MI_FATALPRINTF("impossible de dupliquer le mot '%*s'",(finc-debc), txt);
   MI_DEBOPRINTF("mot='%s'", mot);
-  unsigned lgmot = strlen(mot);
-  unsigned taille = 0;
+  unsigned lgmot = mot?strlen(mot):0;
+  unsigned taille = 5;
   unsigned nbcompl = 0;
   char**vec = calloc(taille, sizeof(char*));
   if (!vec)
@@ -158,6 +158,11 @@ char** mi_tenter_completion(const char*txt, int debc, int finc)
   MI_DEBOPRINTF("nbcompl=%d vec@%p", nbcompl, vec);
   if (!nbcompl)
     free (vec), vec= NULL;
+#ifndef NDEBUG
+  if (mi_deboguage)
+    for (unsigned i=0; i<nbcompl; i++)
+      MI_DEBOPRINTF("vec[%d]='%s'", i, vec[i]);
+#endif
   return vec;
 } /* fin  mi_tenter_completion */
 
