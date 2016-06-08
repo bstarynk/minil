@@ -166,10 +166,57 @@ char** mi_tenter_completion(const char*txt, int debc, int finc)
   return vec;
 } /* fin  mi_tenter_completion */
 
+char*
+mi_generer_completion (const char*texte, int etat)
+{
+  static const char*debmot;
+  static const char*finmot;
+  static char**vecomp;
+  MI_DEBOPRINTF("texte='%s' etat=%d", texte, etat);
+  if (etat == 0) {
+    debmot = texte;
+    while (isspace(*debmot))
+      debmot++;
+    finmot = debmot;
+    while (isalpha(*finmot))
+      finmot++;
+    MI_DEBOPRINTF("debmot='%s' finmot-debmot=%d",
+		  debmot, (int)(finmot-debmot));
+    vecomp =  mi_tenter_completion(texte, debmot-texte, finmot-texte);
+    MI_DEBOPRINTF("vecomp@%p", vecomp);
+    return vecomp?vecomp[0]:NULL;
+  }
+  else {
+    assert (vecomp != NULL);
+    if (vecomp[etat] != NULL) {
+      MI_DEBOPRINTF("etat=%d vecomp[%d]='%s'", etat, etat-1, vecomp[etat]);
+      return vecomp[etat-1];
+    }
+    else {
+      MI_DEBOPRINTF("etat=%d final", etat);
+      free (vecomp), vecomp=NULL;
+      debmot=finmot=NULL;
+      return NULL;
+    }
+  }
+} /* fin mi_generer_completion */
+
+char**mi_completion (const char*texte, int deb, int fin)
+{
+  MI_DEBOPRINTF("texte='%s', deb=%d, fin=%d", texte, deb, fin);
+  bool motvalide = true;
+  for (int i=deb; i<fin && motvalide; i++)
+    if (!isalpha(texte[i])) motvalide = false;
+  MI_DEBOPRINTF("motvalide %s", motvalide?"vrai":"faux");
+  if (motvalide)
+    return rl_completion_matches(texte, mi_generer_completion);
+  return NULL;
+} /* fin mi_completion */
 
 void mi_lire_expressions_en_boucle(void)
 {
   using_history();
+  rl_completion_entry_function = mi_generer_completion;
   rl_attempted_completion_function = mi_tenter_completion;
   printf("Entrez des expressions en boucle, et une ligne vide pour terminer...\n");
   int cnt=0;
