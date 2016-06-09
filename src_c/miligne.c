@@ -105,6 +105,8 @@ void mi_lire_trous(struct Mi_Lecteur_st*lec, const char*invite)
 } /* fin mi_lire_trous */
 
 
+
+#if 0 && code_obsolete
 // Pour readline.  Doit renvoyer un tableau dynamiquement alloué de
 // chaînes dynamiquement alloué, ou bien NULL en échec.
 char** mi_tenter_completion(const char*txt, int debc, int finc)
@@ -236,17 +238,39 @@ char**mi_completion (const char*texte, int deb, int fin)
   MI_DEBOPRINTF("res@%p", res);
   return res;
 } /* fin mi_completion */
+#endif
 
+
+/// fonction appellée par readline via rl_attempted_completion_function
+static char**
+mi_completion_attendue(const char*tige, int deb, int fin)
+{
+  // La tige pourrait être le mot à compléter, mais il vaut mieux
+  // travailler sur la ligne courante avec le point
+  // courant... notamment pour pouvoir compléter des opérateurs comme
+  // <= ou un nom précédé d'un opérateur...
+  //
+  // deb et fin et rl_point sont des indices d'octets (pas des
+  // positions de glyphes UTF8)
+  if (mi_deboguage)   // faut forcer le saut à la ligne
+    {
+      fputc('\n', stderr);
+      MI_DEBOPRINTF("tige='%s'@%p, deb=%d fin=%d rlbuf='%s'@%p(l%d, ul%d) rlpoint#%d rlend#%d",
+                    tige, tige, deb, fin, rl_line_buffer, rl_line_buffer,
+                    (int)strlen(rl_line_buffer),
+                    (int)u8_strlen(rl_line_buffer),
+                    rl_point, rl_end);
+    }
+  return NULL;
+} // fin mi_completion_attendue
 
 ////////////////
 void mi_lire_expressions_en_boucle(void)
 {
   using_history();
-  // rl_attempted_completion_function = mi_completion;
-  // rl_attempted_completion_function = mi_tenter_completion;
-  rl_completion_entry_function = mi_generer_completion;
-  printf("Entrez des expressions en boucle,\n"
-         "et une ligne vide pour terminer.\n"
+  rl_attempted_completion_function = mi_completion_attendue;
+  printf("Entrez des expressions en boucle,"
+         " et une ligne vide pour terminer.\n"
          "\t (utilise libreadline %s)\n\n",
          rl_library_version);
   int cnt=0;
