@@ -130,7 +130,9 @@ char** mi_tenter_completion(const char*txt, int debc, int finc)
        != NULL;
        rad = mi_trouver_radical_apres(nomrad))
     {
-      if (nbcompl + 1 >= taille)
+      MI_DEBOPRINTF("nbcompl=%d taille=%d nomrad:%s",
+                    nbcompl, taille, nomrad);
+      if (nbcompl + 2 >= taille)
         {
           unsigned nouvtaille = mi_nombre_premier_apres(5*nbcompl/4+11);
           char**nouvec = calloc(nouvtaille, sizeof(char*));
@@ -155,9 +157,9 @@ char** mi_tenter_completion(const char*txt, int debc, int finc)
       else
         break;
     }
-  MI_DEBOPRINTF("nbcompl=%d vec@%p", nbcompl, vec);
   if (!nbcompl)
     free (vec), vec= NULL;
+  MI_DEBOPRINTF("nbcompl=%d vec@%p", nbcompl, vec);
 #ifndef NDEBUG
   if (mi_deboguage)
     for (unsigned i=0; i<nbcompl; i++)
@@ -168,6 +170,7 @@ char** mi_tenter_completion(const char*txt, int debc, int finc)
   return vec;
 } /* fin  mi_tenter_completion */
 
+
 char*
 mi_generer_completion (const char*texte, int etat)
 {
@@ -175,52 +178,58 @@ mi_generer_completion (const char*texte, int etat)
   static const char*finmot;
   static char**vecomp;
   MI_DEBOPRINTF("texte='%s' etat=%d ligne=%s", texte, etat, rl_line_buffer);
-  if (etat == 0) {
-    debmot = texte;
-    while (isspace(*debmot))
-      debmot++;
-    finmot = debmot;
-    while (isalpha(*finmot))
-      finmot++;
-    MI_DEBOPRINTF("debmot='%s' finmot-debmot=%d",
-		  debmot, (int)(finmot-debmot));
-    vecomp =  mi_tenter_completion(texte, debmot-texte, finmot-texte);
-    MI_DEBOPRINTF("vecomp@%p", vecomp);
-    return vecomp?vecomp[0]:NULL;
-  }
-  else {
-    assert (vecomp != NULL);
-    if (vecomp[etat] != NULL) {
-      MI_DEBOPRINTF("etat=%d vecomp[%d]='%s'", etat, etat-1, vecomp[etat]);
-      return vecomp[etat-1];
+  if (etat == 0)
+    {
+      debmot = texte;
+      while (isspace(*debmot))
+        debmot++;
+      finmot = debmot;
+      while (isalpha(*finmot))
+        finmot++;
+      MI_DEBOPRINTF("debmot='%s' finmot-debmot=%d",
+                    debmot, (int)(finmot-debmot));
+      vecomp =  mi_tenter_completion(texte, debmot-texte, finmot-texte);
+      MI_DEBOPRINTF("vecomp@%p", vecomp);
+      return vecomp?vecomp[0]:NULL;
     }
-    else {
-      MI_DEBOPRINTF("etat=%d final", etat);
-      free (vecomp), vecomp=NULL;
-      debmot=finmot=NULL;
-      return NULL;
+  else
+    {
+      assert (vecomp != NULL);
+      if (vecomp[etat] != NULL && etat>0)
+        {
+          MI_DEBOPRINTF("etat=%d vecomp[%d]='%s'", etat, etat, vecomp[etat]);
+          return vecomp[etat];
+        }
+      else
+        {
+          MI_DEBOPRINTF("etat=%d final", etat);
+          vecomp=NULL;
+          debmot=finmot=NULL;
+          return NULL;
+        }
     }
-  }
 } /* fin mi_generer_completion */
 
 char**mi_completion (const char*texte, int deb, int fin)
 {
-  MI_DEBOPRINTF("texte='%s', deb=%d, fin=%d", texte, deb, fin);
+  char**res = NULL;
+  MI_DEBOPRINTF("texte='%s', deb=%d, fin=%d ligne'%s'",
+                texte, deb, fin, rl_line_buffer);
   bool motvalide = true;
   for (int i=deb; i<fin && motvalide; i++)
     if (!isalpha(texte[i])) motvalide = false;
   MI_DEBOPRINTF("motvalide %s", motvalide?"vrai":"faux");
-  if (motvalide)
-    return rl_completion_matches(texte, mi_generer_completion);
-  return NULL;
+  res = rl_completion_matches(texte, mi_generer_completion);
+  MI_DEBOPRINTF("res@%p", res);
+  return res;
 } /* fin mi_completion */
 
 void mi_lire_expressions_en_boucle(void)
 {
   using_history();
-  rl_attempted_completion_function = mi_completion;
+  // rl_attempted_completion_function = mi_completion;
   // rl_attempted_completion_function = mi_tenter_completion;
-  // rl_completion_entry_function = mi_generer_completion;
+  rl_completion_entry_function = mi_generer_completion;
   printf("Entrez des expressions en boucle, et une ligne vide pour terminer...\n");
   int cnt=0;
   int numexpcorr=0;		/* le numéro de la dernière expression correcte */
