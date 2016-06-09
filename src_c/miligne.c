@@ -258,9 +258,20 @@ mi_completion_attendue(const char*tige, int deb, int fin)
       MI_DEBOPRINTF("tige='%s'@%p, deb=%d fin=%d rlbuf='%s'@%p(l%d, ul%d) rlpoint#%d rlend#%d",
                     tige, tige, deb, fin, rl_line_buffer, rl_line_buffer,
                     (int)strlen(rl_line_buffer),
-                    (int)u8_strlen(rl_line_buffer),
+                    (int)u8_strlen((const uint8_t*)rl_line_buffer),
                     rl_point, rl_end);
     }
+  // Le cas simple est quand la tige contient un mot (lexicalement
+  // parlant) mais il faut aussi traiter les cas plus compliqués en
+  // analysant la ligne rl_line_buffer et y reculant depuis rl_point en UTF8
+  bool tigealpha = deb<=rl_point && fin>deb && fin<=rl_end && fin<=rl_point;
+  MI_DEBOPRINTF("tigealpha initial %s", tigealpha?"vrai":"faux");
+  for (int i=deb; i<fin && tigealpha; i++)
+    {
+      tigealpha = rl_line_buffer[i]==tige[i-deb] && isalpha(rl_line_buffer[i]);
+      // MI_DEBOPRINTF("tigealpha en i#%d %s", i, tigealpha?"vrai":"faux");
+    }
+  MI_DEBOPRINTF("tigealpha final %s", tigealpha?"vrai":"faux");
   return NULL;
 } // fin mi_completion_attendue
 
@@ -269,6 +280,10 @@ void mi_lire_expressions_en_boucle(void)
 {
   using_history();
   rl_attempted_completion_function = mi_completion_attendue;
+  // une liste de caractères qui pourrait précéder un mot à compléter
+  rl_basic_word_break_characters = " \t\n\"\\'`@$><=;|&{(+-*/~#[^@?.!";
+  // une liste de caractères à prefixer un mo"
+  rl_special_prefixes = "$";
   printf("Entrez des expressions en boucle,"
          " et une ligne vide pour terminer.\n"
          "\t (utilise libreadline %s)\n\n",
