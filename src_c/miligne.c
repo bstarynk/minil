@@ -109,8 +109,8 @@ void mi_lire_trous(struct Mi_Lecteur_st*lec, const char*invite)
 // chaînes dynamiquement alloué, ou bien NULL en échec.
 char** mi_tenter_completion(const char*txt, int debc, int finc)
 {
-  MI_DEBOPRINTF("txt='%s' debc=%d finc=%d mot='%*s'",
-                txt, debc, finc, (finc>debc)?(finc-debc):0, txt);
+  MI_DEBOPRINTF("txt='%s' debc=%d finc=%d mot='%*s' ligne=%s",
+                txt, debc, finc, (finc>debc)?(finc-debc):0, txt, rl_line_buffer);
   char*mot = NULL;
   if (finc>debc)
     if (asprintf(&mot, "%*s", finc-debc, txt)<0)
@@ -163,6 +163,8 @@ char** mi_tenter_completion(const char*txt, int debc, int finc)
     for (unsigned i=0; i<nbcompl; i++)
       MI_DEBOPRINTF("vec[%d]='%s'", i, vec[i]);
 #endif
+  // indiquer à readline qu'on a fini s'il y a un seul élément
+  rl_attempted_completion_over = nbcompl <= 1;
   return vec;
 } /* fin  mi_tenter_completion */
 
@@ -172,7 +174,7 @@ mi_generer_completion (const char*texte, int etat)
   static const char*debmot;
   static const char*finmot;
   static char**vecomp;
-  MI_DEBOPRINTF("texte='%s' etat=%d", texte, etat);
+  MI_DEBOPRINTF("texte='%s' etat=%d ligne=%s", texte, etat, rl_line_buffer);
   if (etat == 0) {
     debmot = texte;
     while (isspace(*debmot))
@@ -216,8 +218,9 @@ char**mi_completion (const char*texte, int deb, int fin)
 void mi_lire_expressions_en_boucle(void)
 {
   using_history();
-  rl_completion_entry_function = mi_generer_completion;
-  rl_attempted_completion_function = mi_tenter_completion;
+  rl_attempted_completion_function = mi_completion;
+  // rl_attempted_completion_function = mi_tenter_completion;
+  // rl_completion_entry_function = mi_generer_completion;
   printf("Entrez des expressions en boucle, et une ligne vide pour terminer...\n");
   int cnt=0;
   int numexpcorr=0;		/* le numéro de la dernière expression correcte */
