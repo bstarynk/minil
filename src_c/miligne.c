@@ -115,7 +115,10 @@ char** mi_tenter_completion(const char*txt, int debc, int finc)
   if (finc>debc)
     if (asprintf(&mot, "%*s", finc-debc, txt)<0)
       MI_FATALPRINTF("impossible de dupliquer le mot '%*s'",(finc-debc), txt);
-  MI_DEBOPRINTF("mot='%s'", mot);
+  if (mot)
+    MI_DEBOPRINTF("mot='%s'@%p", mot, mot);
+  else
+    MI_DEBOPRINTF("mot nul");
   unsigned lgmot = mot?strlen(mot):0;
   unsigned taille = 5;
   unsigned nbcompl = 0;
@@ -177,15 +180,21 @@ mi_generer_completion (const char*texte, int etat)
   static const char*debmot;
   static const char*finmot;
   static char**vecomp;
-  MI_DEBOPRINTF("texte='%s' etat=%d ligne=%s", texte, etat, rl_line_buffer);
+  if (mi_deboguage)
+    {
+      // on va à la ligne, car on est en train de taper via readline...
+      fputs("\n\t", stderr);
+      MI_DEBOPRINTF("texte='%s'@%p etat=%d ligne='%s'@%p rl_point#%d",
+                    texte, texte, etat, rl_line_buffer, rl_line_buffer,
+                    rl_point);
+    }
   if (etat == 0)
     {
-      debmot = texte;
-      while (isspace(*debmot))
-        debmot++;
-      finmot = debmot;
-      while (isalpha(*finmot))
-        finmot++;
+      debmot = NULL;
+      finmot = NULL;
+      vecomp = NULL;
+      MI_DEBOPRINTF("rl_point=%d rl_end=%d", rl_point, rl_end);
+      assert(rl_point >= 0 && rl_point <= rl_end);
       MI_DEBOPRINTF("debmot='%s' finmot-debmot=%d",
                     debmot, (int)(finmot-debmot));
       vecomp =  mi_tenter_completion(texte, debmot-texte, finmot-texte);
@@ -210,11 +219,15 @@ mi_generer_completion (const char*texte, int etat)
     }
 } /* fin mi_generer_completion */
 
+
+
+
 char**mi_completion (const char*texte, int deb, int fin)
 {
   char**res = NULL;
-  MI_DEBOPRINTF("texte='%s', deb=%d, fin=%d ligne'%s'",
-                texte, deb, fin, rl_line_buffer);
+  MI_DEBOPRINTF("texte='%s'@%p, deb=%d, fin=%d ligne'%s'@%p point#%d",
+                texte, texte, deb, fin,
+                rl_line_buffer, rl_line_buffer, rl_point);
   bool motvalide = true;
   for (int i=deb; i<fin && motvalide; i++)
     if (!isalpha(texte[i])) motvalide = false;
@@ -224,13 +237,18 @@ char**mi_completion (const char*texte, int deb, int fin)
   return res;
 } /* fin mi_completion */
 
+
+////////////////
 void mi_lire_expressions_en_boucle(void)
 {
   using_history();
   // rl_attempted_completion_function = mi_completion;
   // rl_attempted_completion_function = mi_tenter_completion;
   rl_completion_entry_function = mi_generer_completion;
-  printf("Entrez des expressions en boucle, et une ligne vide pour terminer...\n");
+  printf("Entrez des expressions en boucle,\n"
+         "et une ligne vide pour terminer.\n"
+         "\t (utilise libreadline %s)\n\n",
+         rl_library_version);
   int cnt=0;
   int numexpcorr=0;		/* le numéro de la dernière expression correcte */
   for (;;)
