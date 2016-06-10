@@ -994,7 +994,7 @@ mi_lire_conjonction (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
     ps++;
   char *debdisj = ps;
   char *fingch = NULL;
-  Mit_Val vgch = mi_lire_comparande (lec, ps, &fingch);
+  Mit_Val vgch = mi_lire_comparaison (lec, ps, &fingch);
   if (!fingch)
     MI_ERREUR_LECTURE (lec, debdisj, NULL,
                        "erreur de lecture du membre gauche d'une conjonction");
@@ -1068,10 +1068,10 @@ mi_lire_conjonction (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
         MI_FATALPRINTF ("corruption: mauvais operateur de disjonction %s",
                         ps);
       char *finop = NULL;
-      Mit_Val vop = mi_lire_comparande (lec, ps, &finop);
+      Mit_Val vop = mi_lire_comparaison (lec, ps, &finop);
       if (!finop)
         MI_ERREUR_LECTURE (lec, ps, NULL,
-                           "erreur de lecture d'une disjonction");
+                           "erreur de lecture d'une conjonction");
       if (!lec->lec_pascreer)
         {
           Mit_Symbole *syxop = mi_symbole_expressif (vop);
