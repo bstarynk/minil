@@ -634,7 +634,8 @@ mi_lire_primaire (struct Mi_Lecteur_st *lec, char *ps, const char **pfin)
       else
         return MI_NILV;
     }
-  else if (!strncmp (ps, "\302\254", 2) /* UTF-8 U+00AC NOT SIGN ¬ */ )
+  else if (!strncmp (ps, "!-", 2)
+           || !strncmp (ps, "\302\254", 2) /* UTF-8 U+00AC NOT SIGN ¬ */ )
     {
       /* la negation logique */
       char *debneg = ps;
@@ -984,7 +985,7 @@ mi_lire_comparaison (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
 
 
 Mit_Val
-mi_lire_disjonction (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
+mi_lire_conjonction (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
 {
   assert (lec && lec->lec_nmagiq == MI_LECTEUR_NMAGIQ);
   assert (ps != NULL);
@@ -994,6 +995,128 @@ mi_lire_disjonction (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
   char *debdisj = ps;
   char *fingch = NULL;
   Mit_Val vgch = mi_lire_comparande (lec, ps, &fingch);
+  if (!fingch)
+    MI_ERREUR_LECTURE (lec, debdisj, NULL,
+                       "erreur de lecture du membre gauche d'une conjonction");
+  ps = (char *) fingch;
+  while (*ps && isspace (*ps))
+    ps++;
+  if (strncmp (ps, "&&", 2)
+      || strncmp (ps, "\342\210\247" /*U+2227 LOGICAL AND ∧ */ , 3))
+    {
+      *pfin = (char*)fingch;
+      return vgch;
+    };
+  int tailarg = 3;
+  int nbarg = 1;
+  const Mit_Symbole **tabarg = NULL;
+  Mit_Symbole *sydisj = NULL;
+  if (!lec->lec_pascreer)
+    {
+      sydisj = mi_cloner_symbole (MI_PREDEFINI (conjonction));
+      mi_symbole_mettre_attribut
+      (sydisj, MI_PREDEFINI (type),
+       MI_SYMBOLEV (MI_PREDEFINI (conjonction)));
+      tabarg = calloc (tailarg, sizeof (Mit_Symbole *));
+      if (!tabarg)
+        MI_FATALPRINTF
+        ("impossible d'allouer %d arguments de conjonction (%s)", tailarg,
+         strerror (errno));
+      Mit_Symbole *syxgch = mi_symbole_expressif (vgch);
+      Mit_Symbole *sygch =	//
+        syxgch ? syxgch : mi_cloner_symbole (MI_PREDEFINI (arg));
+      if (!syxgch)
+        {
+          mi_symbole_mettre_attribut
+          (sygch, MI_PREDEFINI (type), MI_SYMBOLEV (MI_PREDEFINI (arg)));
+          mi_symbole_mettre_attribut (sygch, MI_PREDEFINI (arg), vgch);
+        }
+      mi_symbole_mettre_attribut (sygch, MI_PREDEFINI (dans),
+                                  MI_SYMBOLEV (sydisj));
+      mi_symbole_mettre_attribut (sygch, MI_PREDEFINI (indice),
+                                  MI_ENTIERV (mi_creer_entier (0)));
+
+      vgch = MI_SYMBOLEV (sygch);
+      tabarg[0] = sygch;
+    }
+  for (;;)
+    {
+      while (*ps && isspace (*ps))
+        ps++;
+      if (strncmp (ps, "&&", 2)
+          || strncmp (ps, "\342\210\247" /* U+2227 LOGICAL AND ∧*/ , 3))
+        break;
+      if (nbarg >= tailarg && !lec->lec_pascreer)
+        {
+          unsigned nouvtailargs =
+            mi_nombre_premier_apres (4 * nbarg / 3 + 10);
+          const Mit_Symbole **nouvtabarg =
+            calloc (nouvtailargs, sizeof (Mit_Symbole *));
+          if (!nouvtabarg)
+            MI_FATALPRINTF
+            ("impossible d'agrandir à %d arguments de disjonction (%s)",
+             nouvtailargs, strerror (errno));
+          memcpy (nouvtabarg, tabarg, nbarg * sizeof (Mit_Symbole *));
+          free (tabarg), tabarg = nouvtabarg;
+          tailarg = nouvtailargs;
+        }
+      if (!strncmp (ps, "&&", 2))
+        ps += 2;
+      else if (!strncmp (ps,"\342\210\247" /*U+2227 LOGICAL AND ∧ */ , 3))
+        ps += 3;
+      else			//impossible
+        MI_FATALPRINTF ("corruption: mauvais operateur de disjonction %s",
+                        ps);
+      char *finop = NULL;
+      Mit_Val vop = mi_lire_comparande (lec, ps, &finop);
+      if (!finop)
+        MI_ERREUR_LECTURE (lec, ps, NULL,
+                           "erreur de lecture d'une disjonction");
+      if (!lec->lec_pascreer)
+        {
+          Mit_Symbole *syxop = mi_symbole_expressif (vop);
+          Mit_Symbole *syop =	//
+            syxop ? syxop : mi_cloner_symbole (MI_PREDEFINI (arg));
+          if (!syxop)
+            {
+              mi_symbole_mettre_attribut
+              (syop, MI_PREDEFINI (type), MI_SYMBOLEV (MI_PREDEFINI (arg)));
+              mi_symbole_mettre_attribut (syop, MI_PREDEFINI (arg), vop);
+            }
+          mi_symbole_mettre_attribut (syop, MI_PREDEFINI (dans),
+                                      MI_SYMBOLEV (sydisj));
+          mi_symbole_mettre_attribut (syop, MI_PREDEFINI (indice),
+                                      MI_ENTIERV (mi_creer_entier (nbarg)));
+          vop = MI_SYMBOLEV (syop);
+          tabarg[nbarg++] = syop;
+        }
+      ps = finop;
+    };
+  Mit_Val vdisj = MI_NILV;
+  if (!lec->lec_pascreer)
+    {
+      assert (sydisj != NULL);
+      const Mit_Tuple *tupargs = mi_creer_tuple_symboles (nbarg, tabarg);
+      mi_symbole_mettre_attribut (sydisj, MI_PREDEFINI (arg),
+                                  MI_TUPLEV (tupargs));
+      vdisj = MI_SYMBOLEV (sydisj);
+    }
+  *pfin = ps;
+  return vdisj;
+}				/* fin mi_lire_conjonction */
+
+
+Mit_Val
+mi_lire_disjonction (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
+{
+  assert (lec && lec->lec_nmagiq == MI_LECTEUR_NMAGIQ);
+  assert (ps != NULL);
+  assert (pfin != NULL);
+  while (*ps && isspace (*ps))
+    ps++;
+  char *debdisj = ps;
+  char *fingch = NULL;
+  Mit_Val vgch = mi_lire_conjonction (lec, ps, &fingch);
   if (!fingch)
     MI_ERREUR_LECTURE (lec, debdisj, NULL,
                        "erreur de lecture du membre gauche d'une disjonction");
@@ -1059,7 +1182,7 @@ mi_lire_disjonction (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
           free (tabarg), tabarg = nouvtabarg;
           tailarg = nouvtailargs;
         }
-      if (!strncmp (ps, "&&", 2))
+      if (!strncmp (ps, "||", 2))
         ps += 2;
       else if (!strncmp (ps,"\342\210\250" /*U+2228 LOGICAL OR ∨ */ , 3))
         ps += 3;
@@ -1067,7 +1190,7 @@ mi_lire_disjonction (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
         MI_FATALPRINTF ("corruption: mauvais operateur de disjonction %s",
                         ps);
       char *finop = NULL;
-      Mit_Val vop = mi_lire_comparande (lec, ps, &finop);
+      Mit_Val vop = mi_lire_conjonction (lec, ps, &finop);
       if (!finop)
         MI_ERREUR_LECTURE (lec, ps, NULL,
                            "erreur de lecture d'une disjonction");
@@ -1103,6 +1226,7 @@ mi_lire_disjonction (struct Mi_Lecteur_st *lec, char *ps, char **pfin)
   *pfin = ps;
   return vdisj;
 }				/* fin mi_lire_disjonction */
+
 
 
 Mit_Val
