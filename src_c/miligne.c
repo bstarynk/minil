@@ -134,6 +134,7 @@ mi_generer_completion_alpha (const char *tige, int etat)
   if (etat == 0)
     {
       int lgtige = strlen (tige);
+      nbcompl = 0;
       // etat initial, il faut allouer et remplir vecrad
       // & nbcompl & taillevec;
       taillevec = 5;
@@ -169,6 +170,7 @@ mi_generer_completion_alpha (const char *tige, int etat)
             }
           if (!strncmp (nomrad, tige, lgtige))
             {
+              assert (nbcompl >= 0 && nbcompl < taillevec);
               vecrad[nbcompl] = rad;
               MI_DEBOPRINTF ("vecrad[%d]@%p nomrad='%s'", nbcompl,
                              vecrad[nbcompl], nomrad);
@@ -199,6 +201,21 @@ mi_generer_completion_alpha (const char *tige, int etat)
 }				/* fin mi_generer_completion_alpha */
 
 
+// générateur de complétion pour un delimiteur, la tige est inutile,
+// il faut utiliser rl_line_buffer; la chaîne renvoyée doit être
+// dynamiquement allouée et sera libérée par readline.
+char *
+mi_generer_completion_delim (const char *tige, int etat)
+{
+  static char**vecdelim;
+  static int taillevec;
+  static int nbcompl;
+  MI_DEBOPRINTF ("tige='%s'@%p etat=%d vecdelim@%p nbcompl=%d taillevec=%d point#%d après '%c' end#%d",
+                 tige, tige, etat, vecdelim, nbcompl, taillevec, rl_point,
+                 (rl_point>0 && rl_point<=rl_end)?rl_line_buffer[rl_point-1]:' ',
+                 rl_end);
+  return NULL;
+}
 
 /// fonction appellée par readline via rl_attempted_completion_function
 static char **
@@ -236,12 +253,28 @@ mi_completion_attendue (const char *tige, int deb, int fin)
   MI_DEBOPRINTF ("tigealpha final %s", tigealpha ? "vrai" : "faux");
   if (tigealpha)
     {
+      MI_DEBOPRINTF ("avant rl_completion_matches completion_alpha tige='%s'", tige);
       char **res = rl_completion_matches (tige, mi_generer_completion_alpha);
       MI_DEBOPRINTF ("res@%p", res);
+      return res;
     }
-  MI_DEBOPRINTF ("échec");
+  if (rl_point >= 2 && rl_point <= rl_end
+      && ispunct(rl_line_buffer[rl_point-1])
+      && ispunct(rl_line_buffer[rl_point-2])
+      && (rl_point == 2 || !ispunct(rl_line_buffer[rl_point-3])))
+    {
+      /// il faudrait probablement modifier rl_line_buffer
+      MI_DEBOPRINTF ("avant completion_delim tige='%s'", tige);
+      char **res = NULL;
+      MI_DEBOPRINTF ("res@%p", res);
+      return res;
+    }
+
+  MI_DEBOPRINTF ("échec tigealpha %s", tigealpha ? "vrai" : "faux");
   return NULL;
 }				// fin mi_completion_attendue
+
+
 
 ////////////////
 void
