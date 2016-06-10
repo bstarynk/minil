@@ -201,21 +201,22 @@ mi_generer_completion_alpha (const char *tige, int etat)
 }				/* fin mi_generer_completion_alpha */
 
 
-// générateur de complétion pour un delimiteur, la tige est inutile,
-// il faut utiliser rl_line_buffer; la chaîne renvoyée doit être
-// dynamiquement allouée et sera libérée par readline.
-char *
-mi_generer_completion_delim (const char *tige, int etat)
+
+struct mi_raccourci_delim_st
 {
-  static char**vecdelim;
-  static int taillevec;
-  static int nbcompl;
-  MI_DEBOPRINTF ("tige='%s'@%p etat=%d vecdelim@%p nbcompl=%d taillevec=%d point#%d après '%c' end#%d",
-                 tige, tige, etat, vecdelim, nbcompl, taillevec, rl_point,
-                 (rl_point>0 && rl_point<=rl_end)?rl_line_buffer[rl_point-1]:' ',
-                 rl_end);
-  return NULL;
-}
+  const char *ra_delim;
+  const char *ra_equiv;
+};
+const struct mi_raccourci_delim_st mi_tabracdelim[] =
+{
+  {"<=", "\342\211\244" /* U+2264 LESS-THAN OR EQUAL TO ≤ */ },
+  {">=", "\342\211\245" /* U+2265 GREATER-THAN OR EQUAL TO ≥ */ },
+  {"!=", "\342\211\245" /* U+2265 GREATER-THAN OR EQUAL TO ≥ */ },
+  {"!-", "\302\254" /* UTF-8 U+00AC NOT SIGN ¬ */ },
+  {"||", "\342\210\250" /*U+2228 LOGICAL OR ∨ */ },
+  {"&&", "\342\210\247" /*U+2227 LOGICAL AND ∧ */ },
+  {NULL, NULL}
+};
 
 /// fonction appellée par readline via rl_attempted_completion_function
 static char **
@@ -239,7 +240,7 @@ mi_completion_attendue (const char *tige, int deb, int fin)
        rl_end);
     }
   // Le cas simple est quand la tige contient un mot (lexicalement
-  // parlant) mais il faut aussi traiter les cas plus compliqués en
+  // parlant) mais il faudrait aussi traiter les cas plus compliqués en
   // analysant la ligne rl_line_buffer et y reculant depuis rl_point en UTF8
   bool tigealpha = deb <= rl_point && fin > deb && fin <= rl_end
                    && fin <= rl_point;
@@ -253,23 +254,44 @@ mi_completion_attendue (const char *tige, int deb, int fin)
   MI_DEBOPRINTF ("tigealpha final %s", tigealpha ? "vrai" : "faux");
   if (tigealpha)
     {
-      MI_DEBOPRINTF ("avant rl_completion_matches completion_alpha tige='%s'", tige);
+      MI_DEBOPRINTF ("avant rl_completion_matches completion_alpha tige='%s'",
+                     tige);
       char **res = rl_completion_matches (tige, mi_generer_completion_alpha);
       MI_DEBOPRINTF ("res@%p", res);
       return res;
     }
   if (rl_point >= 2 && rl_point <= rl_end
-      && ispunct(rl_line_buffer[rl_point-1])
-      && ispunct(rl_line_buffer[rl_point-2])
-      && (rl_point == 2 || !ispunct(rl_line_buffer[rl_point-3])))
+      && ispunct (rl_line_buffer[rl_point - 1])
+      && ispunct (rl_line_buffer[rl_point - 2])
+      && (rl_point == 2 || !ispunct (rl_line_buffer[rl_point - 3])))
     {
-      /// il faudrait probablement modifier rl_line_buffer
-      MI_DEBOPRINTF ("avant completion_delim tige='%s'", tige);
-      char **res = NULL;
-      MI_DEBOPRINTF ("res@%p", res);
-      return res;
+      const char *d = rl_line_buffer + rl_point - 2;
+      const char *rempl = NULL;
+      /// il faut modifier rl_line_buffer
+      for (const struct mi_raccourci_delim_st * rd = mi_tabracdelim;
+           rempl == NULL && rd->ra_delim != NULL; rd++)
+        {
+          if (strlen (rd->ra_delim) == 2 && !strncmp (rd->ra_delim, d, 2))
+            rempl = rd->ra_equiv;
+        }
+      if (rempl)
+        {
+          int vieuxpoint = rl_point;
+          MI_DEBOPRINTF ("d='%c%c' rempl='%s'", d[0], d[1], rempl);
+          int nbc = rl_delete_text(rl_point-2,rl_point);
+          if (nbc != 2)
+            MI_FATALPRINTF("echec rl_delete_text vieuxpoint=%d nbc=%d point=%d", vieuxpoint, nbc, rl_point);
+          rl_point -= 2;
+          rl_insert_text(rempl);
+          // peut-être appeler rl_redisplay ici?
+        }
+      else
+        {
+          MI_DEBOPRINTF ("d='%c%c' sans rempl", d[0], d[1]);
+        }
+      MI_DEBOPRINTF ("fin compl.delim. point=%d ligne='%s'", rl_point, rl_line_buffer);
+      return NULL;
     }
-
   MI_DEBOPRINTF ("échec tigealpha %s", tigealpha ? "vrai" : "faux");
   return NULL;
 }				// fin mi_completion_attendue
@@ -286,6 +308,8 @@ mi_lire_expressions_en_boucle (void)
   rl_basic_word_break_characters = " \t\n\"\\'`@$><=;|&{(+-*/~#[^@?.!";
   // une liste de caractères à prefixer un mo"
   rl_special_prefixes = "$";
+  rl_set_paren_blink_timeout(250000); // 250 millisecondes
+  rl_variable_bind ("blink-matching-paren", "on");
   printf ("Entrez des expressions en boucle,"
           " et une ligne vide pour terminer.\n"
           "\t (utilise libreadline %s)\n\n", rl_library_version);
