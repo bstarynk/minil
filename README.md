@@ -7,3 +7,7 @@ this [`minil` project](https://github.com/bstarynk/minil) was written (in French
 and is now, in 2019, abandonned, but
 [bismon](https://github.com/bstarynk/bismon) shares most ideas of
 `minil` and is still (in 2019) alive.
+
+J.Pitrat passed away on october 2019.
+
+See also [RefPerSys](http://refpersys.org/) (work in progress in 2020) and its source code on https://gitlab.com/bstarynk/refpersys
